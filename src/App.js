@@ -1,5 +1,5 @@
 import React from 'react';
-import SudokuBoard from './components/SudokuBoard/SudokuBoard';
+import SudokuBoard from './components/Sudoku/Board/Board';
 import styles from './App.module.scss';
 
 export default function App() {

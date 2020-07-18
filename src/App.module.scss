@@ -1,11 +1,18 @@
 .App {
+  // position: absolute;
+  // top: 0;
+  // bottom: 0;
+  // left: 0;
+  // right: 0;
+  // overflow: auto;
+
+  // other
   text-align: center;
 }
 
 .Board {
   display: inline-block;
-  width: 75vmin;
+  width: 90vmin;
   background: pink;
-  margin: 1rem;
   padding: 1rem;
 }

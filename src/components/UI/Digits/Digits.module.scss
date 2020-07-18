@@ -1,0 +1,41 @@
+@mixin background($digit) {
+  background: url('./assets/#{$digit}.svg');
+  background-repeat: no-repeat;
+  background-size: contain;
+  background-position: center;
+  width: 100%;
+  height: 100%;
+}
+
+.Zero {
+  @include background(0);
+}
+
+.One {
+  @include background(1);
+}
+
+.Two {
+  @include background(2);
+}
+.Three {
+  @include background(3);
+}
+.Four {
+  @include background(4);
+}
+.Five {
+  @include background(5);
+}
+.Six {
+  @include background(6);
+}
+.Seven {
+  @include background(7);
+}
+.Eight {
+  @include background(8);
+}
+.Nine {
+  @include background(9);
+}

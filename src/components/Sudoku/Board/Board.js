@@ -1,11 +1,11 @@
 import React from 'react';
 import Block from './Block/Block';
-import AspectRatioBox from '../UI/AspectRatioBox/AspectRatioBox';
-import styles from './SudokuBoard.module.scss';
+import AspectRatioBox from '../../UI/AspectRatioBox/AspectRatioBox';
+import styles from './Board.module.scss';
 
-const SudokuBoard = () => {
+const Board = () => {
   return (
-    <AspectRatioBox ratio={1.0}>
+    <AspectRatioBox ratio={1.0} scroll>
       <div className={styles.SudokuBoard}>
         <div className={styles.Row}>
           <Block isOdd />
@@ -27,4 +27,4 @@ const SudokuBoard = () => {
   );
 };
 
-export default SudokuBoard;
+export default Board;
