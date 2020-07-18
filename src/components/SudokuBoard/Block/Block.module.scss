@@ -1,0 +1,16 @@
+.Block {
+  background-color: lightgrey;
+  display: flex;
+  flex-direction: column;
+  flex: 1 0;
+  margin: 0.125rem;
+
+  &.Odd {
+    background-color: lightblue;
+  }
+
+  .Row {
+    display: flex;
+    flex: 1 0;
+  }
+}

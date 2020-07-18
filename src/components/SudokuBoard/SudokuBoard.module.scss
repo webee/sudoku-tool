@@ -1,0 +1,12 @@
+.SudokuBoard {
+  min-width: 100%;
+  min-height: 100%;
+  display: inline-flex;
+  flex-direction: column;
+  background-color: lighten($color: black, $amount: 75);
+
+  .Row {
+    display: flex;
+    flex: 1 0;
+  }
+}
