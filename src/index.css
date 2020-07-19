@@ -1,13 +1,12 @@
 * {
   box-sizing: border-box;
-}
-
-html,
-body {
   margin: 0;
   padding: 0;
+  user-select: none;
+  /* mobile */
+  touch-action: none;
+}
+
+body {
   font-family: sans-serif;
-  /* height: 100%;
-  overflow: hidden;
-  position: relative; */
 }
