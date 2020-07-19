@@ -1,41 +1,40 @@
-@mixin background($digit) {
-  background: url('./assets/#{$digit}.svg');
-  background-repeat: no-repeat;
-  background-size: contain;
-  background-position: center;
+@mixin mask($digit) {
+  mask-image: url('./assets/#{$digit}.svg');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  mask-origin: content-box;
+  background-color: black;
   width: 100%;
   height: 100%;
 }
-
 .Zero {
-  @include background(0);
+  @include mask(0);
 }
-
 .One {
-  @include background(1);
+  @include mask(1);
 }
-
 .Two {
-  @include background(2);
+  @include mask(1);
 }
 .Three {
-  @include background(3);
+  @include mask(3);
 }
 .Four {
-  @include background(4);
+  @include mask(4);
 }
 .Five {
-  @include background(5);
+  @include mask(5);
 }
 .Six {
-  @include background(6);
+  @include mask(6);
 }
 .Seven {
-  @include background(7);
+  @include mask(7);
 }
 .Eight {
-  @include background(8);
+  @include mask(8);
 }
 .Nine {
-  @include background(9);
+  @include mask(9);
 }

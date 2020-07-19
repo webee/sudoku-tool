@@ -1,17 +1,22 @@
 import React from 'react';
 import styles from './Digits.module.scss';
 
-export const Zero = () => <div className={styles.Zero} />;
+const styleColor = c => (c ? { backgroundColor: c } : {});
 
-export const One = () => <div className={styles.One} />;
-export const Two = () => <div className={styles.Two} />;
-export const Three = () => <div className={styles.Three} />;
-export const Four = () => <div className={styles.Four} />;
-export const Five = () => <div className={styles.Five} />;
-export const Six = () => <div className={styles.Six} />;
-export const Seven = () => <div className={styles.Seven} />;
-export const Eight = () => <div className={styles.Eight} />;
-export const Nine = () => <div className={styles.Nine} />;
+const generateDigit = className => ({ color }) => (
+  <div className={className} style={styleColor(color)} />
+);
+
+export const Zero = generateDigit(styles.Zero);
+export const One = generateDigit(styles.One);
+export const Two = generateDigit(styles.Two);
+export const Three = generateDigit(styles.Three);
+export const Four = generateDigit(styles.Four);
+export const Five = generateDigit(styles.Five);
+export const Six = generateDigit(styles.Six);
+export const Seven = generateDigit(styles.Seven);
+export const Eight = generateDigit(styles.Eight);
+export const Nine = generateDigit(styles.Nine);
 
 export default [
   <Zero />,
