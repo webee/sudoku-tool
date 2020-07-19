@@ -6,33 +6,61 @@
   justify-content: center;
   align-items: center;
   padding: 2.5%;
+  cursor: pointer;
+
+  &.Selected {
+    box-shadow: none;
+    background-color: #aaa;
+  }
+}
+
+$activeColor: salmon;
+
+@mixin digitColor($color) {
+  // digit
+  div {
+    background-color: $color;
+  }
+}
+
+@mixin placed() {
+  @include digitColor(darken($color: skyblue, $amount: 25));
 }
 
 .Value {
   @extend %Cell;
   background-color: white;
   box-shadow: inset 0 -2px #666;
-  cursor: pointer;
-
-  &.Placed {
-    box-shadow: inset 0 -2px green;
-    background-color: lighten($color: green, $amount: 60);
-  }
 
   &:hover,
-  &:active {
+  &:active,
+  &.active {
     background-color: lightseagreen;
     box-shadow: none;
-    div {
-      background-color: white;
+
+    @include digitColor(white);
+  }
+
+  &.ActiveValue {
+    background-color: $activeColor;
+    @include digitColor(white);
+    &.Placed {
+      @include placed();
+    }
+    &.Selected {
+      background-color: lightseagreen !important;
+      @include digitColor($activeColor);
     }
   }
+}
+
+.Placed {
+  @include placed();
 }
 
 .Notes {
   @extend %Cell;
   background-color: rgba(127, 127, 127, 0.1);
-  cursor: cell;
   flex-direction: column;
   align-items: stretch;
 
@@ -47,5 +75,19 @@
     display: inline-flex;
     justify-content: center;
     align-items: center;
+    &.ActiveValue {
+      @include digitColor($activeColor);
+    }
+  }
+
+  &:hover,
+  &:active,
+  &.active {
+    background-color: lightseagreen;
+    box-shadow: none;
+
+    .Note {
+      @include digitColor(white);
+    }
   }
 }

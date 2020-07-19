@@ -2,37 +2,93 @@ import React from 'react';
 import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
 
-const Cell = ({ value, origin }) => {
-  if (typeof value === 'number') {
-    const classes = [styles.Value];
-    !origin && classes.push(styles.Placed);
+const noteClassName = active =>
+  `${styles.Note} ${active ? styles.ActiveValue : ''}`;
+
+const Cell = React.memo(
+  ({
+    value,
+    origin,
+    block,
+    row,
+    col,
+    activePos: [activeBlock, activeRow, activeCol],
+    activeVal,
+    onClick,
+  }) => {
+    const classes = [];
+    let content = null;
+
+    if (block === activeBlock || row === activeRow || col === activeCol) {
+      // related area
+      classes.push(styles.Selected);
+    }
+    if (row === activeRow && col === activeCol) {
+      // selected
+      classes.push(styles.active);
+    }
+
+    if (typeof value === 'number') {
+      classes.push(styles.Value);
+      // it's placed value
+      !origin && classes.push(styles.Placed);
+      // it's active value
+      value === activeVal && classes.push(styles.ActiveValue);
+
+      content = digits[value];
+    } else {
+      classes.push(styles.Notes);
+      // Set: [1-9]
+      const notes = value;
+      if (notes.size > 0) {
+        content = (
+          <>
+            <div className={styles.RowNotes}>
+              <div className={noteClassName(1 === activeVal)}>
+                {notes.has(1) ? digits[1] : null}
+              </div>
+              <div className={noteClassName(2 === activeVal)}>
+                {notes.has(2) ? digits[2] : null}
+              </div>
+              <div className={noteClassName(3 === activeVal)}>
+                {notes.has(3) ? digits[3] : null}
+              </div>
+            </div>
+            <div className={styles.RowNotes}>
+              <div className={noteClassName(4 === activeVal)}>
+                {notes.has(4) ? digits[4] : null}
+              </div>
+              <div className={noteClassName(5 === activeVal)}>
+                {notes.has(5) ? digits[5] : null}
+              </div>
+              <div className={noteClassName(6 === activeVal)}>
+                {notes.has(6) ? digits[6] : null}
+              </div>
+            </div>
+            <div className={styles.RowNotes}>
+              <div className={noteClassName(7 === activeVal)}>
+                {notes.has(7) ? digits[7] : null}
+              </div>
+              <div className={noteClassName(8 === activeVal)}>
+                {notes.has(8) ? digits[8] : null}
+              </div>
+              <div className={noteClassName(9 === activeVal)}>
+                {notes.has(9) ? digits[9] : null}
+              </div>
+            </div>
+          </>
+        );
+      }
+    }
     return (
-      <div className={classes.join(' ')} onClick={() => {}}>
-        {digits[value]}
+      <div
+        className={classes.join(' ')}
+        onClick={() => onClick(block, row, col)}
+      >
+        {content}
       </div>
     );
   }
-  // Set: [1-9]
-  const notes = value;
-  return (
-    <div className={styles.Notes}>
-      <div className={styles.RowNotes}>
-        <div className={styles.Note}>{notes.has(1) ? digits[1] : null}</div>
-        <div className={styles.Note}>{notes.has(2) ? digits[2] : null}</div>
-        <div className={styles.Note}>{notes.has(3) ? digits[3] : null}</div>
-      </div>
-      <div className={styles.RowNotes}>
-        <div className={styles.Note}>{notes.has(4) ? digits[4] : null}</div>
-        <div className={styles.Note}>{notes.has(5) ? digits[5] : null}</div>
-        <div className={styles.Note}>{notes.has(6) ? digits[6] : null}</div>
-      </div>
-      <div className={styles.RowNotes}>
-        <div className={styles.Note}>{notes.has(7) ? digits[7] : null}</div>
-        <div className={styles.Note}>{notes.has(8) ? digits[8] : null}</div>
-        <div className={styles.Note}>{notes.has(9) ? digits[9] : null}</div>
-      </div>
-    </div>
-  );
-};
+);
 
 export default Cell;

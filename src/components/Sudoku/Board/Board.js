@@ -1,26 +1,125 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatioBox/AspectRatioBox';
 import styles from './Board.module.scss';
 
 const Board = ({ values }) => {
+  // [row, col]
+  const [activePos, setActivePos] = useState([-1, -1, -1]);
+  const [activeVal, setActiveVal] = useState(0);
+
+  const cellClickedHandler = useCallback(
+    (block, row, col) => {
+      // position
+      setActivePos(([curBlock, curRow, curCol]) => {
+        if (block === curBlock && row === curRow && col === curCol) {
+          // cancel select
+          return [-1, -1, -1];
+        }
+        return [block, row, col];
+      });
+      // value
+      const val = values[row][col].value;
+      if (typeof val === 'number') {
+        // value
+        setActiveVal(val);
+      } else {
+        // notes
+        setActiveVal(0);
+      }
+    },
+    [values]
+  );
+
   return (
     <AspectRatioBox ratio={1.0}>
       <div className={styles.SudokuBoard}>
         <div className={styles.Row}>
-          <Block values={values} rowStart={0} colStart={0} />
-          <Block values={values} rowStart={0} colStart={3} />
-          <Block values={values} rowStart={0} colStart={6} />
+          <Block
+            block={0}
+            rowStart={0}
+            colStart={0}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
+          <Block
+            block={1}
+            rowStart={0}
+            colStart={3}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
+          <Block
+            block={2}
+            rowStart={0}
+            colStart={6}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
         </div>
         <div className={styles.Row}>
-          <Block values={values} rowStart={3} colStart={0} />
-          <Block values={values} rowStart={3} colStart={3} />
-          <Block values={values} rowStart={3} colStart={6} />
+          <Block
+            block={3}
+            rowStart={3}
+            colStart={0}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
+          <Block
+            block={4}
+            rowStart={3}
+            colStart={3}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
+          <Block
+            block={5}
+            rowStart={3}
+            colStart={6}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
         </div>
         <div className={styles.Row}>
-          <Block values={values} rowStart={6} colStart={0} />
-          <Block values={values} rowStart={6} colStart={3} />
-          <Block values={values} rowStart={6} colStart={6} />
+          <Block
+            block={6}
+            rowStart={6}
+            colStart={0}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
+          <Block
+            block={7}
+            rowStart={6}
+            colStart={3}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
+          <Block
+            block={8}
+            rowStart={6}
+            colStart={6}
+            activePos={activePos}
+            activeVal={activeVal}
+            values={values}
+            cellClickedHandler={cellClickedHandler}
+          />
         </div>
       </div>
     </AspectRatioBox>
