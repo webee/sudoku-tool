@@ -2,34 +2,45 @@
 
 .Controls {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   padding: 1%;
-  background-color: lightblue;
+  border: 1px solid black;
 
-  .Digit {
-    flex: 1 0;
-    border-radius: 10%;
-    box-shadow: inset 0 -2px #666;
-    position: relative;
-    margin: 0 1%;
-    cursor: pointer;
-    background-color: white;
-    @include digitColor($placed-color);
+  .Digits {
+    display: flex;
+    background-color: lightblue;
+    .Digit {
+      flex: 1 0;
+      border-radius: 10%;
+      box-shadow: inset 0 -2px #666;
+      position: relative;
+      margin: 1%;
+      cursor: pointer;
+      background-color: white;
+      @include digitColor($placed-color);
+      > .digit {
+        background-color: $placed-color;
+      }
 
-    &:hover,
-    &:active {
-      box-shadow: none;
-      background-color: $selected-bg-color;
-      @include digitColor(white);
+      &:hover,
+      &:active {
+        box-shadow: none;
+        background-color: $selected-bg-color;
+        @include digitColor(white);
+        > .digit {
+          background-color: white;
+        }
+      }
     }
-  }
 
-  .Count {
-    position: absolute;
-    right: 0;
-    bottom: 2px;
-    width: 30%;
-    height: 30%;
-    @include digitColor(black);
+    .Count {
+      position: absolute;
+      right: 0;
+      bottom: 2px;
+      width: 30%;
+      height: 30%;
+      @include digitColor(black);
+    }
   }
 }

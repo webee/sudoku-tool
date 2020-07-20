@@ -3,8 +3,18 @@ import styles from './Digits.module.scss';
 
 const styleColor = c => (c ? { backgroundColor: c } : {});
 
-const generateDigit = className => ({ color, digitClassName = 'digit' }) => (
-  <div className={`${className} ${digitClassName}`} style={styleColor(color)} />
+const generateDigit = digitClass => ({
+  color,
+  digitClassName = 'digit',
+  className,
+  children,
+}) => (
+  <div
+    className={`${digitClass} ${digitClassName} ${className}`}
+    style={styleColor(color)}
+  >
+    {children}
+  </div>
 );
 
 export const Zero = generateDigit(styles.Zero);

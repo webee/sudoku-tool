@@ -10,10 +10,15 @@
   padding: 2.5%;
   cursor: pointer;
 
-  &.Selected {
+  &.Related {
     box-shadow: none;
     background-color: #aaa;
   }
+}
+
+@mixin hoverOrSelectedCell() {
+  background-color: $selected-bg-color;
+  box-shadow: none;
 }
 
 @mixin placed() {
@@ -25,25 +30,19 @@
   background-color: white;
   box-shadow: inset 0 -2px #666;
 
-  &:hover,
-  &:active,
-  &.active {
-    background-color: $selected-bg-color;
-    box-shadow: none;
-
-    @include digitColor(white);
-  }
-
   &.ActiveValue {
     background-color: $active-color;
     @include digitColor(white);
     &.Placed {
       @include placed();
     }
-    &.Selected {
-      background-color: $selected-bg-color !important;
-      @include digitColor($active-color);
-    }
+  }
+
+  &:hover,
+  &:active,
+  &.Selected {
+    @include hoverOrSelectedCell();
+    @include digitColor(white);
   }
 }
 
@@ -53,7 +52,7 @@
 
 .Notes {
   @extend %Cell;
-  background-color: rgba(127, 127, 127, 0.1);
+  background-color: rgba(127, 127, 127, 0.15);
   flex-direction: column;
   align-items: stretch;
 
@@ -75,10 +74,8 @@
 
   &:hover,
   &:active,
-  &.active {
-    background-color: $selected-bg-color;
-    box-shadow: none;
-
+  &.Selected {
+    @include hoverOrSelectedCell();
     .Note {
       @include digitColor(white);
     }

@@ -5,7 +5,8 @@ import styled from 'styled-components';
   make sure the width is the same with a parent's,
   because padding refer to parent's width.
 */
-const Wrapper = styled.div`
+const Box = styled.div`
+  width: ${({ width }) => (width !== undefined ? width : 'auto')};
   height: 0;
   padding-top: ${({ ratio }) => 100 / ratio}%;
   position: relative;
@@ -29,10 +30,10 @@ const Content = styled.div`
 
 export default ({ ratio = 1.0, fixed = true, scroll = false, children }) => {
   return (
-    <Wrapper ratio={ratio}>
+    <Box ratio={ratio}>
       <Content fixed={fixed} scroll={scroll}>
         {children}
       </Content>
-    </Wrapper>
+    </Box>
   );
 };

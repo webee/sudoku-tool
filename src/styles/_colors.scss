@@ -1,14 +1,18 @@
+// placed digit color
 $placed-color: darken(
   $color: skyblue,
   $amount: 25,
 );
 
+// active(same value as selected) digit color
 $active-color: salmon;
 
+// selected cell background color
 $selected-bg-color: lightseagreen;
 
+// set digit color
 @mixin digitColor($color) {
-  :global(.digit) {
+  > :global(.digit) {
     background-color: $color;
   }
 }

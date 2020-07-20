@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Board from './Board/Board';
 import Controls from './Controls/Controls';
 import styles from './Sudoku.module.scss';
@@ -16,15 +16,47 @@ const puzzle = `
 `;
 
 const Sudoku = () => {
-  const [values] = useState(() => parsePuzzle(puzzle));
+  const [values, setValues] = useState(() => parsePuzzle(puzzle));
+  // [block, row, col]
+  const [activePos, setActivePos] = useState([-1, -1, -1]);
+  const cellClickedHandler = useCallback((block, row, col) => {
+    // position
+    setActivePos(([curBlock, curRow, curCol]) => {
+      if (block === curBlock && row === curRow && col === curCol) {
+        // cancel select
+        return [-1, -1, -1];
+      }
+      return [block, row, col];
+    });
+  }, []);
+
+  const togglePlaceHandler = useCallback(
+    value => {
+      console.log('OK');
+      const [, row, col] = activePos;
+      if (row >= 0 && col >= 0) {
+        setValues(curValues => {
+          const newValues = [...curValues];
+          newValues[row] = [...curValues[row]];
+          newValues[row][col] = { ...curValues[row][col], value };
+          return newValues;
+        });
+      }
+    },
+    [activePos]
+  );
 
   return (
     <div className={styles.Sudoku}>
       <div className={styles.Board}>
-        <Board values={values} />
+        <Board
+          values={values}
+          activePos={activePos}
+          cellClickedHandler={cellClickedHandler}
+        />
       </div>
       <div>
-        <Controls />
+        <Controls togglePlaceHandler={togglePlaceHandler} />
       </div>
     </div>
   );

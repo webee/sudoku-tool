@@ -1,23 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React from 'react';
 import Block from './Block/Block';
-import AspectRatioBox from '../../UI/AspectRatioBox/AspectRatioBox';
+import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
 import styles from './Board.module.scss';
 
-const Board = ({ values }) => {
-  // [row, col]
-  const [activePos, setActivePos] = useState([-1, -1, -1]);
-
-  const cellClickedHandler = useCallback((block, row, col) => {
-    // position
-    setActivePos(([curBlock, curRow, curCol]) => {
-      if (block === curBlock && row === curRow && col === curCol) {
-        // cancel select
-        return [-1, -1, -1];
-      }
-      return [block, row, col];
-    });
-  }, []);
-
+const Board = ({ values, activePos, cellClickedHandler }) => {
   // active value
   let activeVal = 0;
   const [block, row, col] = activePos;

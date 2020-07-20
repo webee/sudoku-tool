@@ -18,14 +18,19 @@ const Cell = React.memo(
   }) => {
     const classes = [];
     let content = null;
+    let isSelected = false;
 
-    if (block === activeBlock || row === activeRow || col === activeCol) {
-      // related area
-      classes.push(styles.Selected);
-    }
     if (row === activeRow && col === activeCol) {
-      // selected
-      classes.push(styles.active);
+      // active
+      isSelected = true;
+      classes.push(styles.Selected);
+    } else if (
+      block === activeBlock ||
+      row === activeRow ||
+      col === activeCol
+    ) {
+      // related area
+      classes.push(styles.Related);
     }
 
     if (typeof value === 'number') {
@@ -33,7 +38,9 @@ const Cell = React.memo(
       // it's placed value
       !origin && classes.push(styles.Placed);
       // it's active value
-      value === activeVal && classes.push(styles.ActiveValue);
+      if (value === activeVal && !isSelected) {
+        classes.push(styles.ActiveValue);
+      }
 
       content = digits[value];
     } else {
