@@ -1,0 +1,14 @@
+$placed-color: darken(
+  $color: skyblue,
+  $amount: 25,
+);
+
+$active-color: salmon;
+
+$selected-bg-color: lightseagreen;
+
+@mixin digitColor($color) {
+  :global(.digit) {
+    background-color: $color;
+  }
+}

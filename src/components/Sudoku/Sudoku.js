@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Board from './Board/Board';
+import Controls from './Controls/Controls';
 import styles from './Sudoku.module.scss';
 
 const puzzle = `
@@ -22,6 +23,9 @@ const Sudoku = () => {
       <div className={styles.Board}>
         <Board values={values} />
       </div>
+      <div>
+        <Controls />
+      </div>
     </div>
   );
 };
@@ -38,7 +42,6 @@ const parsePuzzle = puzzle => {
   // parse values
   const cellValues = cells.map(cell => {
     if (cell.startsWith('n') && cell.endsWith('N')) {
-      console.log(cell);
       // it's note
       const notes = cell
         .slice(1, -1)

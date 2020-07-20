@@ -1,3 +1,5 @@
+@import 'styles/colors';
+
 %Cell {
   margin: 1%;
   border-radius: 10%;
@@ -14,17 +16,8 @@
   }
 }
 
-$activeColor: salmon;
-
-@mixin digitColor($color) {
-  // digit
-  div {
-    background-color: $color;
-  }
-}
-
 @mixin placed() {
-  @include digitColor(darken($color: skyblue, $amount: 25));
+  @include digitColor($placed-color);
 }
 
 .Value {
@@ -35,21 +28,21 @@ $activeColor: salmon;
   &:hover,
   &:active,
   &.active {
-    background-color: lightseagreen;
+    background-color: $selected-bg-color;
     box-shadow: none;
 
     @include digitColor(white);
   }
 
   &.ActiveValue {
-    background-color: $activeColor;
+    background-color: $active-color;
     @include digitColor(white);
     &.Placed {
       @include placed();
     }
     &.Selected {
-      background-color: lightseagreen !important;
-      @include digitColor($activeColor);
+      background-color: $selected-bg-color !important;
+      @include digitColor($active-color);
     }
   }
 }
@@ -76,14 +69,14 @@ $activeColor: salmon;
     justify-content: center;
     align-items: center;
     &.ActiveValue {
-      @include digitColor($activeColor);
+      @include digitColor($active-color);
     }
   }
 
   &:hover,
   &:active,
   &.active {
-    background-color: lightseagreen;
+    background-color: $selected-bg-color;
     box-shadow: none;
 
     .Note {

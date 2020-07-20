@@ -6,30 +6,24 @@ import styles from './Board.module.scss';
 const Board = ({ values }) => {
   // [row, col]
   const [activePos, setActivePos] = useState([-1, -1, -1]);
-  const [activeVal, setActiveVal] = useState(0);
 
-  const cellClickedHandler = useCallback(
-    (block, row, col) => {
-      // position
-      setActivePos(([curBlock, curRow, curCol]) => {
-        if (block === curBlock && row === curRow && col === curCol) {
-          // cancel select
-          return [-1, -1, -1];
-        }
-        return [block, row, col];
-      });
-      // value
-      const val = values[row][col].value;
-      if (typeof val === 'number') {
-        // value
-        setActiveVal(val);
-      } else {
-        // notes
-        setActiveVal(0);
+  const cellClickedHandler = useCallback((block, row, col) => {
+    // position
+    setActivePos(([curBlock, curRow, curCol]) => {
+      if (block === curBlock && row === curRow && col === curCol) {
+        // cancel select
+        return [-1, -1, -1];
       }
-    },
-    [values]
-  );
+      return [block, row, col];
+    });
+  }, []);
+
+  // active value
+  let activeVal = 0;
+  const [block, row, col] = activePos;
+  if (block >= 0 && row >= 0 && col >= 0) {
+    activeVal = values[row][col].value;
+  }
 
   return (
     <AspectRatioBox ratio={1.0}>
