@@ -30,20 +30,40 @@ const Sudoku = () => {
     });
   }, []);
 
+  const [activeBlock, activeRow, activeCol] = activePos;
   const togglePlaceHandler = useCallback(
     value => {
-      console.log('OK');
-      const [, row, col] = activePos;
-      if (row >= 0 && col >= 0) {
+      if (activeRow >= 0 && activeCol >= 0) {
         setValues(curValues => {
+          const oldValue = curValues[activeRow][activeCol];
+          if (oldValue.origin) {
+            // can't set origin value
+            return curValues;
+          }
+
+          if (oldValue.value === value) {
+            // cancel current value
+            value = new Set();
+          }
+
           const newValues = [...curValues];
-          newValues[row] = [...curValues[row]];
-          newValues[row][col] = { ...curValues[row][col], value };
+          newValues[activeRow] = [...curValues[activeRow]];
+          newValues[activeRow][activeCol] = {
+            ...oldValue,
+            value,
+          };
           return newValues;
         });
       }
     },
-    [activePos]
+    [activeCol, activeRow]
+  );
+
+  const availableDigits = calcAvailableDigits(
+    values,
+    activeBlock,
+    activeRow,
+    activeCol
   );
 
   return (
@@ -56,10 +76,53 @@ const Sudoku = () => {
         />
       </div>
       <div>
-        <Controls togglePlaceHandler={togglePlaceHandler} />
+        <Controls
+          availableDigits={availableDigits}
+          togglePlaceHandler={togglePlaceHandler}
+        />
       </div>
     </div>
   );
+};
+
+// functions
+// TODO: remove block props.
+const cellToBlockMapping = [
+  [0, 0, 0, 1, 1, 1, 2, 2, 2],
+  [0, 0, 0, 1, 1, 1, 2, 2, 2],
+  [0, 0, 0, 1, 1, 1, 2, 2, 2],
+  [3, 3, 3, 4, 4, 4, 5, 5, 5],
+  [3, 3, 3, 4, 4, 4, 5, 5, 5],
+  [3, 3, 3, 4, 4, 4, 5, 5, 5],
+  [6, 6, 6, 7, 7, 7, 8, 8, 8],
+  [6, 6, 6, 7, 7, 7, 8, 8, 8],
+  [6, 6, 6, 7, 7, 7, 8, 8, 8],
+];
+const calcAvailableDigits = (values, block, row, col) => {
+  let res = new Set();
+  if (block >= 0 && row >= 0 && col >= 0) {
+    const value = values[row][col];
+    if (value.origin) {
+      // origin can't be changed
+      return res;
+    }
+    res = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const b = cellToBlockMapping[r][c];
+        if (b === block && r === row && c === col) {
+          continue;
+        }
+        if (b === block || r === row || c === col) {
+          const v = values[r][c].value;
+          if (typeof v === 'number') {
+            res.delete(v);
+          }
+        }
+      }
+    }
+  }
+  return res;
 };
 
 const cellPattern = /(\d)|(p\d)|(n[1-9]*N)/g;
