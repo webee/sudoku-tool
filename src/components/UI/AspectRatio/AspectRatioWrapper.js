@@ -17,9 +17,9 @@ const Wrapper = styled.div`
   }
 `;
 
-export default ({ ratio = 1.0, className, children }) => {
+export default ({ ratio = 1.0, children, ...props }) => {
   return (
-    <Wrapper ratio={ratio} className={className}>
+    <Wrapper ratio={ratio} {...props}>
       {children}
     </Wrapper>
   );
