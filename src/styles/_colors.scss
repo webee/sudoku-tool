@@ -9,6 +9,8 @@ $active-color: salmon;
 
 // selected cell background color
 $selected-bg-color: lightseagreen;
+// available cell background color
+$available-bg-color: green;
 
 // set digit color
 @mixin digitColor($color) {

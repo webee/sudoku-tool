@@ -22,6 +22,28 @@ export const getCellBlock = (row, col) =>
 
 export const getBlockCells = block => blockToCellsMapping[block];
 
+export const getRelatedCells = (row, col) => [
+  [row, 0],
+  [row, 1],
+  [row, 2],
+  [row, 3],
+  [row, 4],
+  [row, 5],
+  [row, 6],
+  [row, 7],
+  [row, 8],
+  [0, col],
+  [1, col],
+  [2, col],
+  [3, col],
+  [4, col],
+  [5, col],
+  [6, col],
+  [7, col],
+  [8, col],
+  ...getBlockCells(getCellBlock(row, col)),
+];
+
 // calcuate available digits for cell at postion <pos>.
 export const calcAvailableDigits = (values, pos) => {
   let res = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -33,27 +55,7 @@ export const calcAvailableDigits = (values, pos) => {
       return new Set();
     }
 
-    for (const [r, c] of [
-      [row, 0],
-      [row, 1],
-      [row, 2],
-      [row, 3],
-      [row, 4],
-      [row, 5],
-      [row, 6],
-      [row, 7],
-      [row, 8],
-      [0, col],
-      [1, col],
-      [2, col],
-      [3, col],
-      [4, col],
-      [5, col],
-      [6, col],
-      [7, col],
-      [8, col],
-      ...getBlockCells(getCellBlock(row, col)),
-    ]) {
+    for (const [r, c] of getRelatedCells(row, col)) {
       if (r === row && c === col) {
         // self
         continue;
@@ -74,6 +76,40 @@ export const calcRemainingDigits = values => {
       const { value } = cell;
       if (typeof value === 'number') {
         res[value]--;
+      }
+    }
+  }
+  return res;
+};
+
+export const calcAvailableCells = (values, d) => {
+  if (d <= 0) {
+    return false;
+  }
+
+  const res = [
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+    [true, true, true, true, true, true, true, true, true],
+  ];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const { value } = values[r][c];
+      if (typeof value === 'number') {
+        if (value === d) {
+          // clear
+          for (const [row, col] of getRelatedCells(r, c)) {
+            res[row][col] = false;
+          }
+        } else {
+          res[r][c] = false;
+        }
       }
     }
   }

@@ -3,7 +3,13 @@ import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
 import styles from './Board.module.scss';
 
-const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
+const Board = ({
+  values,
+  activeVal,
+  activePos,
+  availableCells,
+  cellClickedHandler,
+}) => {
   // active value
   if (activePos) {
     const [row, col] = activePos;
@@ -20,6 +26,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
           <Block
@@ -28,6 +35,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
           <Block
@@ -36,6 +44,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
         </div>
@@ -46,6 +55,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
           <Block
@@ -54,6 +64,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
           <Block
@@ -62,6 +73,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
         </div>
@@ -72,6 +84,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
           <Block
@@ -80,6 +93,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
           <Block
@@ -88,6 +102,7 @@ const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
             activePos={activePos}
             activeVal={activeVal}
             values={values}
+            availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
           />
         </div>

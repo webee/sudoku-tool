@@ -18,63 +18,75 @@ const puzzle = `
 
 const Sudoku = () => {
   const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
-  // [row, col]
-  const [activePos, setActivePos] = useState(null);
-  const [activeVal, setActiveVal] = useState(0);
+  // {pos:[row, col], val:0}
+  const [activeState, setActiveState] = useState({ pos: null, val: 0 });
+  const { pos: activePos, val: activeVal } = activeState;
 
-  const cellClickedHandler = useCallback((row, col) => {
-    // position
-    setActivePos(curActivePos => {
-      if (curActivePos) {
-        const [curRow, curCol] = curActivePos;
-        if (row === curRow && col === curCol) {
-          // cancel current selected
-          return null;
-        }
+  const updateValues = useCallback((row, col, value) => {
+    setValues(curValues => {
+      const oldValue = curValues[row][col];
+      if (oldValue.origin) {
+        // can't set origin value
+        return curValues;
       }
-      return [row, col];
+
+      if (oldValue.value === value) {
+        // cancel current value
+        value = new Set();
+      }
+
+      const newValues = [...curValues];
+      newValues[row] = [...curValues[row]];
+      newValues[row][col] = {
+        ...oldValue,
+        value,
+      };
+      return newValues;
     });
-    // cancel active
-    setActiveVal(0);
   }, []);
 
-  const digitClickedHandler = useCallback(
-    value => {
-      if (activePos) {
+  const cellClickedHandler = useCallback(
+    (row, col) => {
+      if (activeVal !== 0) {
         // place or note
-        const [activeRow, activeCol] = activePos;
-        setValues(curValues => {
-          const oldValue = curValues[activeRow][activeCol];
-          if (oldValue.origin) {
-            // can't set origin value
-            return curValues;
-          }
-
-          if (oldValue.value === value) {
-            // cancel current value
-            value = new Set();
-          }
-
-          const newValues = [...curValues];
-          newValues[activeRow] = [...curValues[activeRow]];
-          newValues[activeRow][activeCol] = {
-            ...oldValue,
-            value,
-          };
-          return newValues;
-        });
+        updateValues(row, col, activeVal);
       } else {
-        // active a value
-        setActiveVal(curActiveVal => {
-          if (curActiveVal === value) {
-            // cancel active
-            return 0;
+        // select position
+        setActiveState(({ pos: curActivePos }) => {
+          let pos = [row, col];
+          if (curActivePos) {
+            const [curRow, curCol] = curActivePos;
+            if (row === curRow && col === curCol) {
+              // cancel current selected
+              pos = null;
+            }
           }
-          return value;
+          return { pos, val: 0 };
         });
       }
     },
-    [activePos]
+    [activeVal, updateValues]
+  );
+
+  const digitClickedHandler = useCallback(
+    d => {
+      if (activePos) {
+        // place or note
+        const [activeRow, activeCol] = activePos;
+        updateValues(activeRow, activeCol, d);
+      } else {
+        // active a value
+        setActiveState(({ val: curActiveVal }) => {
+          let val = d;
+          if (curActiveVal === d) {
+            // cancel active
+            val = 0;
+          }
+          return { pos: null, val };
+        });
+      }
+    },
+    [activePos, updateValues]
   );
 
   const availableDigits = useMemo(
@@ -84,6 +96,10 @@ const Sudoku = () => {
   const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [
     values,
   ]);
+  const availableCells = useMemo(
+    () => sudoku.calcAvailableCells(values, activeVal),
+    [activeVal, values]
+  );
 
   return (
     <div className={styles.Sudoku}>
@@ -92,6 +108,7 @@ const Sudoku = () => {
           values={values}
           activeVal={activeVal}
           activePos={activePos}
+          availableCells={availableCells}
           cellClickedHandler={cellClickedHandler}
         />
       </div>

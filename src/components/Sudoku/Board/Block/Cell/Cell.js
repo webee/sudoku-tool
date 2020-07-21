@@ -6,7 +6,7 @@ const noteClassName = active =>
   `${styles.Note} ${active ? styles.ActiveValue : ''}`;
 
 const Cell = React.memo(
-  ({ value, origin, row, col, activePos, activeVal, onClick }) => {
+  ({ value, origin, row, col, activePos, activeVal, available, onClick }) => {
     const classes = [];
     let content = null;
     let isSelected = false;
@@ -21,6 +21,9 @@ const Cell = React.memo(
         // related area
         classes.push(styles.Related);
       }
+    }
+    if (available) {
+      classes.push(styles.Available);
     }
 
     if (typeof value === 'number') {

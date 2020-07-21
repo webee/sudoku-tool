@@ -6,7 +6,7 @@ const styleColor = c => (c ? { backgroundColor: c } : {});
 const generateDigit = digitClass => ({
   color,
   digitClassName = 'digit',
-  className,
+  className = '',
   children,
 }) => (
   <div

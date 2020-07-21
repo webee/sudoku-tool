@@ -11,6 +11,7 @@ const Controls = ({
   return (
     <div className={styles.Controls}>
       <div className={styles.Panel}>
+        <button>Deselect</button>
         <button>Note</button>
         <button>Erase</button>
       </div>

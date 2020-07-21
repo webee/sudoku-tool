@@ -5,7 +5,6 @@ import styles from './Digits.module.scss';
 
 const Digits = React.memo(
   ({ activeVal, availableDigits, remainingDigits, digitClickedHandler }) => {
-    console.log(remainingDigits);
     const genClassName = d => {
       const classes = [styles.Digit];
       if (d === activeVal) {

@@ -8,6 +8,7 @@ const Block = ({
   activePos,
   activeVal,
   values,
+  availableCells,
   cellClickedHandler,
 }) => {
   const isOdd = (rowStart + colStart) % 2 === 1;
@@ -20,6 +21,7 @@ const Block = ({
           col={colStart}
           activePos={activePos}
           activeVal={activeVal}
+          available={availableCells && availableCells[rowStart][colStart]}
           onClick={cellClickedHandler}
         />
         <Cell
@@ -28,6 +30,7 @@ const Block = ({
           col={colStart + 1}
           activePos={activePos}
           activeVal={activeVal}
+          available={availableCells && availableCells[rowStart][colStart + 1]}
           onClick={cellClickedHandler}
         />
         <Cell
@@ -36,6 +39,7 @@ const Block = ({
           col={colStart + 2}
           activePos={activePos}
           activeVal={activeVal}
+          available={availableCells && availableCells[rowStart][colStart + 2]}
           onClick={cellClickedHandler}
         />
       </div>
@@ -46,6 +50,7 @@ const Block = ({
           col={colStart}
           activePos={activePos}
           activeVal={activeVal}
+          available={availableCells && availableCells[rowStart + 1][colStart]}
           onClick={cellClickedHandler}
         />
         <Cell
@@ -54,6 +59,9 @@ const Block = ({
           col={colStart + 1}
           activePos={activePos}
           activeVal={activeVal}
+          available={
+            availableCells && availableCells[rowStart + 1][colStart + 1]
+          }
           onClick={cellClickedHandler}
         />
         <Cell
@@ -62,6 +70,9 @@ const Block = ({
           col={colStart + 2}
           activePos={activePos}
           activeVal={activeVal}
+          available={
+            availableCells && availableCells[rowStart + 1][colStart + 2]
+          }
           onClick={cellClickedHandler}
         />
       </div>
@@ -72,6 +83,7 @@ const Block = ({
           col={colStart}
           activePos={activePos}
           activeVal={activeVal}
+          available={availableCells && availableCells[rowStart + 2][colStart]}
           onClick={cellClickedHandler}
         />
         <Cell
@@ -80,6 +92,9 @@ const Block = ({
           col={colStart + 1}
           activePos={activePos}
           activeVal={activeVal}
+          available={
+            availableCells && availableCells[rowStart + 2][colStart + 1]
+          }
           onClick={cellClickedHandler}
         />
         <Cell
@@ -88,6 +103,9 @@ const Block = ({
           col={colStart + 2}
           activePos={activePos}
           activeVal={activeVal}
+          available={
+            availableCells && availableCells[rowStart + 2][colStart + 2]
+          }
           onClick={cellClickedHandler}
         />
       </div>
