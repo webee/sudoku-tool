@@ -3,9 +3,8 @@ import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
 import styles from './Board.module.scss';
 
-const Board = ({ values, activePos, cellClickedHandler }) => {
+const Board = ({ values, activeVal, activePos, cellClickedHandler }) => {
   // active value
-  let activeVal = 0;
   if (activePos) {
     const [row, col] = activePos;
     activeVal = values[row][col].value;

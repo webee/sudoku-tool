@@ -22,7 +22,8 @@
     }
 
     &:hover,
-    &:active {
+    &:active,
+    &.active {
       &:not(.Disabled) {
         box-shadow: none;
         background-color: $selected-bg-color;

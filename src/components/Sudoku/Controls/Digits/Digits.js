@@ -4,10 +4,13 @@ import digits from '../../../UI/Digits/Digits';
 import styles from './Digits.module.scss';
 
 const Digits = React.memo(
-  ({ availableDigits, remainingDigits, digitClickedHandler }) => {
+  ({ activeVal, availableDigits, remainingDigits, digitClickedHandler }) => {
     console.log(remainingDigits);
     const genClassName = d => {
       const classes = [styles.Digit];
+      if (d === activeVal) {
+        classes.push(styles.active);
+      }
       if (!availableDigits.has(d)) {
         classes.push(styles.Disabled);
       }

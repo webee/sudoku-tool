@@ -3,6 +3,7 @@ import Digits from './Digits/Digits';
 import styles from './Controls.module.scss';
 
 const Controls = ({
+  activeVal,
   availableDigits,
   remainingDigits,
   digitClickedHandler,
@@ -14,6 +15,7 @@ const Controls = ({
         <button>Erase</button>
       </div>
       <Digits
+        activeVal={activeVal}
         availableDigits={availableDigits}
         remainingDigits={remainingDigits}
         digitClickedHandler={digitClickedHandler}

@@ -20,7 +20,7 @@ const Sudoku = () => {
   const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
   // [row, col]
   const [activePos, setActivePos] = useState(null);
-  // const [activeVal, setActiveVal] = useState(0);
+  const [activeVal, setActiveVal] = useState(0);
 
   const cellClickedHandler = useCallback((row, col) => {
     // position
@@ -34,11 +34,14 @@ const Sudoku = () => {
       }
       return [row, col];
     });
+    // cancel active
+    setActiveVal(0);
   }, []);
 
   const digitClickedHandler = useCallback(
     value => {
       if (activePos) {
+        // place or note
         const [activeRow, activeCol] = activePos;
         setValues(curValues => {
           const oldValue = curValues[activeRow][activeCol];
@@ -60,6 +63,15 @@ const Sudoku = () => {
           };
           return newValues;
         });
+      } else {
+        // active a value
+        setActiveVal(curActiveVal => {
+          if (curActiveVal === value) {
+            // cancel active
+            return 0;
+          }
+          return value;
+        });
       }
     },
     [activePos]
@@ -78,12 +90,14 @@ const Sudoku = () => {
       <div className={styles.Board}>
         <Board
           values={values}
+          activeVal={activeVal}
           activePos={activePos}
           cellClickedHandler={cellClickedHandler}
         />
       </div>
       <div>
         <Controls
+          activeVal={activeVal}
           availableDigits={availableDigits}
           remainingDigits={remainingDigits}
           digitClickedHandler={digitClickedHandler}
