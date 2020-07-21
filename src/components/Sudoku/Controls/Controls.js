@@ -1,5 +1,6 @@
 import React from 'react';
 import Digits from './Digits/Digits';
+import Button from '../../UI/Button/Button';
 import styles from './Controls.module.scss';
 
 const Controls = ({
@@ -7,13 +8,18 @@ const Controls = ({
   availableDigits,
   remainingDigits,
   digitClickedHandler,
+  isNoting,
+  toggleIsNotingHandler,
+  eraseValueHandler,
 }) => {
   return (
     <div className={styles.Controls}>
       <div className={styles.Panel}>
-        <button>Deselect</button>
-        <button>Note</button>
-        <button>Erase</button>
+        <Button>Deselect</Button>
+        <Button type={isNoting ? 'On' : 'Off'} onClick={toggleIsNotingHandler}>
+          Note
+        </Button>
+        <Button onClick={eraseValueHandler}>Erase</Button>
       </div>
       <Digits
         activeVal={activeVal}

@@ -18,38 +18,58 @@ const puzzle = `
 
 const Sudoku = () => {
   const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
+  const [isNoting, setIsNoting] = useState(false);
   // {pos:[row, col], val:0}
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
 
-  const updateValues = useCallback((row, col, value) => {
-    setValues(curValues => {
-      const oldValue = curValues[row][col];
-      if (oldValue.origin) {
-        // can't set origin value
-        return curValues;
-      }
+  const updateValues = useCallback((isNoting, row, col, value) => {
+    if (!isNoting) {
+      setValues(curValues => {
+        const oldValue = curValues[row][col];
+        if (oldValue.origin) {
+          // can't place/note origin value
+          return curValues;
+        }
 
-      if (oldValue.value === value) {
-        // cancel current value
-        value = new Set();
-      }
+        if (oldValue.value === value) {
+          // cancel current value
+          value = new Set();
+        }
 
-      const newValues = [...curValues];
-      newValues[row] = [...curValues[row]];
-      newValues[row][col] = {
-        ...oldValue,
-        value,
-      };
-      return newValues;
-    });
+        return sudoku.updateValues(curValues, row, col, value);
+      });
+    } else {
+      setValues(curValues => {
+        const oldValue = curValues[row][col];
+        if (oldValue.origin) {
+          // can't place/note origin value
+          return curValues;
+        }
+
+        if (typeof oldValue.value === 'number') {
+          // can't note cell with value.
+          return curValues;
+        }
+
+        // note
+        const notes = new Set(oldValue.value);
+        if (notes.has(value)) {
+          notes.delete(value);
+        } else {
+          notes.add(value);
+        }
+
+        return sudoku.updateValues(curValues, row, col, notes);
+      });
+    }
   }, []);
 
   const cellClickedHandler = useCallback(
     (row, col) => {
       if (activeVal !== 0) {
         // place or note
-        updateValues(row, col, activeVal);
+        updateValues(isNoting, row, col, activeVal);
       } else {
         // select position
         setActiveState(({ pos: curActivePos }) => {
@@ -65,7 +85,7 @@ const Sudoku = () => {
         });
       }
     },
-    [activeVal, updateValues]
+    [activeVal, isNoting, updateValues]
   );
 
   const digitClickedHandler = useCallback(
@@ -73,7 +93,7 @@ const Sudoku = () => {
       if (activePos) {
         // place or note
         const [activeRow, activeCol] = activePos;
-        updateValues(activeRow, activeCol, d);
+        updateValues(isNoting, activeRow, activeCol, d);
       } else {
         // active a value
         setActiveState(({ val: curActiveVal }) => {
@@ -86,8 +106,27 @@ const Sudoku = () => {
         });
       }
     },
-    [activePos, updateValues]
+    [activePos, isNoting, updateValues]
   );
+
+  const toggleIsNotingHandler = useCallback(() => {
+    setIsNoting(isNoting => !isNoting);
+  }, []);
+
+  const eraseValueHandler = useCallback(() => {
+    if (activePos) {
+      const [activeRow, activeCol] = activePos;
+      setValues(curValues => {
+        const oldValue = curValues[activeRow][activeCol];
+        if (oldValue.origin) {
+          // can't erase origin value
+          return curValues;
+        }
+
+        return sudoku.updateValues(curValues, activeRow, activeCol, new Set());
+      });
+    }
+  }, [activePos]);
 
   const availableDigits = useMemo(
     () => sudoku.calcAvailableDigits(values, activePos),
@@ -118,6 +157,9 @@ const Sudoku = () => {
           availableDigits={availableDigits}
           remainingDigits={remainingDigits}
           digitClickedHandler={digitClickedHandler}
+          isNoting={isNoting}
+          toggleIsNotingHandler={toggleIsNotingHandler}
+          eraseValueHandler={eraseValueHandler}
         />
       </div>
     </div>

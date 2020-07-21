@@ -6,9 +6,8 @@
   border: 1px solid black;
 
   .Panel {
-    margin: 1rem;
     display: flex;
-    justify-content: space-around;
+    justify-content: flex-end;
   }
 
   .Tools {

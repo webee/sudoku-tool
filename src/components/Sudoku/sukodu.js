@@ -161,3 +161,14 @@ export const parsePuzzle = puzzle => {
   }
   return values;
 };
+
+export const updateValues = (curValues, row, col, value) => {
+  const oldValue = { ...curValues[row][col] };
+  const newValues = [...curValues];
+  newValues[row] = [...curValues[row]];
+  newValues[row][col] = {
+    ...oldValue,
+    value,
+  };
+  return newValues;
+};
