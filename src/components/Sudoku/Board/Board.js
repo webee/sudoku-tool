@@ -6,8 +6,8 @@ import styles from './Board.module.scss';
 const Board = ({ values, activePos, cellClickedHandler }) => {
   // active value
   let activeVal = 0;
-  const [block, row, col] = activePos;
-  if (block >= 0 && row >= 0 && col >= 0) {
+  if (activePos) {
+    const [row, col] = activePos;
     activeVal = values[row][col].value;
   }
 
@@ -16,7 +16,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
       <div className={styles.SudokuBoard}>
         <div className={styles.Row}>
           <Block
-            block={0}
             rowStart={0}
             colStart={0}
             activePos={activePos}
@@ -25,7 +24,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
             cellClickedHandler={cellClickedHandler}
           />
           <Block
-            block={1}
             rowStart={0}
             colStart={3}
             activePos={activePos}
@@ -34,7 +32,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
             cellClickedHandler={cellClickedHandler}
           />
           <Block
-            block={2}
             rowStart={0}
             colStart={6}
             activePos={activePos}
@@ -45,7 +42,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
         </div>
         <div className={styles.Row}>
           <Block
-            block={3}
             rowStart={3}
             colStart={0}
             activePos={activePos}
@@ -54,7 +50,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
             cellClickedHandler={cellClickedHandler}
           />
           <Block
-            block={4}
             rowStart={3}
             colStart={3}
             activePos={activePos}
@@ -63,7 +58,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
             cellClickedHandler={cellClickedHandler}
           />
           <Block
-            block={5}
             rowStart={3}
             colStart={6}
             activePos={activePos}
@@ -74,7 +68,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
         </div>
         <div className={styles.Row}>
           <Block
-            block={6}
             rowStart={6}
             colStart={0}
             activePos={activePos}
@@ -83,7 +76,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
             cellClickedHandler={cellClickedHandler}
           />
           <Block
-            block={7}
             rowStart={6}
             colStart={3}
             activePos={activePos}
@@ -92,7 +84,6 @@ const Board = ({ values, activePos, cellClickedHandler }) => {
             cellClickedHandler={cellClickedHandler}
           />
           <Block
-            block={8}
             rowStart={6}
             colStart={6}
             activePos={activePos}

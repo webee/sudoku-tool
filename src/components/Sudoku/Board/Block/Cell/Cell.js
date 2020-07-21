@@ -6,31 +6,21 @@ const noteClassName = active =>
   `${styles.Note} ${active ? styles.ActiveValue : ''}`;
 
 const Cell = React.memo(
-  ({
-    value,
-    origin,
-    block,
-    row,
-    col,
-    activePos: [activeBlock, activeRow, activeCol],
-    activeVal,
-    onClick,
-  }) => {
+  ({ value, origin, row, col, activePos, activeVal, onClick }) => {
     const classes = [];
     let content = null;
     let isSelected = false;
 
-    if (row === activeRow && col === activeCol) {
-      // active
-      isSelected = true;
-      classes.push(styles.Selected);
-    } else if (
-      block === activeBlock ||
-      row === activeRow ||
-      col === activeCol
-    ) {
-      // related area
-      classes.push(styles.Related);
+    if (activePos) {
+      const [activeRow, activeCol] = activePos;
+      if (row === activeRow && col === activeCol) {
+        // active
+        isSelected = true;
+        classes.push(styles.Selected);
+      } else if (row === activeRow || col === activeCol) {
+        // related area
+        classes.push(styles.Related);
+      }
     }
 
     if (typeof value === 'number') {
@@ -88,10 +78,7 @@ const Cell = React.memo(
       }
     }
     return (
-      <div
-        className={classes.join(' ')}
-        onClick={() => onClick(block, row, col)}
-      >
+      <div className={classes.join(' ')} onClick={() => onClick(row, col)}>
         {content}
       </div>
     );

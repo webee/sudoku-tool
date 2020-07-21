@@ -1,5 +1,3 @@
-@import 'styles/colors';
-
 .Controls {
   display: flex;
   flex-direction: column;
@@ -7,45 +5,15 @@
   padding: 1%;
   border: 1px solid black;
 
-  .Digits {
+  .Panel {
+    margin: 1rem;
     display: flex;
-    background-color: lightblue;
-    .Digit {
-      flex: 1 0;
-      border-radius: 10%;
-      box-shadow: inset 0 -2px #666;
-      position: relative;
-      margin: 1%;
-      cursor: pointer;
-      background-color: white;
-      @include digitColor($placed-color);
-      > .digit {
-        background-color: $placed-color;
-      }
+    justify-content: space-around;
+  }
 
-      &:hover,
-      &:active {
-        box-shadow: none;
-        background-color: $selected-bg-color;
-        @include digitColor(white);
-        > .digit {
-          background-color: white;
-        }
-      }
-
-      &.Disabled {
-        cursor: initial;
-        filter: grayscale(100%);
-      }
-    }
-
-    .Count {
-      position: absolute;
-      right: 0;
-      bottom: 2px;
-      width: 30%;
-      height: 30%;
-      @include digitColor(black);
-    }
+  .Tools {
+    margin: 1rem;
+    display: flex;
+    justify-content: space-around;
   }
 }

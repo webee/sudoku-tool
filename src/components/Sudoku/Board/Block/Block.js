@@ -3,7 +3,6 @@ import Cell from './Cell/Cell';
 import styles from './Block.module.scss';
 
 const Block = ({
-  block,
   rowStart,
   colStart,
   activePos,
@@ -17,7 +16,6 @@ const Block = ({
       <div className={styles.Row}>
         <Cell
           {...values[rowStart][colStart]}
-          block={block}
           row={rowStart}
           col={colStart}
           activePos={activePos}
@@ -26,7 +24,6 @@ const Block = ({
         />
         <Cell
           {...values[rowStart][colStart + 1]}
-          block={block}
           row={rowStart}
           col={colStart + 1}
           activePos={activePos}
@@ -35,7 +32,6 @@ const Block = ({
         />
         <Cell
           {...values[rowStart][colStart + 2]}
-          block={block}
           row={rowStart}
           col={colStart + 2}
           activePos={activePos}
@@ -46,7 +42,6 @@ const Block = ({
       <div className={styles.Row}>
         <Cell
           {...values[rowStart + 1][colStart]}
-          block={block}
           row={rowStart + 1}
           col={colStart}
           activePos={activePos}
@@ -55,7 +50,6 @@ const Block = ({
         />
         <Cell
           {...values[rowStart + 1][colStart + 1]}
-          block={block}
           row={rowStart + 1}
           col={colStart + 1}
           activePos={activePos}
@@ -64,7 +58,6 @@ const Block = ({
         />
         <Cell
           {...values[rowStart + 1][colStart + 2]}
-          block={block}
           row={rowStart + 1}
           col={colStart + 2}
           activePos={activePos}
@@ -75,7 +68,6 @@ const Block = ({
       <div className={styles.Row}>
         <Cell
           {...values[rowStart + 2][colStart]}
-          block={block}
           row={rowStart + 2}
           col={colStart}
           activePos={activePos}
@@ -84,7 +76,6 @@ const Block = ({
         />
         <Cell
           {...values[rowStart + 2][colStart + 1]}
-          block={block}
           row={rowStart + 2}
           col={colStart + 1}
           activePos={activePos}
@@ -93,7 +84,6 @@ const Block = ({
         />
         <Cell
           {...values[rowStart + 2][colStart + 2]}
-          block={block}
           row={rowStart + 2}
           col={colStart + 2}
           activePos={activePos}
