@@ -1,23 +1,29 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
+import Button from '../UI/Button/Button';
+import NewGame from './NewGame';
 import Board from './Board/Board';
 import Controls from './Controls/Controls';
 import styles from './Sudoku.module.scss';
 import * as sudoku from './sukodu';
 
-const puzzle = `
-901002708
-570060000
-000000004
-000000000
-700421900
-000098030
-300506070
-009003000
-000080051
+const initialPuzzle = `
+090000000
+000800230
+006004070
+500083100
+600090003
+001560007
+010200700
+084001000
+000000020
 `;
 
 const Sudoku = () => {
-  const [initialValues] = useState(() => sudoku.parsePuzzle(puzzle));
+  const [isNewGame, setIsNewGame] = useState(false);
+  const [newGameError, setNewGameError] = useState(null);
+  const [initialValues, setInitialValues] = useState(() =>
+    sudoku.parsePuzzle(initialPuzzle)
+  );
   const [values, setValues] = useState(initialValues);
   const [isNoting, setIsNoting] = useState(false);
   // {pos:[row, col], val:0}
@@ -25,6 +31,25 @@ const Sudoku = () => {
   const { pos: activePos, val: activeVal } = activeState;
 
   // handlers
+  const startNewGameHandler = useCallback(() => {
+    setIsNewGame(true);
+  }, []);
+
+  const cancelNewGameHandler = useCallback(() => {
+    setIsNewGame(false);
+  }, []);
+
+  const newGameHandler = useCallback(puzzle => {
+    try {
+      const values = sudoku.parsePuzzle(puzzle);
+      setInitialValues(values);
+      setValues(values);
+      setIsNewGame(false);
+    } catch (error) {
+      setNewGameError(error);
+    }
+  }, []);
+
   const cellClickedHandler = useCallback(
     (row, col) => {
       if (activeVal !== 0) {
@@ -109,48 +134,50 @@ const Sudoku = () => {
     setValues(sudoku.autoPlace);
   }, []);
 
-  // calculated states
-  const availableDigits = useMemo(
-    () => sudoku.calcAvailableDigits(values, activePos),
-    [activePos, values]
-  );
-  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [
-    values,
-  ]);
-  const availableCells = useMemo(
-    () => sudoku.calcAvailableCells(values, activeVal),
-    [activeVal, values]
-  );
+  let content = null;
+  if (isNewGame) {
+    content = (
+      <NewGame
+        cancelNewGameHandler={cancelNewGameHandler}
+        newGameHandler={newGameHandler}
+        error={newGameError}
+      />
+    );
+  } else {
+    content = (
+      <>
+        <div className={styles.Menu}>
+          <Button onClick={startNewGameHandler}>New</Button>
+        </div>
+        <div className={styles.Board}>
+          <Board
+            values={values}
+            activeVal={activeVal}
+            activePos={activePos}
+            cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
+          />
+        </div>
+        <div className={styles.Controls}>
+          <Controls
+            values={values}
+            activePos={activePos}
+            activeVal={activeVal}
+            digitClickedHandler={digitClickedHandler}
+            isNoting={isNoting}
+            resetHandler={resetHandler}
+            eraseValueHandler={eraseValueHandler}
+            deselectHandler={deselectHandler}
+            toggleIsNotingHandler={toggleIsNotingHandler}
+            autoNoteHandler={autoNoteHandler}
+            autoPlaceHandler={autoPlaceHandler}
+          />
+        </div>
+      </>
+    );
+  }
 
-  return (
-    <div className={styles.Sudoku}>
-      <div className={styles.Board}>
-        <Board
-          values={values}
-          activeVal={activeVal}
-          activePos={activePos}
-          availableCells={availableCells}
-          cellClickedHandler={cellClickedHandler}
-          isNoting={isNoting}
-        />
-      </div>
-      <div>
-        <Controls
-          activeVal={activeVal}
-          availableDigits={availableDigits}
-          remainingDigits={remainingDigits}
-          digitClickedHandler={digitClickedHandler}
-          isNoting={isNoting}
-          resetHandler={resetHandler}
-          eraseValueHandler={eraseValueHandler}
-          deselectHandler={deselectHandler}
-          toggleIsNotingHandler={toggleIsNotingHandler}
-          autoNoteHandler={autoNoteHandler}
-          autoPlaceHandler={autoPlaceHandler}
-        />
-      </div>
-    </div>
-  );
+  return <div className={styles.Sudoku}>{content}</div>;
 };
 
 export default Sudoku;

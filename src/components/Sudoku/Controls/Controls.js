@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Digits from './Digits/Digits';
 import Button from '../../UI/Button/Button';
 import styles from './Controls.module.scss';
+import * as sudoku from '../sukodu';
 
 const Controls = ({
+  values,
+  activePos,
   activeVal,
-  availableDigits,
-  remainingDigits,
   digitClickedHandler,
   isNoting,
   deselectHandler,
@@ -16,6 +17,14 @@ const Controls = ({
   autoNoteHandler,
   autoPlaceHandler,
 }) => {
+  // calculated states
+  const availableDigits = useMemo(
+    () => sudoku.calcAvailableDigits(values, activePos),
+    [activePos, values]
+  );
+  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [
+    values,
+  ]);
   return (
     <div className={styles.Controls}>
       <div className={styles.Panel}>

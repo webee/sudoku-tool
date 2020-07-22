@@ -1,9 +1,29 @@
 .Sudoku {
-  width: 75vmin;
+  width: 100vmin;
   min-width: 240px;
+  min-height: 100vh;
   margin: auto;
-}
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 
-.Board {
-  margin: 1rem auto;
+  @media (min-height: 640px) and (min-width: 640px) {
+    width: 65vmin;
+  }
+
+  .Menu {
+    margin-top: 4px;
+    border: 1px solid black;
+    display: flex;
+    justify-content: center;
+  }
+
+  .Board {
+    margin: 4px 4px 0 4px;
+  }
+
+  .Controls {
+    margin-top: 4px;
+  }
 }

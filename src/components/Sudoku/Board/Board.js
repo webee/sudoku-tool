@@ -1,16 +1,22 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
 import styles from './Board.module.scss';
+import * as sudoku from '../sukodu';
 
 const Board = ({
   values,
   activeVal,
   activePos,
-  availableCells,
   cellClickedHandler,
   isNoting,
 }) => {
+  // calculated states
+  const availableCells = useMemo(
+    () => sudoku.calcAvailableCells(values, activeVal),
+    [activeVal, values]
+  );
+
   // active value
   if (activePos) {
     const [row, col] = activePos;

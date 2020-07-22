@@ -131,6 +131,9 @@ const cellPattern = /(\d)|(p\d)|(n[1-9]*N)/g;
 const valuePattern = /^[1-9]$/;
 
 export const parsePuzzle = puzzle => {
+  if (puzzle.length < 81) {
+    throw new Error('bad sudoku puzzle format');
+  }
   // split cell
   const cells = puzzle.match(cellPattern);
   if (cells.length !== 81) {
@@ -170,6 +173,7 @@ export const parsePuzzle = puzzle => {
       values[i][j] = cellValues[9 * i + j];
     }
   }
+  // TODO: check board integrity
   return values;
 };
 
