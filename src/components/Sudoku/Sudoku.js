@@ -7,13 +7,13 @@ import * as sudoku from './sukodu';
 const puzzle = `
 901002708
 570060000
-00n2368N00n579N004
+000000004
 000000000
 700421900
 000098030
 300506070
-0090030n2468N0
-000080p351
+009003000
+000080051
 `;
 
 const Sudoku = () => {
@@ -109,6 +109,10 @@ const Sudoku = () => {
     [activePos, isNoting, updateValues]
   );
 
+  const deselectHandler = useCallback(() => {
+    setActiveState({ pos: null, val: 0 });
+  }, []);
+
   const toggleIsNotingHandler = useCallback(() => {
     setIsNoting(isNoting => !isNoting);
   }, []);
@@ -123,6 +127,7 @@ const Sudoku = () => {
           return curValues;
         }
 
+        // clear placed and noted value.
         return sudoku.updateValues(curValues, activeRow, activeCol, new Set());
       });
     }
@@ -149,6 +154,7 @@ const Sudoku = () => {
           activePos={activePos}
           availableCells={availableCells}
           cellClickedHandler={cellClickedHandler}
+          isNoting={isNoting}
         />
       </div>
       <div>
@@ -158,6 +164,7 @@ const Sudoku = () => {
           remainingDigits={remainingDigits}
           digitClickedHandler={digitClickedHandler}
           isNoting={isNoting}
+          deselectHandler={deselectHandler}
           toggleIsNotingHandler={toggleIsNotingHandler}
           eraseValueHandler={eraseValueHandler}
         />

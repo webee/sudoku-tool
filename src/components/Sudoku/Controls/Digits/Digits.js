@@ -1,23 +1,32 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import AspectRatioWrapper from '../../../UI/AspectRatio/AspectRatioWrapper';
 import digits from '../../../UI/Digits/Digits';
 import styles from './Digits.module.scss';
 
 const Digits = React.memo(
-  ({ activeVal, availableDigits, remainingDigits, digitClickedHandler }) => {
-    const genClassName = d => {
-      const classes = [styles.Digit];
-      if (d === activeVal) {
-        classes.push(styles.active);
-      }
-      if (!availableDigits.has(d)) {
-        classes.push(styles.Disabled);
-      }
-      return classes.join(' ');
-    };
+  ({
+    isNoting,
+    activeVal,
+    availableDigits,
+    remainingDigits,
+    digitClickedHandler,
+  }) => {
+    const genClassName = useCallback(
+      d => {
+        const classes = [styles.Digit];
+        if (d === activeVal) {
+          classes.push(styles.active);
+        }
+        if (!availableDigits.has(d)) {
+          classes.push(styles.Disabled);
+        }
+        return classes.join(' ');
+      },
+      [activeVal, availableDigits]
+    );
 
     return (
-      <div className={styles.Digits}>
+      <div className={`${styles.Digits} ${isNoting ? styles.isNoting : ''}`}>
         <AspectRatioWrapper
           className={genClassName(1)}
           onClick={
@@ -25,7 +34,9 @@ const Digits = React.memo(
           }
         >
           {digits[1]}
-          <div className={styles.Count}>{digits[remainingDigits[1]]}</div>
+          {!isNoting && (
+            <div className={styles.Count}>{digits[remainingDigits[1]]}</div>
+          )}
         </AspectRatioWrapper>
         {[2, 3, 4, 5, 6, 7, 8, 9].map(d => (
           <div
@@ -36,7 +47,9 @@ const Digits = React.memo(
             }
           >
             {digits[d]}
-            <div className={styles.Count}>{digits[remainingDigits[d]]}</div>
+            {!isNoting && (
+              <div className={styles.Count}>{digits[remainingDigits[d]]}</div>
+            )}
           </div>
         ))}
       </div>

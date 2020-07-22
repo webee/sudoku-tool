@@ -15,8 +15,11 @@
     background-color: #aaa;
   }
 
-  &.Available {
-    background-color: $available-bg-color;
+  &.PlaceAvailable {
+    background-color: $place-color;
+  }
+  &.NoteAvailable {
+    background-color: $note-color;
   }
 }
 
@@ -26,7 +29,7 @@
 }
 
 @mixin placed() {
-  @include digitColor($placed-color);
+  @include digitColor($place-color);
 }
 
 .Value {

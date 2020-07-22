@@ -9,6 +9,7 @@ const Board = ({
   activePos,
   availableCells,
   cellClickedHandler,
+  isNoting,
 }) => {
   // active value
   if (activePos) {
@@ -28,6 +29,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
           <Block
             rowStart={0}
@@ -37,6 +39,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
           <Block
             rowStart={0}
@@ -46,6 +49,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
         </div>
         <div className={styles.Row}>
@@ -57,6 +61,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
           <Block
             rowStart={3}
@@ -66,6 +71,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
           <Block
             rowStart={3}
@@ -75,6 +81,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
         </div>
         <div className={styles.Row}>
@@ -86,6 +93,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
           <Block
             rowStart={6}
@@ -95,6 +103,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
           <Block
             rowStart={6}
@@ -104,6 +113,7 @@ const Board = ({
             values={values}
             availableCells={availableCells}
             cellClickedHandler={cellClickedHandler}
+            isNoting={isNoting}
           />
         </div>
       </div>

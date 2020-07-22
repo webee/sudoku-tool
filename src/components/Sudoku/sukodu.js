@@ -172,3 +172,5 @@ export const updateValues = (curValues, row, col, value) => {
   };
   return newValues;
 };
+
+export const audoNote = curValues => {};

@@ -11,9 +11,9 @@
     margin: 1%;
     cursor: pointer;
     background-color: white;
-    @include digitColor($placed-color);
+    @include digitColor($place-color);
     > .digit {
-      background-color: $placed-color;
+      background-color: $place-color;
     }
 
     &.Disabled {
@@ -26,10 +26,27 @@
     &.active {
       &:not(.Disabled) {
         box-shadow: none;
-        background-color: $selected-bg-color;
+        background-color: $place-color;
         @include digitColor(white);
         > .digit {
           background-color: white;
+        }
+      }
+    }
+  }
+
+  &.isNoting {
+    .Digit {
+      @include digitColor($note-color);
+      > .digit {
+        background-color: $note-color;
+      }
+
+      &:hover,
+      &:active,
+      &.active {
+        &:not(.Disabled) {
+          background-color: $note-color;
         }
       }
     }

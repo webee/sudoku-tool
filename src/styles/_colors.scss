@@ -1,16 +1,16 @@
-// placed digit color
-$placed-color: darken(
+// place color
+$place-color: darken(
   $color: skyblue,
   $amount: 25,
 );
+// note color
+$note-color: green;
 
 // active(same value as selected) digit color
 $active-color: salmon;
 
 // selected cell background color
 $selected-bg-color: lightseagreen;
-// available cell background color
-$available-bg-color: green;
 
 // set digit color
 @mixin digitColor($color) {

@@ -10,6 +10,7 @@ const Block = ({
   values,
   availableCells,
   cellClickedHandler,
+  isNoting,
 }) => {
   const isOdd = (rowStart + colStart) % 2 === 1;
   return (
@@ -23,6 +24,7 @@ const Block = ({
           activeVal={activeVal}
           available={availableCells && availableCells[rowStart][colStart]}
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
         <Cell
           {...values[rowStart][colStart + 1]}
@@ -32,6 +34,7 @@ const Block = ({
           activeVal={activeVal}
           available={availableCells && availableCells[rowStart][colStart + 1]}
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
         <Cell
           {...values[rowStart][colStart + 2]}
@@ -41,6 +44,7 @@ const Block = ({
           activeVal={activeVal}
           available={availableCells && availableCells[rowStart][colStart + 2]}
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
       </div>
       <div className={styles.Row}>
@@ -52,6 +56,7 @@ const Block = ({
           activeVal={activeVal}
           available={availableCells && availableCells[rowStart + 1][colStart]}
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
         <Cell
           {...values[rowStart + 1][colStart + 1]}
@@ -63,6 +68,7 @@ const Block = ({
             availableCells && availableCells[rowStart + 1][colStart + 1]
           }
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
         <Cell
           {...values[rowStart + 1][colStart + 2]}
@@ -74,6 +80,7 @@ const Block = ({
             availableCells && availableCells[rowStart + 1][colStart + 2]
           }
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
       </div>
       <div className={styles.Row}>
@@ -85,6 +92,7 @@ const Block = ({
           activeVal={activeVal}
           available={availableCells && availableCells[rowStart + 2][colStart]}
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
         <Cell
           {...values[rowStart + 2][colStart + 1]}
@@ -96,6 +104,7 @@ const Block = ({
             availableCells && availableCells[rowStart + 2][colStart + 1]
           }
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
         <Cell
           {...values[rowStart + 2][colStart + 2]}
@@ -107,6 +116,7 @@ const Block = ({
             availableCells && availableCells[rowStart + 2][colStart + 2]
           }
           onClick={cellClickedHandler}
+          isNoting={isNoting}
         />
       </div>
     </div>
