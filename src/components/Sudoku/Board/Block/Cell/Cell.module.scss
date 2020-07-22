@@ -15,11 +15,13 @@
     background-color: #aaa;
   }
 
-  &.PlaceAvailable {
-    background-color: $place-color;
-  }
-  &.NoteAvailable {
-    background-color: $note-color;
+  &.Available {
+    &.Place {
+      background-color: $place-color;
+    }
+    &.Note {
+      background-color: $note-color;
+    }
   }
 }
 
@@ -45,11 +47,13 @@
     }
   }
 
-  &:hover,
-  &:active,
-  &.Selected {
-    @include hoverOrSelectedCell();
-    @include digitColor(white !important);
+  &.Available {
+    &:hover,
+    &:active,
+    &.Selected {
+      @include hoverOrSelectedCell();
+      @include digitColor(white !important);
+    }
   }
 }
 
@@ -79,12 +83,14 @@
     }
   }
 
-  &:hover,
-  &:active,
-  &.Selected {
-    @include hoverOrSelectedCell();
-    .Note {
-      @include digitColor(white);
+  &.Available {
+    &:hover,
+    &:active,
+    &.Selected {
+      @include hoverOrSelectedCell();
+      .Note {
+        @include digitColor(white);
+      }
     }
   }
 }

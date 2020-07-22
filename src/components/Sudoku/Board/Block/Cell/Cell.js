@@ -32,8 +32,18 @@ const Cell = React.memo(
         classes.push(styles.Related);
       }
     }
+
+    let clickable = available;
     if (available) {
-      classes.push(isNoting ? styles.NoteAvailable : styles.PlaceAvailable);
+      classes.push(styles.Available, isNoting ? styles.Note : styles.Place);
+    } else if (available === null) {
+      // deselected
+      classes.push(styles.Available);
+      clickable = true;
+    } else if (!isNoting && !origin && value === activeVal) {
+      // place mode, placed value === activeVal
+      classes.push(styles.Available);
+      clickable = true;
     }
 
     if (typeof value === 'number') {
@@ -91,7 +101,10 @@ const Cell = React.memo(
       }
     }
     return (
-      <div className={classes.join(' ')} onClick={() => onClick(row, col)}>
+      <div
+        className={classes.join(' ')}
+        onClick={clickable ? () => onClick(row, col) : undefined}
+      >
         {content}
       </div>
     );

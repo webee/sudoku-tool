@@ -23,53 +23,11 @@ const Sudoku = () => {
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
 
-  const updateValues = useCallback((isNoting, row, col, value) => {
-    if (!isNoting) {
-      setValues(curValues => {
-        const oldValue = curValues[row][col];
-        if (oldValue.origin) {
-          // can't place/note origin value
-          return curValues;
-        }
-
-        if (oldValue.value === value) {
-          // cancel current value
-          value = new Set();
-        }
-
-        return sudoku.updateValues(curValues, row, col, value);
-      });
-    } else {
-      setValues(curValues => {
-        const oldValue = curValues[row][col];
-        if (oldValue.origin) {
-          // can't place/note origin value
-          return curValues;
-        }
-
-        if (typeof oldValue.value === 'number') {
-          // can't note cell with value.
-          return curValues;
-        }
-
-        // note
-        const notes = new Set(oldValue.value);
-        if (notes.has(value)) {
-          notes.delete(value);
-        } else {
-          notes.add(value);
-        }
-
-        return sudoku.updateValues(curValues, row, col, notes);
-      });
-    }
-  }, []);
-
   const cellClickedHandler = useCallback(
     (row, col) => {
       if (activeVal !== 0) {
         // place or note
-        updateValues(isNoting, row, col, activeVal);
+        setValues(sudoku.updateValues(isNoting, row, col, activeVal));
       } else {
         // select position
         setActiveState(({ pos: curActivePos }) => {
@@ -85,7 +43,7 @@ const Sudoku = () => {
         });
       }
     },
-    [activeVal, isNoting, updateValues]
+    [activeVal, isNoting]
   );
 
   const digitClickedHandler = useCallback(
@@ -93,7 +51,7 @@ const Sudoku = () => {
       if (activePos) {
         // place or note
         const [activeRow, activeCol] = activePos;
-        updateValues(isNoting, activeRow, activeCol, d);
+        setValues(sudoku.updateValues(isNoting, activeRow, activeCol, d));
       } else {
         // active a value
         setActiveState(({ val: curActiveVal }) => {
@@ -106,7 +64,7 @@ const Sudoku = () => {
         });
       }
     },
-    [activePos, isNoting, updateValues]
+    [activePos, isNoting]
   );
 
   const deselectHandler = useCallback(() => {

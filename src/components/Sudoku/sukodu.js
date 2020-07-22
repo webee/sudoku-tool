@@ -84,7 +84,7 @@ export const calcRemainingDigits = values => {
 
 export const calcAvailableCells = (values, d) => {
   if (d <= 0) {
-    return false;
+    return null;
   }
 
   const res = [
@@ -162,7 +162,7 @@ export const parsePuzzle = puzzle => {
   return values;
 };
 
-export const updateValues = (curValues, row, col, value) => {
+export const setValues = (curValues, row, col, value) => {
   const oldValue = { ...curValues[row][col] };
   const newValues = [...curValues];
   newValues[row] = [...curValues[row]];
@@ -171,6 +171,49 @@ export const updateValues = (curValues, row, col, value) => {
     value,
   };
   return newValues;
+};
+
+export const updateValues = (isNoting, row, col, value) => {
+  return curValues => {
+    // TODO: add basic row, col, block check
+    if (!isNoting) {
+      // place
+      const oldValue = curValues[row][col];
+      if (oldValue.origin) {
+        // can't place origin value
+        return curValues;
+      }
+
+      if (oldValue.value === value) {
+        // cancel current value
+        value = new Set();
+      }
+
+      return setValues(curValues, row, col, value);
+    } else {
+      // note
+      const oldValue = curValues[row][col];
+      if (oldValue.origin) {
+        // can't note origin value
+        return curValues;
+      }
+
+      if (typeof oldValue.value === 'number') {
+        // can't note cell with value.
+        return curValues;
+      }
+
+      // note
+      const notes = new Set(oldValue.value);
+      if (notes.has(value)) {
+        notes.delete(value);
+      } else {
+        notes.add(value);
+      }
+
+      return setValues(curValues, row, col, notes);
+    }
+  };
 };
 
 export const audoNote = curValues => {};
