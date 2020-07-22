@@ -101,6 +101,14 @@ const Sudoku = () => {
     setIsNoting(isNoting => !isNoting);
   }, []);
 
+  const autoNoteHandler = useCallback(() => {
+    setValues(sudoku.audoNote);
+  }, []);
+
+  const autoPlaceHandler = useCallback(() => {
+    setValues(sudoku.autoPlace);
+  }, []);
+
   // calculated states
   const availableDigits = useMemo(
     () => sudoku.calcAvailableDigits(values, activePos),
@@ -137,6 +145,8 @@ const Sudoku = () => {
           eraseValueHandler={eraseValueHandler}
           deselectHandler={deselectHandler}
           toggleIsNotingHandler={toggleIsNotingHandler}
+          autoNoteHandler={autoNoteHandler}
+          autoPlaceHandler={autoPlaceHandler}
         />
       </div>
     </div>

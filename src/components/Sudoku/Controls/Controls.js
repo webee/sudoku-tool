@@ -34,8 +34,8 @@ const Controls = ({
         digitClickedHandler={digitClickedHandler}
       />
       <div className={styles.Tools}>
-        <Button className={autoNoteHandler}>Auto Note</Button>
-        <Button className={autoPlaceHandler}>Auto Place</Button>
+        <Button onClick={autoNoteHandler}>Auto Note</Button>
+        <Button onClick={autoPlaceHandler}>Auto Place</Button>
       </div>
     </div>
   );

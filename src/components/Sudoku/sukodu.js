@@ -22,26 +22,42 @@ export const getCellBlock = (row, col) =>
 
 export const getBlockCells = block => blockToCellsMapping[block];
 
+export const getRelatedBlockCells = (row, col) =>
+  blockToCellsMapping[getCellBlock(row, col)].filter(
+    c => c[0] !== row || c[1] !== col
+  );
+
+export const getRelatedRowCells = (row, col) =>
+  [
+    [row, 0],
+    [row, 1],
+    [row, 2],
+    [row, 3],
+    [row, 4],
+    [row, 5],
+    [row, 6],
+    [row, 7],
+    [row, 8],
+  ].filter(c => c[1] !== col);
+
+export const getRelatedColCells = (row, col) =>
+  [
+    [0, col],
+    [1, col],
+    [2, col],
+    [3, col],
+    [4, col],
+    [5, col],
+    [6, col],
+    [7, col],
+    [8, col],
+  ].filter(c => c[0] !== row);
+
+//  related cells without self.
 export const getRelatedCells = (row, col) => [
-  [row, 0],
-  [row, 1],
-  [row, 2],
-  [row, 3],
-  [row, 4],
-  [row, 5],
-  [row, 6],
-  [row, 7],
-  [row, 8],
-  [0, col],
-  [1, col],
-  [2, col],
-  [3, col],
-  [4, col],
-  [5, col],
-  [6, col],
-  [7, col],
-  [8, col],
-  ...getBlockCells(getCellBlock(row, col)),
+  ...getRelatedRowCells(row, col),
+  ...getRelatedColCells(row, col),
+  ...getRelatedBlockCells(row, col),
 ];
 
 // calcuate available digits for cell at postion <pos>.
@@ -56,10 +72,6 @@ export const calcAvailableDigits = (values, pos) => {
     }
 
     for (const [r, c] of getRelatedCells(row, col)) {
-      if (r === row && c === col) {
-        // self
-        continue;
-      }
       const v = values[r][c].value;
       if (typeof v === 'number') {
         res.delete(v);
@@ -102,13 +114,12 @@ export const calcAvailableCells = (values, d) => {
     for (let c = 0; c < 9; c++) {
       const { value } = values[r][c];
       if (typeof value === 'number') {
+        res[r][c] = false;
         if (value === d) {
           // clear
           for (const [row, col] of getRelatedCells(r, c)) {
             res[row][col] = false;
           }
-        } else {
-          res[r][c] = false;
         }
       }
     }
@@ -163,14 +174,17 @@ export const parsePuzzle = puzzle => {
 };
 
 export const setValues = (curValues, row, col, value) => {
-  const oldValue = { ...curValues[row][col] };
-  const newValues = [...curValues];
-  newValues[row] = [...curValues[row]];
-  newValues[row][col] = {
-    ...oldValue,
+  let values = [...curValues];
+  values[row] = [...curValues[row]];
+  values[row][col] = {
+    ...curValues[row][col],
     value,
   };
-  return newValues;
+  if (typeof value === 'number') {
+    values = copyValues(values);
+    updateRelatedNotes(values, row, col);
+  }
+  return values;
 };
 
 export const updateValues = (isNoting, row, col, value) => {
@@ -216,4 +230,106 @@ export const updateValues = (isNoting, row, col, value) => {
   };
 };
 
-export const audoNote = curValues => {};
+const copyValues = curValues => {
+  const values = [...curValues];
+  for (let i = 0; i < 9; i++) {
+    values[i] = [...values[i]];
+  }
+  return values;
+};
+
+export const audoNote = curValues => {
+  const values = copyValues(curValues);
+
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = values[r][c];
+      if (typeof cell.value === 'number') {
+        continue;
+      }
+      values[r][c] = { ...cell, value: calcAvailableDigits(values, [r, c]) };
+    }
+  }
+  return values;
+};
+
+const checkUniqueValue = (values, notes, cells) => {
+  let remNotes = new Set(notes);
+  for (const [r, c] of cells) {
+    const cell = values[r][c];
+    if (typeof cell.value === 'number') {
+      continue;
+    }
+    const otherNotes = cell.value;
+    otherNotes.forEach(v => {
+      remNotes.delete(v);
+    });
+  }
+  if (remNotes.size === 1) {
+    return [...remNotes][0];
+  }
+};
+
+const updateRelatedNotes = (values, row, col) => {
+  const { value } = values[row][col];
+  for (const [r, c] of getRelatedCells(row, col)) {
+    const cell = values[r][c];
+    if (typeof cell.value === 'number') {
+      continue;
+    }
+    values[r][c] = {
+      ...cell,
+      value: new Set([...cell.value].filter(n => n !== value)),
+    };
+  }
+};
+
+// auto place last value of cell and unique value of row, col or block.
+export const autoPlace = curValues => {
+  let copied = false;
+  let placed = true;
+  let values = curValues;
+
+  const tryCopyValues = () => {
+    if (!copied) {
+      values = copyValues(values);
+      copied = true;
+    }
+  };
+
+  while (placed) {
+    placed = false;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) {
+        const cell = values[r][c];
+        if (typeof cell.value === 'number') {
+          continue;
+        }
+        // note cell
+        const notes = cell.value;
+        if (notes.size === 1) {
+          placed = true;
+          // 1. check last value
+          tryCopyValues();
+          values[r][c] = { ...cell, value: [...notes][0] };
+          updateRelatedNotes(values, r, c);
+        } else {
+          let uv;
+          // 1. check unique value of row, col or block;
+          uv =
+            checkUniqueValue(values, notes, getRelatedRowCells(r, c)) ||
+            checkUniqueValue(values, notes, getRelatedColCells(r, c)) ||
+            checkUniqueValue(values, notes, getRelatedBlockCells(r, c));
+          if (uv) {
+            placed = true;
+            tryCopyValues();
+            values[r][c] = { ...cell, value: uv };
+            updateRelatedNotes(values, r, c);
+          }
+        }
+      }
+    }
+  }
+
+  return values;
+};
