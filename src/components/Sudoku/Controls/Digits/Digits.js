@@ -34,9 +34,7 @@ const Digits = React.memo(
           }
         >
           {digits[1]}
-          {!isNoting && (
-            <div className={styles.Count}>{digits[remainingDigits[1]]}</div>
-          )}
+          <div className={styles.Count}>{digits[remainingDigits[1]]}</div>
         </AspectRatioWrapper>
         {[2, 3, 4, 5, 6, 7, 8, 9].map(d => (
           <div
@@ -47,9 +45,7 @@ const Digits = React.memo(
             }
           >
             {digits[d]}
-            {!isNoting && (
-              <div className={styles.Count}>{digits[remainingDigits[d]]}</div>
-            )}
+            <div className={styles.Count}>{digits[remainingDigits[d]]}</div>
           </div>
         ))}
       </div>
