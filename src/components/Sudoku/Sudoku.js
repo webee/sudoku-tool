@@ -17,12 +17,14 @@ const puzzle = `
 `;
 
 const Sudoku = () => {
-  const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
+  const [initialValues] = useState(() => sudoku.parsePuzzle(puzzle));
+  const [values, setValues] = useState(initialValues);
   const [isNoting, setIsNoting] = useState(false);
   // {pos:[row, col], val:0}
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
 
+  // handlers
   const cellClickedHandler = useCallback(
     (row, col) => {
       if (activeVal !== 0) {
@@ -67,13 +69,13 @@ const Sudoku = () => {
     [activePos, isNoting]
   );
 
-  const deselectHandler = useCallback(() => {
-    setActiveState({ pos: null, val: 0 });
-  }, []);
-
-  const toggleIsNotingHandler = useCallback(() => {
-    setIsNoting(isNoting => !isNoting);
-  }, []);
+  const resetHandler = useCallback(() => {
+    if (!window.confirm || window.confirm('Are you sure to reset?')) {
+      setValues(initialValues);
+      // deselect
+      setActiveState({ pos: null, val: 0 });
+    }
+  }, [initialValues]);
 
   const eraseValueHandler = useCallback(() => {
     if (activePos) {
@@ -91,6 +93,15 @@ const Sudoku = () => {
     }
   }, [activePos]);
 
+  const deselectHandler = useCallback(() => {
+    setActiveState({ pos: null, val: 0 });
+  }, []);
+
+  const toggleIsNotingHandler = useCallback(() => {
+    setIsNoting(isNoting => !isNoting);
+  }, []);
+
+  // calculated states
   const availableDigits = useMemo(
     () => sudoku.calcAvailableDigits(values, activePos),
     [activePos, values]
@@ -122,9 +133,10 @@ const Sudoku = () => {
           remainingDigits={remainingDigits}
           digitClickedHandler={digitClickedHandler}
           isNoting={isNoting}
+          resetHandler={resetHandler}
+          eraseValueHandler={eraseValueHandler}
           deselectHandler={deselectHandler}
           toggleIsNotingHandler={toggleIsNotingHandler}
-          eraseValueHandler={eraseValueHandler}
         />
       </div>
     </div>

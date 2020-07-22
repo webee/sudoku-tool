@@ -11,6 +11,7 @@ const Controls = ({
   isNoting,
   deselectHandler,
   toggleIsNotingHandler,
+  resetHandler,
   eraseValueHandler,
   autoNoteHandler,
   autoPlaceHandler,
@@ -18,11 +19,12 @@ const Controls = ({
   return (
     <div className={styles.Controls}>
       <div className={styles.Panel}>
+        <Button onClick={resetHandler}>Reset</Button>
+        <Button onClick={eraseValueHandler}>Erase</Button>
         <Button onClick={deselectHandler}>Deselect</Button>
         <Button type={isNoting ? 'On' : 'Off'} onClick={toggleIsNotingHandler}>
           Note
         </Button>
-        <Button onClick={eraseValueHandler}>Erase</Button>
       </div>
       <Digits
         isNoting={isNoting}
