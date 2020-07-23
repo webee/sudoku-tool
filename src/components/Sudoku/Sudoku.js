@@ -132,11 +132,19 @@ const Sudoku = () => {
   }, []);
 
   const autoNoteHandler = useCallback(() => {
-    setValues(sudoku.audoNote);
+    setValues(sudoku.autoNote);
   }, []);
 
   const autoPlaceHandler = useCallback(() => {
     setValues(sudoku.autoPlace);
+  }, []);
+
+  const pointingHandler = useCallback(() => {
+    setValues(sudoku.pointing);
+  }, []);
+
+  const claimingHandler = useCallback(() => {
+    setValues(sudoku.claiming);
   }, []);
 
   let content = null;
@@ -179,8 +187,11 @@ const Sudoku = () => {
             toggleIsNotingHandler={toggleIsNotingHandler}
             autoNoteHandler={autoNoteHandler}
             autoPlaceHandler={autoPlaceHandler}
+            pointingHandler={pointingHandler}
+            claimingHandler={claimingHandler}
           />
         </div>
+        <div className={styles.Info}></div>
       </>
     );
   }

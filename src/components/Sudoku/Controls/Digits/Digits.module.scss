@@ -31,6 +31,10 @@
         > .digit {
           background-color: white;
         }
+
+        .Count {
+          @include digitColor(white);
+        }
       }
     }
   }

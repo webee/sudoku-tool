@@ -242,7 +242,7 @@ const copyValues = curValues => {
   return values;
 };
 
-export const audoNote = curValues => {
+export const autoNote = curValues => {
   const values = copyValues(curValues);
 
   for (let r = 0; r < 9; r++) {
@@ -335,5 +335,234 @@ export const autoPlace = curValues => {
     }
   }
 
+  return values;
+};
+
+export const pointing = curValues => {
+  let copied = false;
+  let values = curValues;
+
+  const tryCopyValues = () => {
+    if (!copied) {
+      values = copyValues(values);
+      copied = true;
+    }
+  };
+
+  for (let b = 0; b < 9; b++) {
+    const results = {};
+    for (const [r, c] of getBlockCells(b)) {
+      const { value } = values[r][c];
+      if (typeof value === 'number') {
+        continue;
+      }
+      for (const n of value) {
+        if (!results.hasOwnProperty(n)) {
+          results[n] = { pos: [r, c], to: null };
+          continue;
+        }
+        if (results[n] === false) {
+          continue;
+        }
+        switch (results[n].to) {
+          case 'row':
+            if (results[n].row !== r) {
+              results[n] = false;
+            }
+            break;
+          case 'col':
+            if (results[n].col !== c) {
+              results[n] = false;
+            }
+            break;
+          default:
+            if (results[n].pos[0] === r) {
+              results[n] = { to: 'row', row: r, n };
+            } else if (results[n].pos[1] === c) {
+              results[n] = { to: 'col', col: c, n };
+            } else {
+              results[n] = false;
+            }
+            break;
+        }
+      }
+    }
+    // results
+    for (const res of Object.values(results)) {
+      if (res === false || !res.to) {
+        continue;
+      }
+      if (res.to === 'row') {
+        // clear r.row for r.n
+        for (let c = 0; c < 9; c++) {
+          const curValue = values[res.row][c];
+          if (typeof curValue.value === 'number') {
+            continue;
+          }
+          if (b === getCellBlock(res.row, c)) {
+            continue;
+          }
+
+          if (!curValue.value.has(res.n)) {
+            continue;
+          }
+
+          console.log(
+            `[pointing] block: ${b}, row:${res.row}, n:${res.n}, col:${c}`
+          );
+
+          tryCopyValues();
+          values[res.row][c] = {
+            ...curValue,
+            value: new Set([...curValue.value].filter(n => n !== res.n)),
+          };
+        }
+      } else if (res.to === 'col') {
+        // clear r.col for r.n
+        for (let r = 0; r < 9; r++) {
+          const curValue = values[r][res.col];
+          if (typeof curValue.value === 'number') {
+            continue;
+          }
+          if (b === getCellBlock(r, res.col)) {
+            continue;
+          }
+
+          if (!curValue.value.has(res.n)) {
+            continue;
+          }
+
+          console.log(
+            `[pointing] block: ${b}, col:${res.col}, n:${res.n}, row:${r}`
+          );
+
+          tryCopyValues();
+          values[r][res.col] = {
+            ...curValue,
+            value: new Set([...curValue.value].filter(n => n !== res.n)),
+          };
+        }
+      }
+    }
+  }
+  return values;
+};
+
+export const claiming = curValues => {
+  let copied = false;
+  let values = curValues;
+
+  const tryCopyValues = () => {
+    if (!copied) {
+      values = copyValues(values);
+      copied = true;
+    }
+  };
+
+  // rows
+  for (let r = 0; r < 9; r++) {
+    const results = {};
+    for (let c = 0; c < 9; c++) {
+      const { value } = values[r][c];
+      if (typeof value === 'number') {
+        continue;
+      }
+      for (const n of value) {
+        if (!results.hasOwnProperty(n)) {
+          results[n] = { block: getCellBlock(r, c), n };
+          continue;
+        }
+        if (results[n] === false) {
+          continue;
+        }
+        if (results[n].block !== getCellBlock(r, c)) {
+          results[n] = false;
+        }
+      }
+    }
+    // results
+    for (const res of Object.values(results)) {
+      if (res === false) {
+        continue;
+      }
+
+      for (const [row, col] of getBlockCells(res.block)) {
+        const curValue = values[row][col];
+        if (typeof curValue.value === 'number') {
+          continue;
+        }
+
+        if (r === row) {
+          continue;
+        }
+
+        if (!curValue.value.has(res.n)) {
+          continue;
+        }
+        console.log(
+          `[claiming] row: ${r}, block:${res.block}, n:${res.n}, row: ${row}, col:${col}`
+        );
+
+        tryCopyValues();
+        values[row][col] = {
+          ...curValue,
+          value: new Set([...curValue.value].filter(n => n !== res.n)),
+        };
+      }
+    }
+  }
+  // cols
+  for (let c = 0; c < 9; c++) {
+    const results = {};
+    for (let r = 0; r < 9; r++) {
+      const { value } = values[r][c];
+      if (typeof value === 'number') {
+        continue;
+      }
+      for (const n of value) {
+        if (!results.hasOwnProperty(n)) {
+          results[n] = { block: getCellBlock(r, c), n };
+          continue;
+        }
+        if (results[n] === false) {
+          continue;
+        }
+        if (results[n].block !== getCellBlock(r, c)) {
+          results[n] = false;
+        }
+      }
+    }
+    // results
+    for (const res of Object.values(results)) {
+      if (res === false) {
+        continue;
+      }
+
+      for (const [row, col] of getBlockCells(res.block)) {
+        const curValue = values[row][col];
+        if (typeof curValue.value === 'number') {
+          continue;
+        }
+
+        if (c === col) {
+          continue;
+        }
+
+        if (!curValue.value.has(res.n)) {
+          continue;
+        }
+
+        console.log(
+          `[claiming] row: ${c}, block:${res.block}, n:${res.n}, row: ${row}, col:${col}`
+        );
+
+        tryCopyValues();
+        values[row][col] = {
+          ...curValue,
+          value: new Set([...curValue.value].filter(n => n !== res.n)),
+        };
+      }
+    }
+  }
   return values;
 };
