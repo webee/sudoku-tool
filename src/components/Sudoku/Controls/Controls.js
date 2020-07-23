@@ -9,8 +9,10 @@ const Controls = ({
   activePos,
   activeVal,
   digitClickedHandler,
+  showAvail,
   isNoting,
   deselectHandler,
+  toggleShowAvailHandler,
   toggleIsNotingHandler,
   resetHandler,
   eraseValueHandler,
@@ -31,6 +33,12 @@ const Controls = ({
         <Button onClick={resetHandler}>Reset</Button>
         <Button onClick={eraseValueHandler}>Erase</Button>
         <Button onClick={deselectHandler}>Deselect</Button>
+        <Button
+          type={showAvail ? 'On' : 'Off'}
+          onClick={toggleShowAvailHandler}
+        >
+          Avail
+        </Button>
         <Button type={isNoting ? 'On' : 'Off'} onClick={toggleIsNotingHandler}>
           Note
         </Button>

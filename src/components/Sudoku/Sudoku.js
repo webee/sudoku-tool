@@ -25,6 +25,7 @@ const Sudoku = () => {
     sudoku.parsePuzzle(initialPuzzle)
   );
   const [values, setValues] = useState(initialValues);
+  const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(false);
   // {pos:[row, col], val:0}
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
@@ -122,6 +123,10 @@ const Sudoku = () => {
     setActiveState({ pos: null, val: 0 });
   }, []);
 
+  const toggleShowAvailHandler = useCallback(() => {
+    setShowAvail(showAvail => !showAvail);
+  }, []);
+
   const toggleIsNotingHandler = useCallback(() => {
     setIsNoting(isNoting => !isNoting);
   }, []);
@@ -155,6 +160,7 @@ const Sudoku = () => {
             activeVal={activeVal}
             activePos={activePos}
             cellClickedHandler={cellClickedHandler}
+            showAvail={showAvail}
             isNoting={isNoting}
           />
         </div>
@@ -164,10 +170,12 @@ const Sudoku = () => {
             activePos={activePos}
             activeVal={activeVal}
             digitClickedHandler={digitClickedHandler}
+            showAvail={showAvail}
             isNoting={isNoting}
             resetHandler={resetHandler}
             eraseValueHandler={eraseValueHandler}
             deselectHandler={deselectHandler}
+            toggleShowAvailHandler={toggleShowAvailHandler}
             toggleIsNotingHandler={toggleIsNotingHandler}
             autoNoteHandler={autoNoteHandler}
             autoPlaceHandler={autoPlaceHandler}

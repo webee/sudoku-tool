@@ -14,6 +14,7 @@ const Cell = React.memo(
     activePos,
     activeVal,
     available,
+    showAvail,
     isNoting,
     onClick,
   }) => {
@@ -34,7 +35,7 @@ const Cell = React.memo(
     }
 
     let clickable = available;
-    if (available) {
+    if (available && showAvail) {
       classes.push(styles.Available, isNoting ? styles.Note : styles.Place);
     } else if (available === null) {
       // deselected
