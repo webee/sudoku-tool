@@ -1,6 +1,7 @@
 import React from 'react';
 import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
+import * as sudoku from '../../../sukodu';
 
 const noteClassName = active =>
   `${styles.Note} ${active ? styles.ActiveValue : ''}`;
@@ -24,11 +25,17 @@ const Cell = React.memo(
 
     if (activePos) {
       const [activeRow, activeCol] = activePos;
+      const block = sudoku.getCellBlock(row, col);
+      const activeBlock = sudoku.getCellBlock(activeRow, activeCol);
       if (row === activeRow && col === activeCol) {
         // active
         isSelected = true;
         classes.push(styles.Selected);
-      } else if (row === activeRow || col === activeCol) {
+      } else if (
+        row === activeRow ||
+        col === activeCol ||
+        block === activeBlock
+      ) {
         // related area
         classes.push(styles.Related);
       }
