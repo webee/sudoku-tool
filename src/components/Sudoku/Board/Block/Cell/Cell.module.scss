@@ -79,7 +79,7 @@
     justify-content: center;
     align-items: center;
     &.ActiveValue {
-      @include digitColor($active-color);
+      @include digitColor(darken($color: $active-color, $amount: 20));
     }
   }
 

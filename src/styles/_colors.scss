@@ -1,13 +1,11 @@
 // place color
-$place-color: darken(
-  $color: skyblue,
-  $amount: 25,
-);
+$place-color: #0302ca;
+
 // note color
 $note-color: green;
 
 // active(same value as selected) digit color
-$active-color: orangered;
+$active-color: #fa6782;
 
 // selected cell background color
 $selected-bg-color: lightseagreen;
