@@ -1,6 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import Button from '../../components/UI/Button/Button';
 import styles from './NewGame.module.scss';
+import { useEffect } from 'react';
 
 const samplePuzzle = `901002708
 570060000
@@ -18,11 +19,37 @@ const NewGame = ({ cancelNewGameHandler, newGameHandler, error }) => {
     setPuzzle(event.target.value);
   }, []);
 
+  const textareaRef = useRef();
+  useEffect(() => {
+    textareaRef.current.focus();
+  }, []);
+
+  // event listeners
+  useEffect(() => {
+    const keydownHandler = e => {
+      // console.log(e);
+      if (e.key === 'Escape') {
+        cancelNewGameHandler();
+      } else if (e.key === 'Enter' && e.shiftKey) {
+        newGameHandler(puzzle);
+      } else {
+        return;
+      }
+      e.preventDefault();
+    };
+    document.addEventListener('keydown', keydownHandler);
+
+    return () => {
+      document.removeEventListener('keydown', keydownHandler);
+    };
+  }, [cancelNewGameHandler, newGameHandler, puzzle]);
+
   return (
     <div className={styles.NewGame}>
       <h1>input a new puzzle</h1>
       {error && <div className={styles.Error}>{error.message}</div>}
       <textarea
+        ref={textareaRef}
         id="puzzle"
         name="puzzle"
         inputMode="numeric"

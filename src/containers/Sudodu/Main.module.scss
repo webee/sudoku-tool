@@ -1,0 +1,29 @@
+.Menu {
+  border: 1px solid black;
+  display: flex;
+  justify-content: center;
+}
+
+.Board {
+  margin-top: 4px;
+}
+
+.Controls {
+  margin-top: 4px;
+}
+.Info {
+  display: none;
+  margin-top: 4px;
+  flex: 1 0;
+  border: 1px solid black;
+  overflow: scroll;
+}
+
+.QRCode {
+  width: 100%;
+  text-align: center;
+  overflow-wrap: break-word;
+  p {
+    border: 1px solid black;
+  }
+}
