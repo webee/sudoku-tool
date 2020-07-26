@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Button from '../../components/UI/Button/Button';
 import NewGame from './NewGame';
 import Board from '../../components/Sudoku/Board/Board';
@@ -90,6 +90,10 @@ const Sudoku = () => {
 
   const digitClickedHandler = useCallback(
     d => {
+      if (!(d >= 1 && d <= 9)) {
+        return;
+      }
+
       if (activePos) {
         // place or note
         const [activeRow, activeCol] = activePos;
@@ -160,6 +164,16 @@ const Sudoku = () => {
   const claimingHandler = useCallback(() => {
     setValues(sudoku.claiming);
   }, []);
+
+  // event listeners
+  useEffect(() => {
+    document.addEventListener('keydown', e => {
+      if (e.code.startsWith('Digit')) {
+        const d = parseInt(e.key);
+        digitClickedHandler(d);
+      }
+    });
+  }, [digitClickedHandler]);
 
   let content = null;
   if (isNewGame) {
