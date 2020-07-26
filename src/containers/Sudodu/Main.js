@@ -77,18 +77,9 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   const eraseValueHandler = useCallback(() => {
     if (activePos) {
       const [activeRow, activeCol] = activePos;
-      setValues(curValues => {
-        const oldValue = curValues[activeRow][activeCol];
-        if (oldValue.origin) {
-          // can't erase origin value
-          return curValues;
-        }
-
-        // clear placed and noted value.
-        return sudoku.updateValues(curValues, activeRow, activeCol, new Set());
-      });
+      setValues(sudoku.updateValues(isNoting, activeRow, activeCol, new Set()));
     }
-  }, [activePos]);
+  }, [activePos, isNoting]);
 
   const deselectHandler = useCallback(() => {
     setActiveState({ pos: null, val: 0 });
