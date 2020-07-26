@@ -15,7 +15,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
-  const [isNoting, setIsNoting] = useState(false);
+  const [isNoting, setIsNoting] = useState(true);
 
   // handlers
   const cellClickedHandler = useCallback(
