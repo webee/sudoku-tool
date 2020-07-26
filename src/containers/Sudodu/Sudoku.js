@@ -168,17 +168,22 @@ const Sudoku = () => {
   // event listeners
   useEffect(() => {
     const keydownHandler = e => {
+      // console.log(e);
       if (e.code.startsWith('Digit')) {
         const d = parseInt(e.key);
         digitClickedHandler(d);
+      } else if (e.key === 'N') {
+        startNewGameHandler();
+      } else if (e.key === 'n') {
+        toggleIsNotingHandler();
       }
-      // TODO: handler other key, e.g. N: New, n: Note
+      // TODO: handler other shortcut keys
     };
     document.addEventListener('keydown', keydownHandler);
     return () => {
       document.removeEventListener('keydown', keydownHandler);
     };
-  }, [digitClickedHandler]);
+  }, [digitClickedHandler, startNewGameHandler, toggleIsNotingHandler]);
 
   let content = null;
   if (isNewGame) {
