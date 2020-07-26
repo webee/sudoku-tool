@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
-import * as sudoku from '../../../sukodu';
+import * as sudoku from '../../../../../libs/sudoku';
 
 const noteClassName = active =>
   `${styles.Note} ${active ? styles.ActiveValue : ''}`;

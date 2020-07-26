@@ -132,12 +132,12 @@ const valuePattern = /^[1-9]$/;
 
 export const parsePuzzle = puzzle => {
   if (puzzle.length < 81) {
-    throw new Error('bad sudoku puzzle format');
+    throw new Error(`bad sudoku puzzle format [${puzzle}]`);
   }
   // split cell
   const cells = puzzle.match(cellPattern);
   if (cells.length !== 81) {
-    throw new Error('bad sudoku puzzle format');
+    throw new Error(`bad sudoku puzzle format [${puzzle}]`);
   }
 
   // parse values
@@ -163,7 +163,7 @@ export const parsePuzzle = puzzle => {
       // it's empty
       return { value: new Set() };
     }
-    throw new Error('impossible');
+    throw new Error(`bad sudoku puzzle format [${puzzle}]`);
   });
 
   // organize the values
@@ -175,6 +175,30 @@ export const parsePuzzle = puzzle => {
   }
   // TODO: check board integrity
   return values;
+};
+
+export const stringify = values => {
+  const res = [];
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const cell = values[r][c];
+      if (cell.origin) {
+        // origin
+        res.push(cell.value);
+      } else if (typeof cell.value === 'number') {
+        // placed
+        res.push('p', cell.value);
+      } else {
+        // notes
+        if (cell.value.size > 0) {
+          res.push('n', ...cell.value, 'N');
+        } else {
+          res.push('0');
+        }
+      }
+    }
+  }
+  return res.join('');
 };
 
 export const setValues = (curValues, row, col, value) => {

@@ -1,10 +1,12 @@
 import React, { useState, useCallback } from 'react';
-import Button from '../UI/Button/Button';
+import Button from '../../components/UI/Button/Button';
 import NewGame from './NewGame';
-import Board from './Board/Board';
-import Controls from './Controls/Controls';
+import Board from '../../components/Sudoku/Board/Board';
+import Controls from '../../components/Sudoku/Controls/Controls';
+import Modal from '../../components/UI/Modal/Modal';
+import QRCode from 'qrcode.react';
 import styles from './Sudoku.module.scss';
-import * as sudoku from './sukodu';
+import * as sudoku from '../../libs/sudoku';
 
 const initialPuzzle = `
 090000000
@@ -19,11 +21,21 @@ const initialPuzzle = `
 `;
 
 const Sudoku = () => {
+  const [showShare, setShowShare] = useState(false);
   const [isNewGame, setIsNewGame] = useState(false);
   const [newGameError, setNewGameError] = useState(null);
-  const [initialValues, setInitialValues] = useState(() =>
-    sudoku.parsePuzzle(initialPuzzle)
-  );
+  const [initialValues, setInitialValues] = useState(() => {
+    try {
+      // get puzzle from url search parameter: puzzle
+      const puzzle =
+        new URLSearchParams(window.location.search).get('puzzle') ||
+        initialPuzzle;
+      return sudoku.parsePuzzle(puzzle);
+    } catch (error) {
+      console.error('parse error:', error);
+      return sudoku.parsePuzzle(initialPuzzle);
+    }
+  });
   const [values, setValues] = useState(initialValues);
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(false);
@@ -159,10 +171,27 @@ const Sudoku = () => {
       />
     );
   } else {
+    let shareContent = null;
+    if (showShare) {
+      const url = new URL(window.location);
+      const puzzle = sudoku.stringify(values);
+      url.search = '?puzzle=' + puzzle;
+      shareContent = (
+        <div className={styles.QRCode}>
+          <QRCode size={256} value={url.toString()} />
+          <p>{puzzle}</p>
+        </div>
+      );
+    }
+
     content = (
       <>
+        <Modal show={showShare} close={() => setShowShare(false)}>
+          {shareContent}
+        </Modal>
         <div className={styles.Menu}>
           <Button onClick={startNewGameHandler}>New</Button>
+          <Button onClick={() => setShowShare(true)}>Share</Button>
         </div>
         <div className={styles.Board}>
           <Board

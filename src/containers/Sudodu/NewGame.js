@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import Button from '../UI/Button/Button';
+import Button from '../../components/UI/Button/Button';
 import styles from './NewGame.module.scss';
 
 const samplePuzzle = `901002708
@@ -25,6 +25,7 @@ const NewGame = ({ cancelNewGameHandler, newGameHandler, error }) => {
       <textarea
         id="puzzle"
         name="puzzle"
+        inputMode="numeric"
         onChange={puzzleChangedHandler}
         value={puzzle}
         placeholder={samplePuzzle}

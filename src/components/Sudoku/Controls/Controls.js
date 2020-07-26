@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import Digits from './Digits/Digits';
 import Button from '../../UI/Button/Button';
 import styles from './Controls.module.scss';
-import * as sudoku from '../sukodu';
+import * as sudoku from '../../../libs/sudoku';
 
 const Controls = ({
   values,

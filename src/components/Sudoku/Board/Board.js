@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
 import styles from './Board.module.scss';
-import * as sudoku from '../sukodu';
+import * as sudoku from '../../../libs/sudoku';
 
 const Board = ({
   values,
