@@ -167,12 +167,17 @@ const Sudoku = () => {
 
   // event listeners
   useEffect(() => {
-    document.addEventListener('keydown', e => {
+    const keydownHandler = e => {
       if (e.code.startsWith('Digit')) {
         const d = parseInt(e.key);
         digitClickedHandler(d);
       }
-    });
+      // TODO: handler other key, e.g. N: New, n: Note
+    };
+    document.addEventListener('keydown', keydownHandler);
+    return () => {
+      document.removeEventListener('keydown', keydownHandler);
+    };
   }, [digitClickedHandler]);
 
   let content = null;
