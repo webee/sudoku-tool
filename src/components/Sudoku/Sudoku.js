@@ -46,6 +46,8 @@ const Sudoku = () => {
       setInitialValues(values);
       setValues(values);
       setIsNewGame(false);
+      // deselect
+      setActiveState({ pos: null, val: 0 });
     } catch (error) {
       setNewGameError(error);
     }
