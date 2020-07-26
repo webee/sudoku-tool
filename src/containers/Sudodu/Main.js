@@ -147,8 +147,6 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
       setInitialPuzzle(puzzle);
       const values = sudoku.parsePuzzle(puzzle);
       setValues(values);
-      // deselect
-      setActiveState({ pos: null, val: 0 });
     }
   }, [initialPuzzle, puzzle]);
 
