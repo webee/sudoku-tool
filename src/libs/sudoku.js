@@ -21,37 +21,39 @@ export const getCellBlock = (row, col) =>
   row >= 0 && col >= 0 ? cellToBlockMapping[row][col] : -1;
 
 export const getBlockCells = block => blockToCellsMapping[block];
+export const getRowCells = row => [
+  [row, 0],
+  [row, 1],
+  [row, 2],
+  [row, 3],
+  [row, 4],
+  [row, 5],
+  [row, 6],
+  [row, 7],
+  [row, 8],
+];
+export const getColCells = col => [
+  [0, col],
+  [1, col],
+  [2, col],
+  [3, col],
+  [4, col],
+  [5, col],
+  [6, col],
+  [7, col],
+  [8, col],
+];
 
 export const getRelatedBlockCells = (row, col) =>
   blockToCellsMapping[getCellBlock(row, col)].filter(
-    c => c[0] !== row || c[1] !== col
+    c => !(c[0] === row && c[1] === col)
   );
 
 export const getRelatedRowCells = (row, col) =>
-  [
-    [row, 0],
-    [row, 1],
-    [row, 2],
-    [row, 3],
-    [row, 4],
-    [row, 5],
-    [row, 6],
-    [row, 7],
-    [row, 8],
-  ].filter(c => c[1] !== col);
+  getRowCells(row).filter(c => c[1] !== col);
 
 export const getRelatedColCells = (row, col) =>
-  [
-    [0, col],
-    [1, col],
-    [2, col],
-    [3, col],
-    [4, col],
-    [5, col],
-    [6, col],
-    [7, col],
-    [8, col],
-  ].filter(c => c[0] !== row);
+  getColCells(col).filter(c => c[0] !== row);
 
 //  related cells without self.
 export const getRelatedCells = (row, col) => [
@@ -271,6 +273,7 @@ const copyValues = curValues => {
   return values;
 };
 
+// auto note based on related cells
 export const autoNote = curValues => {
   const values = copyValues(curValues);
 
@@ -286,6 +289,7 @@ export const autoNote = curValues => {
   return values;
 };
 
+// find unique note of notes to cells.
 const checkUniqueValue = (values, notes, cells) => {
   let remNotes = new Set(notes);
   for (const [r, c] of cells) {
@@ -318,6 +322,7 @@ const updateRelatedNotes = (values, row, col) => {
 };
 
 // auto place last value of cell and unique value of row, col or block.
+// based on naked/hidden single
 export const autoPlace = curValues => {
   let copied = false;
   let placed = true;
@@ -342,13 +347,13 @@ export const autoPlace = curValues => {
         const notes = cell.value;
         if (notes.size === 1) {
           placed = true;
-          // 1. check last value
+          // 1. naked single
           tryCopyValues();
           values[r][c] = { ...cell, value: [...notes][0] };
           updateRelatedNotes(values, r, c);
         } else {
           let uv;
-          // 1. check unique value of row, col or block;
+          // 1. hidden single/unique value of row, col or block;
           uv =
             checkUniqueValue(values, notes, getRelatedRowCells(r, c)) ||
             checkUniqueValue(values, notes, getRelatedColCells(r, c)) ||
@@ -367,6 +372,7 @@ export const autoPlace = curValues => {
   return values;
 };
 
+// block eliminate row/col
 export const pointing = curValues => {
   let copied = false;
   let values = curValues;
@@ -379,6 +385,7 @@ export const pointing = curValues => {
   };
 
   for (let b = 0; b < 9; b++) {
+    // {pos:[row, col], to:null} / {to:[row|col],row|col,n} / false
     const results = {};
     for (const [r, c] of getBlockCells(b)) {
       const { value } = values[r][c];
@@ -481,6 +488,7 @@ export const pointing = curValues => {
   return values;
 };
 
+// row/col eliminate block
 export const claiming = curValues => {
   let copied = false;
   let values = curValues;
@@ -494,6 +502,7 @@ export const claiming = curValues => {
 
   // rows
   for (let r = 0; r < 9; r++) {
+    // {block, n} / false
     const results = {};
     for (let c = 0; c < 9; c++) {
       const { value } = values[r][c];
@@ -548,6 +557,7 @@ export const claiming = curValues => {
   }
   // cols
   for (let c = 0; c < 9; c++) {
+    // {block, n} / false
     const results = {};
     for (let r = 0; r < 9; r++) {
       const { value } = values[r][c];
@@ -602,4 +612,153 @@ export const claiming = curValues => {
     }
   }
   return values;
+};
+
+// sets
+// const unionSets = (...sets) => {
+//   const res = new Set();
+//   for (const s of sets) {
+//     s.forEach(res.add, res);
+//   }
+//   return res;
+// };
+
+function* combx(d, n, k) {
+  if (n < k) {
+  } else if (k === 1) {
+    for (let i = d; i < n + d; i++) {
+      yield [i];
+    }
+  } else if (n === k) {
+    const res = [];
+    for (let i = d; i < n + d; i++) {
+      res.push(i);
+    }
+    yield res;
+  } else {
+    // with 0
+    for (const res of combx(d + 1, n - 1, k - 1)) {
+      yield [d, ...res];
+    }
+    // without 0
+    yield* combx(d + 1, n - 1, k);
+  }
+}
+
+function* comb(n, k) {
+  yield* combx(0, n, k);
+}
+
+const findNGroupFromLinks = (links, n, type) => {
+  const s = {};
+  for (const link of links) {
+    const start = link[type];
+    const end = link[(type + 1) % 2];
+    const v = s[start] || { start, ends: new Set() };
+    v.ends.add(end);
+    s[start] = v;
+  }
+  const points = Object.values(s);
+  if (points.length <= n) {
+    // only return group if count(starts) > n
+    return;
+  }
+
+  for (const idxes of comb(points.length, n)) {
+    // check
+    const starts = new Set();
+    const ends = new Set();
+    for (const idx of idxes) {
+      const point = points[idx];
+      starts.add(point.start);
+      point.ends.forEach(ends.add, ends);
+      if (ends.size > n) {
+        break;
+      }
+    }
+    if (ends.size === n) {
+      // only return the first one
+      return [starts, ends];
+    }
+  }
+};
+
+export const encodePos = pos => `${pos[0]}${pos[1]}`;
+export const decodePos = pos => [parseInt(pos[0]), parseInt(pos[1])];
+
+export const findNGroup = (values, n, type) => {
+  const getCellsLinks = cells => {
+    const links = [];
+    for (const [r, c] of cells) {
+      const value = values[r][c];
+      if (typeof value.value === 'number') {
+        continue;
+      }
+      const pos = encodePos([r, c]);
+      for (const note of value.value) {
+        links.push([pos, note]);
+      }
+    }
+    return links;
+  };
+
+  // rows
+  for (let r = 0; r < 9; r++) {
+    const links = getCellsLinks(getRowCells(r));
+    const group = findNGroupFromLinks(links, n, type);
+    if (group) {
+      const [cells, notes] = group;
+      return {
+        type,
+        domain: 'row',
+        row: r,
+        cells,
+        notes,
+      };
+    }
+  }
+  // cols
+  for (let c = 0; c < 9; c++) {
+    const links = getCellsLinks(getColCells(c));
+    const group = findNGroupFromLinks(links, n, type);
+    if (group) {
+      const [cells, notes] = group;
+      return {
+        type,
+        domain: 'col',
+        col: c,
+        cells,
+        notes,
+      };
+    }
+  }
+  // blocks
+  for (let b = 0; b < 9; b++) {
+    const links = getCellsLinks(getBlockCells(b));
+    const group = findNGroupFromLinks(links, n, type);
+    if (group) {
+      const [cells, notes] = group;
+      return {
+        type,
+        domain: 'block',
+        block: b,
+        cells,
+        notes,
+      };
+    }
+  }
+};
+
+// TODO: try to use generator to re-implement
+export const findGroup = values => {
+  // 0:naked group, 1: hidden group
+  for (const type of [0, 1]) {
+    for (let n = 2; n <= 5; n++) {
+      // {type, domain:[row|col|block],[row|col|block],cells:[], notes:[]}
+      const group = findNGroup(values, n, type);
+      if (group) {
+        return group;
+      }
+    }
+  }
 };
