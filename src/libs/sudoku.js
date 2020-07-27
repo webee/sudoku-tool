@@ -130,8 +130,8 @@ export const calcAvailableCells = (values, d) => {
 const cellPattern = /(\d)|(p\d)|(n[1-9]*N)/g;
 const valuePattern = /^[1-9]$/;
 
-export const parsePuzzle = puzzle => {
-  if (puzzle.length < 81) {
+export const simpleCheckPuzzle = puzzle => {
+  if (!puzzle || puzzle.length < 81) {
     throw new Error(`bad sudoku puzzle format [${puzzle}]`);
   }
   // split cell
@@ -139,6 +139,11 @@ export const parsePuzzle = puzzle => {
   if (cells.length !== 81) {
     throw new Error(`bad sudoku puzzle format [${puzzle}]`);
   }
+  return cells;
+};
+
+export const parsePuzzle = puzzle => {
+  const cells = simpleCheckPuzzle(puzzle);
 
   // parse values
   const cellValues = cells.map(cell => {
@@ -163,7 +168,7 @@ export const parsePuzzle = puzzle => {
       // it's empty
       return { value: new Set() };
     }
-    throw new Error(`bad sudoku puzzle format [${puzzle}]`);
+    throw new Error('impossible');
   });
 
   // organize the values
@@ -432,7 +437,9 @@ export const pointing = curValues => {
           }
 
           console.log(
-            `[pointing] block: ${b}, row:${res.row}, n:${res.n}, col:${c}`
+            `[pointing] block:${b + 1}=>row:${res.row + 1}, n:${res.n}, col:${
+              c + 1
+            }`
           );
 
           tryCopyValues();
@@ -457,7 +464,9 @@ export const pointing = curValues => {
           }
 
           console.log(
-            `[pointing] block: ${b}, col:${res.col}, n:${res.n}, row:${r}`
+            `[pointing] block:${b + 1}=>col:${res.col + 1}, n:${res.n}, row:${
+              r + 1
+            }`
           );
 
           tryCopyValues();
@@ -524,7 +533,9 @@ export const claiming = curValues => {
           continue;
         }
         console.log(
-          `[claiming] row: ${r}, block:${res.block}, n:${res.n}, row: ${row}, col:${col}`
+          `[claiming] row:${r + 1}=>block:${res.block + 1}, n:${res.n}, row:${
+            row + 1
+          }, col:${col + 1}`
         );
 
         tryCopyValues();
@@ -577,7 +588,9 @@ export const claiming = curValues => {
         }
 
         console.log(
-          `[claiming] row: ${c}, block:${res.block}, n:${res.n}, row: ${row}, col:${col}`
+          `[claiming] col:${c + 1}=>block:${res.block + 1}, n:${res.n}, row:${
+            row + 1
+          }, col:${col + 1}`
         );
 
         tryCopyValues();

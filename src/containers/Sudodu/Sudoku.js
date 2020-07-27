@@ -5,23 +5,27 @@ import styles from './Sudoku.module.scss';
 import * as sudoku from '../../libs/sudoku';
 
 const defaultPuzzle = `
-090000000
-000800230
-006004070
-500083100
-600090003
-001560007
-010200700
-084001000
-000000020
+000000000
+000000000
+000000000
+000000000
+000000000
+000000000
+000000000
+000000000
+000000000
 `;
 
 const Sudoku = () => {
   const [puzzle, setPuzzle] = useState(() => {
     // get puzzle from url search parameter: puzzle
-    return (
-      new URLSearchParams(window.location.search).get('puzzle') || defaultPuzzle
-    );
+    const puzzle = new URLSearchParams(window.location.search).get('puzzle');
+    try {
+      sudoku.simpleCheckPuzzle(puzzle);
+      return puzzle;
+    } catch (error) {
+      return defaultPuzzle;
+    }
   });
   const [isNewGame, setIsNewGame] = useState(false);
   const [puzzleError, setPuzzleError] = useState(null);
@@ -37,8 +41,7 @@ const Sudoku = () => {
 
   const newGameHandler = useCallback(puzzle => {
     try {
-      // just for check
-      sudoku.parsePuzzle(puzzle);
+      sudoku.simpleCheckPuzzle(puzzle);
       setPuzzle(puzzle);
       setIsNewGame(false);
     } catch (error) {
