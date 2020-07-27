@@ -3,8 +3,16 @@ import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
 import * as sudoku from '../../../../../libs/sudoku';
 
-const noteClassName = active =>
-  `${styles.Note} ${active ? styles.ActiveValue : ''}`;
+const noteClassName = (n, activeVal, marks) => {
+  const classes = [styles.Note];
+  if (n === activeVal) {
+    classes.push(styles.ActiveValue);
+  }
+  if (marks && marks.has(n)) {
+    classes.push(styles.MarkedValue);
+  }
+  return classes.join(' ');
+};
 
 const Cell = React.memo(
   ({
@@ -18,6 +26,7 @@ const Cell = React.memo(
     showAvail,
     isNoting,
     onClick,
+    marks,
   }) => {
     const classes = [];
     let content = null;
@@ -54,6 +63,35 @@ const Cell = React.memo(
       clickable = true;
     }
 
+    // marks
+    let cellMarked = false;
+    let domainMarked = false;
+    if (marks) {
+      if (marks.rows && marks.rows.has(row)) {
+        domainMarked = true;
+      }
+      if (marks.cols && marks.cols.has(col)) {
+        domainMarked = true;
+      }
+      if (marks.blocks) {
+        const block = sudoku.getCellBlock(row, col);
+        if (marks.blocks.has(block)) {
+          domainMarked = true;
+        }
+      }
+      if (marks.cells) {
+        if (marks.cells.has(sudoku.encodePos([row, col]))) {
+          cellMarked = true;
+          classes.push(styles.Marked);
+        }
+      }
+    }
+    if (cellMarked) {
+      classes.push(styles.Marked);
+    } else if (domainMarked) {
+      classes.push(styles.MarkedDomain);
+    }
+
     if (typeof value === 'number') {
       classes.push(styles.Value);
       // it's placed value
@@ -61,6 +99,10 @@ const Cell = React.memo(
       // it's active value
       if (value === activeVal && !isSelected) {
         classes.push(styles.ActiveValue);
+      }
+      // it's marked value
+      if (cellMarked && marks.values.has(value)) {
+        classes.push(styles.MarkedValue);
       }
 
       content = digits[value];
@@ -72,35 +114,89 @@ const Cell = React.memo(
         content = (
           <>
             <div className={styles.RowNotes}>
-              <div className={noteClassName(1 === activeVal)}>
+              <div
+                className={noteClassName(
+                  1,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(1) ? digits[1] : null}
               </div>
-              <div className={noteClassName(2 === activeVal)}>
+              <div
+                className={noteClassName(
+                  2,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(2) ? digits[2] : null}
               </div>
-              <div className={noteClassName(3 === activeVal)}>
+              <div
+                className={noteClassName(
+                  3,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(3) ? digits[3] : null}
               </div>
             </div>
             <div className={styles.RowNotes}>
-              <div className={noteClassName(4 === activeVal)}>
+              <div
+                className={noteClassName(
+                  4,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(4) ? digits[4] : null}
               </div>
-              <div className={noteClassName(5 === activeVal)}>
+              <div
+                className={noteClassName(
+                  5,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(5) ? digits[5] : null}
               </div>
-              <div className={noteClassName(6 === activeVal)}>
+              <div
+                className={noteClassName(
+                  6,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(6) ? digits[6] : null}
               </div>
             </div>
             <div className={styles.RowNotes}>
-              <div className={noteClassName(7 === activeVal)}>
+              <div
+                className={noteClassName(
+                  7,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(7) ? digits[7] : null}
               </div>
-              <div className={noteClassName(8 === activeVal)}>
+              <div
+                className={noteClassName(
+                  8,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(8) ? digits[8] : null}
               </div>
-              <div className={noteClassName(9 === activeVal)}>
+              <div
+                className={noteClassName(
+                  9,
+                  activeVal,
+                  cellMarked && marks.notes
+                )}
+              >
                 {notes.has(9) ? digits[9] : null}
               </div>
             </div>

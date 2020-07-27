@@ -16,6 +16,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
+  const [marks, setMarks] = useState(null);
 
   // handlers
   const cellClickedHandler = useCallback(
@@ -109,6 +110,42 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
     setValues(sudoku.claiming);
   }, [setValues]);
 
+  const groupHandler = useCallback(() => {
+    const group = sudoku.findGroup(values);
+    console.log(group);
+    if (group.domain === 'row') {
+      const { row, cells, notes } = group;
+      cells.add('22');
+      cells.add('75');
+      setMarks({
+        rows: new Set([row]),
+        cells,
+        notes,
+        values: new Set([2]),
+      });
+    } else if (group.domain === 'col') {
+      const { col, cells, notes } = group;
+      cells.add('22');
+      cells.add('75');
+      setMarks({
+        cols: new Set([col]),
+        cells,
+        notes,
+        values: new Set([2]),
+      });
+    } else if (group.domain === 'block') {
+      const { block, cells, notes } = group;
+      cells.add('22');
+      cells.add('75');
+      setMarks({
+        blocks: new Set([block]),
+        cells,
+        notes,
+        values: new Set([2]),
+      });
+    }
+  }, [values]);
+
   // event listeners
   useEffect(() => {
     const keydownHandler = e => {
@@ -121,6 +158,8 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
         startNewGameHandler();
       } else if (e.key === 'n') {
         toggleIsNotingHandler();
+      } else if (e.key === 'd') {
+        deselectHandler();
       } else {
         return;
       }
@@ -131,7 +170,12 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
     return () => {
       document.removeEventListener('keydown', keydownHandler);
     };
-  }, [digitClickedHandler, startNewGameHandler, toggleIsNotingHandler]);
+  }, [
+    deselectHandler,
+    digitClickedHandler,
+    startNewGameHandler,
+    toggleIsNotingHandler,
+  ]);
 
   useEffect(() => {
     if (puzzle !== initialPuzzle) {
@@ -171,6 +215,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
           cellClickedHandler={cellClickedHandler}
           showAvail={showAvail}
           isNoting={isNoting}
+          marks={marks}
         />
       </div>
       <div className={styles.Controls}>
@@ -190,6 +235,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
           autoPlaceHandler={autoPlaceHandler}
           pointingHandler={pointingHandler}
           claimingHandler={claimingHandler}
+          groupHandler={groupHandler}
         />
       </div>
       <div className={styles.Info}></div>

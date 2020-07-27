@@ -11,6 +11,7 @@ const Board = ({
   cellClickedHandler,
   showAvail,
   isNoting,
+  marks,
 }) => {
   // calculated states
   const availableCells = useMemo(
@@ -39,6 +40,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
           <Block
             rowStart={0}
@@ -50,6 +52,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
           <Block
             rowStart={0}
@@ -61,6 +64,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
         </div>
         <div className={styles.Row}>
@@ -74,6 +78,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
           <Block
             rowStart={3}
@@ -85,6 +90,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
           <Block
             rowStart={3}
@@ -96,6 +102,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
         </div>
         <div className={styles.Row}>
@@ -109,6 +116,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
           <Block
             rowStart={6}
@@ -120,6 +128,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
           <Block
             rowStart={6}
@@ -131,6 +140,7 @@ const Board = ({
             cellClickedHandler={cellClickedHandler}
             showAvail={showAvail}
             isNoting={isNoting}
+            marks={marks}
           />
         </div>
       </div>

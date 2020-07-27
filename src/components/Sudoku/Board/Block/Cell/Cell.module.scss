@@ -23,6 +23,17 @@
       background-color: $note-color;
     }
   }
+
+  &.MarkedDomain {
+    box-shadow: none;
+    background-color: #888;
+  }
+
+  &.Marked {
+    box-shadow: none !important;
+    outline: 2px dashed darkgreen !important;
+    background-color: greenyellow !important;
+  }
 }
 
 @mixin hoverOrSelectedCell() {
@@ -53,6 +64,13 @@
     &.Selected {
       @include hoverOrSelectedCell();
       @include digitColor(white !important);
+    }
+  }
+
+  &.Marked {
+    &.MarkedValue {
+      background-color: greenyellow;
+      @include digitColor(red !important);
     }
   }
 }
@@ -90,6 +108,14 @@
       @include hoverOrSelectedCell();
       .Note {
         @include digitColor(white);
+      }
+    }
+  }
+
+  &.Marked {
+    .Note {
+      &.MarkedValue {
+        @include digitColor(red);
       }
     }
   }

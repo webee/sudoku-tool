@@ -20,6 +20,7 @@ const Controls = ({
   autoPlaceHandler,
   pointingHandler,
   claimingHandler,
+  groupHandler,
 }) => {
   // calculated states
   const availableDigits = useMemo(
@@ -53,10 +54,11 @@ const Controls = ({
         digitClickedHandler={digitClickedHandler}
       />
       <div className={styles.Tools}>
-        <Button onClick={autoNoteHandler}>Noting</Button>
-        <Button onClick={pointingHandler}>Pointing</Button>
-        <Button onClick={claimingHandler}>Claiming</Button>
-        <Button onClick={autoPlaceHandler}>Placing</Button>
+        <Button onClick={autoNoteHandler}>note</Button>
+        <Button onClick={pointingHandler}>point</Button>
+        <Button onClick={claimingHandler}>claim</Button>
+        <Button onClick={groupHandler}>group</Button>
+        <Button onClick={autoPlaceHandler}>place</Button>
       </div>
     </div>
   );
