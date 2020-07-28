@@ -10,6 +10,9 @@ $active-color: #fa6782;
 // selected cell background color
 $selected-bg-color: lightseagreen;
 
+// marked value color
+$marked-color: red;
+
 // set digit color
 @mixin digitColor($color) {
   > :global(.digit) {

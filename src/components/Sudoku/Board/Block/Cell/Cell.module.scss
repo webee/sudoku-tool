@@ -33,7 +33,7 @@
   &.Marked {
     border-radius: 0;
     box-shadow: none !important;
-    outline: 2px dashed darkgreen !important;
+    outline: 2px dashed $marked-color !important;
     background-color: greenyellow !important;
   }
 }
@@ -72,7 +72,7 @@
   &.Marked {
     &.MarkedValue {
       background-color: greenyellow;
-      @include digitColor(red !important);
+      @include digitColor($marked-color !important);
     }
   }
 }
@@ -117,7 +117,7 @@
   &.Marked {
     .Note {
       &.MarkedValue {
-        @include digitColor(red);
+        @include digitColor($marked-color);
       }
     }
   }
