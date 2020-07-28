@@ -330,6 +330,7 @@ export const autoPlace = curValues => {
     }
   };
 
+  console.group('[place]');
   while (placed) {
     placed = false;
     for (let r = 0; r < 9; r++) {
@@ -344,8 +345,10 @@ export const autoPlace = curValues => {
           placed = true;
           // 1. naked single
           tryCopyValues();
-          values[r][c] = { ...cell, value: [...notes][0] };
+          const value = [...notes][0];
+          values[r][c] = { ...cell, value };
           updateRelatedNotes(values, r, c);
+          console.log(`naked single: ${value}@${r}${c}`);
         } else {
           let uv;
           // 1. hidden single/unique value of row, col or block;
@@ -358,12 +361,14 @@ export const autoPlace = curValues => {
             tryCopyValues();
             values[r][c] = { ...cell, value: uv };
             updateRelatedNotes(values, r, c);
+            console.log(`hidden single: ${uv}@${r}${c}`);
           }
         }
       }
     }
   }
 
+  console.groupEnd();
   return values;
 };
 
