@@ -8,7 +8,7 @@ import styles from './Main.module.scss';
 import * as sudoku from '../../libs/sudoku';
 import { useMemo } from 'react';
 
-const Sudoku = ({ puzzle, startNewGameHandler }) => {
+const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   const [showShare, setShowShare] = useState(false);
   const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
   const [initialPuzzle, setInitialPuzzle] = useState(() =>
@@ -170,6 +170,8 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
         toggleIsNotingHandler();
       } else if (e.key === 'd') {
         deselectHandler();
+      } else if (e.key === 'g') {
+        groupHandler();
       } else {
         return;
       }
@@ -183,6 +185,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   }, [
     deselectHandler,
     digitClickedHandler,
+    groupHandler,
     startNewGameHandler,
     toggleIsNotingHandler,
   ]);
@@ -222,6 +225,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
       </Modal>
       <div className={styles.Menu}>
         <Button onClick={startNewGameHandler}>New</Button>
+        <Button onClick={emptyHandler}>Empty</Button>
         <Button onClick={() => setShowShare(true)}>Share</Button>
       </div>
       <div className={styles.Board}>

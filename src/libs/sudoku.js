@@ -808,7 +808,7 @@ export const eliminateGroup = group => curValues => {
   } else if (group.type === 1) {
     // hidden
     // to eliminate other notes
-    const cells = group.cells.map(pos => decodePos(pos));
+    const cells = [...group.cells].map(pos => decodePos(pos));
     cells.forEach(([row, col]) => {
       const value = values[row][col];
       values[row][col] = {
