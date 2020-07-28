@@ -11,15 +11,16 @@ import { useMemo } from 'react';
 const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   const [showShare, setShowShare] = useState(false);
   const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
-  const [initialPuzzle, setInitialPuzzle] = useState(() =>
-    sudoku.stringify(values)
-  );
+  const [initialPuzzle, setInitialPuzzle] = useState(() => sudoku.stringify(values));
   // {pos:[row, col], val:0}
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
   const [group, setGroup] = useState(null);
+
+  // calculated states
+  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(values, activePos), [activePos, values]);
 
   // handlers
   const cellClickedHandler = useCallback(
@@ -47,7 +48,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
 
   const digitClickedHandler = useCallback(
     d => {
-      if (!(d >= 1 && d <= 9)) {
+      if (!availableDigits.has(d)) {
         return;
       }
 
@@ -67,7 +68,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         });
       }
     },
-    [activePos, isNoting]
+    [activePos, availableDigits, isNoting]
   );
 
   const resetHandler = useCallback(() => {
@@ -121,45 +122,39 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       // clear
       setGroup(null);
     } else {
-      const nextGroup = sudoku.findGroup(values);
-      if (nextGroup) {
-        console.log(nextGroup);
-        setGroup(nextGroup);
+      const g = sudoku.findGroup(values);
+      if (g) {
+        console.log(
+          `group:${['naked', 'hidden'][g.type]}-${g.n}:${g.domain}-${g[g.domain]}: [${[...g.cells]}],[${[...g.notes]}]`
+        );
+        setGroup(g);
       }
     }
   }, [group, values]);
 
+  const moveActivePos = useCallback(
+    (dRow, dCol) => {
+      if (activePos) {
+        setActiveState(({ pos: [curRow, curCol] }) => {
+          const pos = [(curRow + 9 + dRow) % 9, (curCol + 9 + dCol) % 9];
+          return { val: 0, pos };
+        });
+      }
+    },
+    [activePos]
+  );
+
   const marks = useMemo(() => {
     if (group) {
-      if (group.domain === 'row') {
-        const { row, cells, notes } = group;
-        return {
-          rows: new Set([row]),
-          cells,
-          notes,
-        };
-      } else if (group.domain === 'col') {
-        const { col, cells, notes } = group;
-        return {
-          cols: new Set([col]),
-          cells,
-          notes,
-        };
-      } else if (group.domain === 'block') {
-        const { block, cells, notes } = group;
-        return {
-          blocks: new Set([block]),
-          cells,
-          notes,
-        };
-      }
+      const { cells, notes } = group;
+      return { [group.domain + 's']: new Set([group[group.domain]]), cells, notes };
     }
   }, [group]);
 
   // event listeners
   useEffect(() => {
     const keydownHandler = e => {
-      // console.log(e);
+      console.log(e);
       // TODO: handler other shortcut keys
       if (e.code.startsWith('Digit')) {
         const d = parseInt(e.key);
@@ -172,6 +167,14 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         deselectHandler();
       } else if (e.key === 'g') {
         groupHandler();
+      } else if (e.key === 'h' || e.key === 'ArrowLeft') {
+        moveActivePos(0, -1);
+      } else if (e.key === 'l' || e.key === 'ArrowRight') {
+        moveActivePos(0, 1);
+      } else if (e.key === 'j' || e.key === 'ArrowDown') {
+        moveActivePos(1, 0);
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        moveActivePos(-1, 0);
       } else {
         return;
       }
@@ -182,13 +185,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     return () => {
       document.removeEventListener('keydown', keydownHandler);
     };
-  }, [
-    deselectHandler,
-    digitClickedHandler,
-    groupHandler,
-    startNewGameHandler,
-    toggleIsNotingHandler,
-  ]);
+  }, [deselectHandler, digitClickedHandler, groupHandler, moveActivePos, startNewGameHandler, toggleIsNotingHandler]);
 
   useEffect(() => {
     // start new puzzle if receiving puzzle
@@ -244,6 +241,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
           values={values}
           activePos={activePos}
           activeVal={activeVal}
+          availableDigits={availableDigits}
           digitClickedHandler={digitClickedHandler}
           showAvail={showAvail}
           isNoting={isNoting}

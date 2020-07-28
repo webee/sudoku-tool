@@ -8,6 +8,7 @@ const Controls = ({
   values,
   activePos,
   activeVal,
+  availableDigits,
   digitClickedHandler,
   showAvail,
   isNoting,
@@ -24,23 +25,14 @@ const Controls = ({
   groupHandler,
 }) => {
   // calculated states
-  const availableDigits = useMemo(
-    () => sudoku.calcAvailableDigits(values, activePos),
-    [activePos, values]
-  );
-  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [
-    values,
-  ]);
+  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [values]);
   return (
     <div className={styles.Controls}>
       <div className={styles.Panel}>
         <Button onClick={resetHandler}>Reset</Button>
         <Button onClick={eraseValueHandler}>Erase</Button>
         <Button onClick={deselectHandler}>Deselect</Button>
-        <Button
-          type={showAvail ? 'On' : 'Off'}
-          onClick={toggleShowAvailHandler}
-        >
+        <Button type={showAvail ? 'On' : 'Off'} onClick={toggleShowAvailHandler}>
           Avail
         </Button>
         <Button type={isNoting ? 'On' : 'Off'} onClick={toggleIsNotingHandler}>
