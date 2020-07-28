@@ -17,8 +17,7 @@ for (let r = 0; r < 9; r++) {
   }
 }
 
-export const getCellBlock = (row, col) =>
-  row >= 0 && col >= 0 ? cellToBlockMapping[row][col] : -1;
+export const getCellBlock = (row, col) => (row >= 0 && col >= 0 ? cellToBlockMapping[row][col] : -1);
 
 export const getBlockCells = block => blockToCellsMapping[block];
 export const getRowCells = row => [
@@ -45,15 +44,11 @@ export const getColCells = col => [
 ];
 
 export const getRelatedBlockCells = (row, col) =>
-  blockToCellsMapping[getCellBlock(row, col)].filter(
-    c => !(c[0] === row && c[1] === col)
-  );
+  blockToCellsMapping[getCellBlock(row, col)].filter(c => !(c[0] === row && c[1] === col));
 
-export const getRelatedRowCells = (row, col) =>
-  getRowCells(row).filter(c => c[1] !== col);
+export const getRelatedRowCells = (row, col) => getRowCells(row).filter(c => c[1] !== col);
 
-export const getRelatedColCells = (row, col) =>
-  getColCells(col).filter(c => c[0] !== row);
+export const getRelatedColCells = (row, col) => getColCells(col).filter(c => c[0] !== row);
 
 //  related cells without self.
 export const getRelatedCells = (row, col) => [
@@ -444,9 +439,7 @@ export const pointing = curValues => {
             continue;
           }
 
-          console.log(
-            `block:${b + 1}=>row:${res.row + 1}, n:${res.n}, col:${c + 1}`
-          );
+          console.log(`block:${b + 1}=>row:${res.row + 1}, n:${res.n}, col:${c + 1}`);
 
           tryCopyValues();
           values[res.row][c] = {
@@ -469,9 +462,7 @@ export const pointing = curValues => {
             continue;
           }
 
-          console.log(
-            `block:${b + 1}=>col:${res.col + 1}, n:${res.n}, row:${r + 1}`
-          );
+          console.log(`block:${b + 1}=>col:${res.col + 1}, n:${res.n}, row:${r + 1}`);
 
           tryCopyValues();
           values[r][res.col] = {
@@ -540,11 +531,7 @@ export const claiming = curValues => {
         if (!curValue.value.has(res.n)) {
           continue;
         }
-        console.log(
-          `row:${r + 1}=>block:${res.block + 1}, n:${res.n}, row:${
-            row + 1
-          }, col:${col + 1}`
-        );
+        console.log(`row:${r + 1}=>block:${res.block + 1}, n:${res.n}, row:${row + 1}, col:${col + 1}`);
 
         tryCopyValues();
         values[row][col] = {
@@ -596,11 +583,7 @@ export const claiming = curValues => {
           continue;
         }
 
-        console.log(
-          `col:${c + 1}=>block:${res.block + 1}, n:${res.n}, row:${
-            row + 1
-          }, col:${col + 1}`
-        );
+        console.log(`col:${c + 1}=>block:${res.block + 1}, n:${res.n}, row:${row + 1}, col:${col + 1}`);
 
         tryCopyValues();
         values[row][col] = {
@@ -649,7 +632,7 @@ function* comb(n, k) {
   yield* combx(0, n, k);
 }
 
-const findNGroupFromLinks = (links, n, type) => {
+function* findNGroupFromLinks(links, n, type) {
   const s = {};
   for (const link of links) {
     const start = link[type];
@@ -688,90 +671,66 @@ const findNGroupFromLinks = (links, n, type) => {
       }
 
       if (!cleared) {
-        // only return the first not cleared one
-        return [starts, ends];
+        yield [starts, ends];
       }
     }
   }
-};
+}
 
 export const encodePos = pos => `${pos[0]}${pos[1]}`;
 export const decodePos = pos => [parseInt(pos[0]), parseInt(pos[1])];
 
-export const findNGroup = (values, n, type) => {
-  const getCellsLinks = cells => {
-    const links = [];
-    for (const [r, c] of cells) {
-      const value = values[r][c];
-      if (typeof value.value === 'number') {
-        continue;
-      }
-      const pos = encodePos([r, c]);
-      for (const note of value.value) {
-        links.push([pos, note]);
-      }
+const getCellsLinks = (values, cells) => {
+  const links = [];
+  for (const [r, c] of cells) {
+    const value = values[r][c];
+    if (typeof value.value === 'number') {
+      continue;
     }
-    return links;
-  };
+    const pos = encodePos([r, c]);
+    for (const note of value.value) {
+      links.push([pos, note]);
+    }
+  }
+  return links;
+};
 
+function* findNGroup(values, n, type) {
   // rows
   for (let r = 0; r < 9; r++) {
-    const links = getCellsLinks(getRowCells(r));
-    const group = findNGroupFromLinks(links, n, type);
-    if (group) {
-      const [cells, notes] = group;
-      return {
-        type,
-        n,
-        domain: 'row',
-        row: r,
-        cells,
-        notes,
-      };
+    const links = getCellsLinks(values, getRowCells(r));
+    for (const group of findNGroupFromLinks(links, n, type)) {
+      const cells = group[type];
+      const notes = group[(type + 1) % 2];
+      yield { type, n, domain: 'row', row: r, cells, notes };
     }
   }
   // cols
   for (let c = 0; c < 9; c++) {
-    const links = getCellsLinks(getColCells(c));
-    const group = findNGroupFromLinks(links, n, type);
-    if (group) {
-      const [cells, notes] = group;
-      return {
-        type,
-        n,
-        domain: 'col',
-        col: c,
-        cells,
-        notes,
-      };
+    const links = getCellsLinks(values, getColCells(c));
+    for (const group of findNGroupFromLinks(links, n, type)) {
+      const cells = group[type];
+      const notes = group[(type + 1) % 2];
+      yield { type, n, domain: 'col', col: c, cells, notes };
     }
   }
   // blocks
   for (let b = 0; b < 9; b++) {
-    const links = getCellsLinks(getBlockCells(b));
-    const group = findNGroupFromLinks(links, n, type);
-    if (group) {
-      const [cells, notes] = group;
-      return {
-        type,
-        n,
-        domain: 'block',
-        block: b,
-        cells,
-        notes,
-      };
+    const links = getCellsLinks(values, getBlockCells(b));
+    for (const group of findNGroupFromLinks(links, n, type)) {
+      const cells = group[type];
+      const notes = group[(type + 1) % 2];
+      yield { type, n, domain: 'block', block: b, cells, notes };
     }
   }
-};
+}
 
-// TODO: try to use generator to re-implement
 export const findGroup = values => {
-  // 0:naked group, 1: hidden group
-  for (const type of [0, 1]) {
-    for (let n = 2; n <= 5; n++) {
-      // {type, domain:[row|col|block],[row|col|block],cells:[], notes:[]}
-      const group = findNGroup(values, n, type);
-      if (group) {
+  for (let n = 1; n <= 5; n++) {
+    // 0:naked group, 1: hidden group
+    for (const type of [0, 1]) {
+      for (const group of findNGroup(values, n, type)) {
+        // only return the first group
         return group;
       }
     }
@@ -793,10 +752,7 @@ export const eliminateGroup = group => curValues => {
     }
     otherCells = otherCells.filter(([row, col]) => {
       const value = values[row][col];
-      return !(
-        typeof value.value === 'number' ||
-        group.cells.has(encodePos([row, col]))
-      );
+      return !(typeof value.value === 'number' || group.cells.has(encodePos([row, col])));
     });
     otherCells.forEach(([row, col]) => {
       const value = values[row][col];
@@ -805,17 +761,32 @@ export const eliminateGroup = group => curValues => {
         value: new Set([...value.value].filter(n => !group.notes.has(n))),
       };
     });
+    if (group.n === 1) {
+      // place value
+      const [row, col] = [...group.cells][0];
+      const value = values[row][col];
+      const d = [...group.notes][0];
+      values[row][col] = { ...value, value: d };
+    }
   } else if (group.type === 1) {
     // hidden
-    // to eliminate other notes
-    const cells = [...group.cells].map(pos => decodePos(pos));
-    cells.forEach(([row, col]) => {
+    if (group.n === 1) {
+      // place value
+      const [row, col] = [...group.cells][0];
       const value = values[row][col];
-      values[row][col] = {
-        ...value,
-        value: new Set([...value.value].filter(n => group.notes.has(n))),
-      };
-    });
+      const d = [...group.notes][0];
+      values[row][col] = { ...value, value: d };
+    } else {
+      // to eliminate other notes
+      const cells = [...group.cells].map(pos => decodePos(pos));
+      cells.forEach(([row, col]) => {
+        const value = values[row][col];
+        values[row][col] = {
+          ...value,
+          value: new Set([...value.value].filter(n => group.notes.has(n))),
+        };
+      });
+    }
   }
 
   return values;
