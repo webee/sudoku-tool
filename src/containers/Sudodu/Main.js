@@ -10,8 +10,10 @@ import { useMemo } from 'react';
 
 const Sudoku = ({ puzzle, startNewGameHandler }) => {
   const [showShare, setShowShare] = useState(false);
-  const [initialPuzzle, setInitialPuzzle] = useState(puzzle);
-  const [values, setValues] = useState(() => sudoku.parsePuzzle(initialPuzzle));
+  const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
+  const [initialPuzzle, setInitialPuzzle] = useState(() =>
+    sudoku.stringify(values)
+  );
   // {pos:[row, col], val:0}
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
@@ -188,8 +190,8 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   useEffect(() => {
     // start new puzzle if receiving puzzle
     if (puzzle !== initialPuzzle) {
-      setInitialPuzzle(puzzle);
       const values = sudoku.parsePuzzle(puzzle);
+      setInitialPuzzle(sudoku.stringify(values));
       setValues(values);
     }
   }, [initialPuzzle, puzzle]);
@@ -207,6 +209,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
     shareContent = (
       <div className={styles.QRCode}>
         <QRCode size={256} value={url.toString()} />
+        <p>{initialPuzzle}</p>
         <p>{curPuzzle}</p>
       </div>
     );

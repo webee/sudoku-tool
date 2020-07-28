@@ -677,8 +677,20 @@ const findNGroupFromLinks = (links, n, type) => {
       }
     }
     if (ends.size === n) {
-      // only return the first one
-      return [starts, ends];
+      let cleared = true;
+      // check if group is cleared
+      for (const p of points.filter(p => !starts.has(p.start))) {
+        if ([...p.ends].filter(e => !ends.has(e)).length < p.ends.size) {
+          // need clear
+          cleared = false;
+          break;
+        }
+      }
+
+      if (!cleared) {
+        // only return the first not cleared one
+        return [starts, ends];
+      }
     }
   }
 };
@@ -710,6 +722,7 @@ export const findNGroup = (values, n, type) => {
       const [cells, notes] = group;
       return {
         type,
+        n,
         domain: 'row',
         row: r,
         cells,
@@ -725,6 +738,7 @@ export const findNGroup = (values, n, type) => {
       const [cells, notes] = group;
       return {
         type,
+        n,
         domain: 'col',
         col: c,
         cells,
@@ -740,6 +754,7 @@ export const findNGroup = (values, n, type) => {
       const [cells, notes] = group;
       return {
         type,
+        n,
         domain: 'block',
         block: b,
         cells,
