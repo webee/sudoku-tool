@@ -116,11 +116,11 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
 
   const groupHandler = useCallback(() => {
     if (group) {
-      // handle group
-      setValues(sudoku.eliminateGroup(group));
-
       // clear
       setGroup(null);
+
+      // handle group
+      setValues(sudoku.eliminateGroup(group));
     } else {
       const g = sudoku.findGroup(values);
       if (g) {
@@ -147,7 +147,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   const marks = useMemo(() => {
     if (group) {
       const { cells, notes } = group;
-      return { [group.domain + 's']: new Set([group[group.domain]]), cells, notes };
+      return { [group.domain + 's']: new Set([group[group.domain]]), cells, notes, values: new Set() };
     }
   }, [group]);
 
@@ -162,7 +162,11 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       } else if (e.key === 'N') {
         startNewGameHandler();
       } else if (e.key === 'n') {
-        toggleIsNotingHandler();
+        if (e.ctrlKey) {
+          autoNoteHandler();
+        } else {
+          toggleIsNotingHandler();
+        }
       } else if (e.key === 'd') {
         deselectHandler();
       } else if (e.key === 'g') {

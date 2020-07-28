@@ -739,7 +739,14 @@ export const findGroup = values => {
 
 export const eliminateGroup = group => curValues => {
   const values = copyValues(curValues);
-  if (group.type === 0) {
+  if (group.n === 1) {
+    // place value
+    const [row, col] = [...group.cells][0];
+    const value = values[row][col];
+    const d = [...group.notes][0];
+    values[row][col] = { ...value, value: d };
+    updateRelatedNotes(values, row, col);
+  } else if (group.type === 0) {
     // naked
     // to eliminate other cells
     let otherCells = [];
@@ -761,32 +768,17 @@ export const eliminateGroup = group => curValues => {
         value: new Set([...value.value].filter(n => !group.notes.has(n))),
       };
     });
-    if (group.n === 1) {
-      // place value
-      const [row, col] = [...group.cells][0];
-      const value = values[row][col];
-      const d = [...group.notes][0];
-      values[row][col] = { ...value, value: d };
-    }
   } else if (group.type === 1) {
     // hidden
-    if (group.n === 1) {
-      // place value
-      const [row, col] = [...group.cells][0];
+    // to eliminate other notes
+    const cells = [...group.cells].map(pos => decodePos(pos));
+    cells.forEach(([row, col]) => {
       const value = values[row][col];
-      const d = [...group.notes][0];
-      values[row][col] = { ...value, value: d };
-    } else {
-      // to eliminate other notes
-      const cells = [...group.cells].map(pos => decodePos(pos));
-      cells.forEach(([row, col]) => {
-        const value = values[row][col];
-        values[row][col] = {
-          ...value,
-          value: new Set([...value.value].filter(n => group.notes.has(n))),
-        };
-      });
-    }
+      values[row][col] = {
+        ...value,
+        value: new Set([...value.value].filter(n => group.notes.has(n))),
+      };
+    });
   }
 
   return values;
