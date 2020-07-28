@@ -25,11 +25,13 @@
   }
 
   &.MarkedDomain {
+    border-radius: 0;
     box-shadow: none;
     background-color: #888;
   }
 
   &.Marked {
+    border-radius: 0;
     box-shadow: none !important;
     outline: 2px dashed darkgreen !important;
     background-color: greenyellow !important;

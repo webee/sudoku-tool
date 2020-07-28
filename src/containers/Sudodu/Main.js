@@ -6,6 +6,7 @@ import Modal from '../../components/UI/Modal/Modal';
 import QRCode from 'qrcode.react';
 import styles from './Main.module.scss';
 import * as sudoku from '../../libs/sudoku';
+import { useMemo } from 'react';
 
 const Sudoku = ({ puzzle, startNewGameHandler }) => {
   const [showShare, setShowShare] = useState(false);
@@ -16,7 +17,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
-  const [marks, setMarks] = useState(null);
+  const [group, setGroup] = useState(null);
 
   // handlers
   const cellClickedHandler = useCallback(
@@ -111,40 +112,47 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   }, [setValues]);
 
   const groupHandler = useCallback(() => {
-    const group = sudoku.findGroup(values);
-    console.log(group);
-    if (group.domain === 'row') {
-      const { row, cells, notes } = group;
-      cells.add('22');
-      cells.add('75');
-      setMarks({
-        rows: new Set([row]),
-        cells,
-        notes,
-        values: new Set([2]),
-      });
-    } else if (group.domain === 'col') {
-      const { col, cells, notes } = group;
-      cells.add('22');
-      cells.add('75');
-      setMarks({
-        cols: new Set([col]),
-        cells,
-        notes,
-        values: new Set([2]),
-      });
-    } else if (group.domain === 'block') {
-      const { block, cells, notes } = group;
-      cells.add('22');
-      cells.add('75');
-      setMarks({
-        blocks: new Set([block]),
-        cells,
-        notes,
-        values: new Set([2]),
-      });
+    if (group) {
+      // handle group
+      setValues(sudoku.eliminateGroup(group));
+
+      // clear
+      setGroup(null);
+    } else {
+      const nextGroup = sudoku.findGroup(values);
+      if (nextGroup) {
+        console.log(nextGroup);
+        setGroup(nextGroup);
+      }
     }
-  }, [values]);
+  }, [group, values]);
+
+  const marks = useMemo(() => {
+    if (group) {
+      if (group.domain === 'row') {
+        const { row, cells, notes } = group;
+        return {
+          rows: new Set([row]),
+          cells,
+          notes,
+        };
+      } else if (group.domain === 'col') {
+        const { col, cells, notes } = group;
+        return {
+          cols: new Set([col]),
+          cells,
+          notes,
+        };
+      } else if (group.domain === 'block') {
+        const { block, cells, notes } = group;
+        return {
+          blocks: new Set([block]),
+          cells,
+          notes,
+        };
+      }
+    }
+  }, [group]);
 
   // event listeners
   useEffect(() => {
@@ -178,12 +186,18 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
   ]);
 
   useEffect(() => {
+    // start new puzzle if receiving puzzle
     if (puzzle !== initialPuzzle) {
       setInitialPuzzle(puzzle);
       const values = sudoku.parsePuzzle(puzzle);
       setValues(values);
     }
   }, [initialPuzzle, puzzle]);
+
+  useEffect(() => {
+    // clear group if values changed
+    setGroup(null);
+  }, [values]);
 
   let shareContent = null;
   if (showShare) {
@@ -235,6 +249,7 @@ const Sudoku = ({ puzzle, startNewGameHandler }) => {
           autoPlaceHandler={autoPlaceHandler}
           pointingHandler={pointingHandler}
           claimingHandler={claimingHandler}
+          group={group}
           groupHandler={groupHandler}
         />
       </div>

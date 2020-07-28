@@ -20,6 +20,7 @@ const Controls = ({
   autoPlaceHandler,
   pointingHandler,
   claimingHandler,
+  group,
   groupHandler,
 }) => {
   // calculated states
@@ -57,7 +58,9 @@ const Controls = ({
         <Button onClick={autoNoteHandler}>note</Button>
         <Button onClick={pointingHandler}>point</Button>
         <Button onClick={claimingHandler}>claim</Button>
-        <Button onClick={groupHandler}>group</Button>
+        <Button type={group && 'On'} onClick={groupHandler}>
+          group
+        </Button>
         <Button onClick={autoPlaceHandler}>place</Button>
       </div>
     </div>

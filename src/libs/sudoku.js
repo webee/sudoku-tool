@@ -384,6 +384,7 @@ export const pointing = curValues => {
     }
   };
 
+  console.group('[pointing]');
   for (let b = 0; b < 9; b++) {
     // {pos:[row, col], to:null} / {to:[row|col],row|col,n} / false
     const results = {};
@@ -444,9 +445,7 @@ export const pointing = curValues => {
           }
 
           console.log(
-            `[pointing] block:${b + 1}=>row:${res.row + 1}, n:${res.n}, col:${
-              c + 1
-            }`
+            `block:${b + 1}=>row:${res.row + 1}, n:${res.n}, col:${c + 1}`
           );
 
           tryCopyValues();
@@ -471,9 +470,7 @@ export const pointing = curValues => {
           }
 
           console.log(
-            `[pointing] block:${b + 1}=>col:${res.col + 1}, n:${res.n}, row:${
-              r + 1
-            }`
+            `block:${b + 1}=>col:${res.col + 1}, n:${res.n}, row:${r + 1}`
           );
 
           tryCopyValues();
@@ -485,6 +482,7 @@ export const pointing = curValues => {
       }
     }
   }
+  console.groupEnd();
   return values;
 };
 
@@ -500,6 +498,7 @@ export const claiming = curValues => {
     }
   };
 
+  console.group('[claiming]');
   // rows
   for (let r = 0; r < 9; r++) {
     // {block, n} / false
@@ -542,7 +541,7 @@ export const claiming = curValues => {
           continue;
         }
         console.log(
-          `[claiming] row:${r + 1}=>block:${res.block + 1}, n:${res.n}, row:${
+          `row:${r + 1}=>block:${res.block + 1}, n:${res.n}, row:${
             row + 1
           }, col:${col + 1}`
         );
@@ -598,7 +597,7 @@ export const claiming = curValues => {
         }
 
         console.log(
-          `[claiming] col:${c + 1}=>block:${res.block + 1}, n:${res.n}, row:${
+          `col:${c + 1}=>block:${res.block + 1}, n:${res.n}, row:${
             row + 1
           }, col:${col + 1}`
         );
@@ -611,6 +610,7 @@ export const claiming = curValues => {
       }
     }
   }
+  console.groupEnd();
   return values;
 };
 
@@ -761,4 +761,47 @@ export const findGroup = values => {
       }
     }
   }
+};
+
+export const eliminateGroup = group => curValues => {
+  const values = copyValues(curValues);
+  if (group.type === 0) {
+    // naked
+    // to eliminate other cells
+    let otherCells = [];
+    if (group.domain === 'row') {
+      otherCells = getRowCells(group.row);
+    } else if (group.domain === 'col') {
+      otherCells = getColCells(group.col);
+    } else if (group.domain === 'block') {
+      otherCells = getBlockCells(group.block);
+    }
+    otherCells = otherCells.filter(([row, col]) => {
+      const value = values[row][col];
+      return !(
+        typeof value.value === 'number' ||
+        group.cells.has(encodePos([row, col]))
+      );
+    });
+    otherCells.forEach(([row, col]) => {
+      const value = values[row][col];
+      values[row][col] = {
+        ...value,
+        value: new Set([...value.value].filter(n => !group.notes.has(n))),
+      };
+    });
+  } else if (group.type === 1) {
+    // hidden
+    // to eliminate other notes
+    const cells = group.cells.map(pos => decodePos(pos));
+    cells.forEach(([row, col]) => {
+      const value = values[row][col];
+      values[row][col] = {
+        ...value,
+        value: new Set([...value.value].filter(n => group.notes.has(n))),
+      };
+    });
+  }
+
+  return values;
 };
