@@ -189,7 +189,15 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     return () => {
       document.removeEventListener('keydown', keydownHandler);
     };
-  }, [deselectHandler, digitClickedHandler, groupHandler, moveActivePos, startNewGameHandler, toggleIsNotingHandler]);
+  }, [
+    autoNoteHandler,
+    deselectHandler,
+    digitClickedHandler,
+    groupHandler,
+    moveActivePos,
+    startNewGameHandler,
+    toggleIsNotingHandler,
+  ]);
 
   useEffect(() => {
     // start new puzzle if receiving puzzle
