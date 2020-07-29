@@ -790,12 +790,13 @@ export const eliminateGroup = group => curValues => {
   return values;
 };
 
-function* scanNXwing(values, n, getCells, getOtherCells, reverse) {
+function* scanNXwing(values, n, getCells, getOtherCells, yi) {
   const dist = {};
   for (let x = 0; x < 9; x++) {
     const ys = [];
-    getCells(x).forEach(([x, y]) => {
-      const { value } = values[x][y];
+    getCells(x).forEach(pos => {
+      const y = pos[yi];
+      const { value } = values[pos[0]][pos[1]];
       if (typeof value === 'number') {
         return;
       }
@@ -803,65 +804,68 @@ function* scanNXwing(values, n, getCells, getOtherCells, reverse) {
         ys.push(y);
       }
     });
-    if (ys.length > 0) {
+    if (ys.length > 1) {
       const key = ys.join('');
       const res = dist[key] || { xs: [], ys };
       dist[key] = res;
       res.xs.push(x);
     }
   }
+  // handle dist
   for (const res of Object.values(dist)) {
-    if (res.xs.length === res.ys.length) {
-      const s = res.xs.length;
-      const cells = new Set();
-      for (const x of res.xs) {
-        for (const y of res.ys) {
-          if (reverse) {
-            cells.add(encodePos([y, x]));
-          } else {
-            cells.add(encodePos([x, y]));
-          }
-        }
-      }
+    if (res.xs.length !== res.ys.length) {
+      continue;
+    }
 
-      let cleared = true;
-      // check if xwing is cleared
-      const otherCells = [];
+    const s = res.xs.length;
+    const cells = new Set();
+    for (const x of res.xs) {
       for (const y of res.ys) {
-        otherCells.push(...getOtherCells(y));
-      }
-      for (const [x, y] of otherCells.filter(([x, y]) => {
-        const value = values[x][y];
-        return !(typeof value.value === 'number' || cells.has(encodePos([x, y])));
-      })) {
-        const { value } = values[x][y];
-        if (value.has(n)) {
-          // need clear
-          cleared = false;
-          break;
+        if (yi === 1) {
+          cells.add(encodePos([x, y]));
+        } else {
+          cells.add(encodePos([y, x]));
         }
       }
+    }
 
-      if (!cleared) {
-        yield {
-          type: 'XWing',
-          name: `${s}-X-Wing`,
-          domain: reverse ? 'col' : 'row',
-          [reverse ? 'rows' : 'cols']: new Set(res.ys),
-          cells,
-          n,
-        };
+    let cleared = true;
+    // check if xwing is cleared
+    const otherCells = [];
+    for (const y of res.ys) {
+      otherCells.push(...getOtherCells(y));
+    }
+    for (const [x, y] of otherCells.filter(([x, y]) => {
+      const { value } = values[x][y];
+      return !(typeof value === 'number' || cells.has(encodePos([x, y])));
+    })) {
+      const { value } = values[x][y];
+      if (value.has(n)) {
+        // need clear
+        cleared = false;
+        break;
       }
+    }
+
+    if (!cleared) {
+      yield {
+        type: 'XWing',
+        name: `${s}-X-Wing`,
+        domain: ['col', 'row'][yi],
+        [['rows', 'cols'][yi]]: new Set(res.ys),
+        cells,
+        n,
+      };
     }
   }
 }
 
 function* searchNXWing(values, n) {
   // rows
-  yield* scanNXwing(values, n, getRowCells, getColCells, false);
+  yield* scanNXwing(values, n, getRowCells, getColCells, 1);
 
   // cols
-  yield* scanNXwing(values, n, getColCells, getRowCells, true);
+  yield* scanNXwing(values, n, getColCells, getRowCells, 0);
 }
 
 function* searchXWing(values) {

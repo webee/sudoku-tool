@@ -230,6 +230,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     groupHandler,
     moveActivePos,
     startNewGameHandler,
+    tipHandler,
     toggleIsNotingHandler,
   ]);
 
