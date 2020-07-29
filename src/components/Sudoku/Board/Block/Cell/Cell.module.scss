@@ -8,7 +8,6 @@
   justify-content: center;
   align-items: center;
   padding: 2.5%;
-  cursor: pointer;
 
   &.Related {
     box-shadow: none;
@@ -16,6 +15,7 @@
   }
 
   &.Available {
+    cursor: pointer;
     &.Place {
       background-color: $place-color;
     }
@@ -34,7 +34,7 @@
     border-radius: 0;
     box-shadow: none !important;
     outline: 2px dashed $marked-color !important;
-    background-color: greenyellow !important;
+    background-color: seagreen !important;
   }
 }
 
@@ -71,7 +71,7 @@
 
   &.Marked {
     &.MarkedValue {
-      background-color: greenyellow;
+      background-color: seagreen;
       @include digitColor($marked-color !important);
     }
   }

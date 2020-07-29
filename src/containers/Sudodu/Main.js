@@ -17,7 +17,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
-  const [group, setGroup] = useState(null);
   const [tip, setTip] = useState(null);
 
   // calculated states
@@ -78,13 +77,16 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     [activePos, availableDigits, isNoting]
   );
 
+  const deselectHandler = useCallback(() => {
+    setActiveState({ pos: null, val: 0 });
+  }, []);
+
   const resetHandler = useCallback(() => {
     if (!window.confirm || window.confirm('Are you sure to reset?')) {
       setValues(sudoku.parsePuzzle(initialPuzzle));
-      // deselect
-      setActiveState({ pos: null, val: 0 });
+      deselectHandler();
     }
-  }, [initialPuzzle]);
+  }, [deselectHandler, initialPuzzle]);
 
   const eraseValueHandler = useCallback(() => {
     if (activePos) {
@@ -92,10 +94,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       setValues(sudoku.updateValues(isNoting, activeRow, activeCol, new Set()));
     }
   }, [activePos, isNoting]);
-
-  const deselectHandler = useCallback(() => {
-    setActiveState({ pos: null, val: 0 });
-  }, []);
 
   const toggleShowAvailHandler = useCallback(() => {
     setShowAvail(showAvail => !showAvail);
@@ -121,24 +119,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     setValues(sudoku.claiming);
   }, [setValues]);
 
-  const groupHandler = useCallback(() => {
-    if (group) {
-      // clear
-      setGroup(null);
-
-      // handle group
-      setValues(sudoku.eliminateGroup(group));
-    } else {
-      const g = sudoku.findGroup(values);
-      if (g) {
-        console.log(
-          `group:${['naked', 'hidden'][g.type]}-${g.n}:${g.domain}-${g[g.domain]}: [${[...g.cells]}],[${[...g.notes]}]`
-        );
-        setGroup(g);
-      }
-    }
-  }, [group, values]);
-
   const tipHandler = useCallback(() => {
     if (tip) {
       // clear
@@ -150,14 +130,22 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       // find tip
       const t = sudoku.findTip(values);
       if (t) {
-        console.log(t);
+        console.group('[tip]');
         setTip(t);
-        if (t.n) {
-          digitClickedHandler(t.n, true);
+        if (t.type === 'X-Wing') {
+          console.log(t);
+          digitClickedHandler(t.d, true);
+        } else if (t.type === 'group') {
+          console.log(
+            `group:${['naked', 'hidden'][t.cls]}-${t.n}:${t.domain}-${t[t.domain]}: [${[...t.cells]}],[${[...t.notes]}]`
+          );
+          // deselect
+          deselectHandler();
         }
+        console.groupEnd();
       }
     }
-  }, [digitClickedHandler, tip, values]);
+  }, [deselectHandler, digitClickedHandler, tip, values]);
 
   const moveActivePos = useCallback(
     (dRow, dCol) => {
@@ -172,16 +160,16 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   );
 
   const marks = useMemo(() => {
-    if (group) {
-      const { cells, notes } = group;
-      return { [group.domain + 's']: new Set([group[group.domain]]), cells, notes, values: new Set() };
-    } else if (tip) {
-      if (tip.type === 'XWing') {
-        const { rows, cols, cells, n } = tip;
-        return { rows, cols, cells, notes: new Set([n]), values: new Set([tip.n]) };
+    if (tip) {
+      if (tip.type === 'X-Wing') {
+        const { rows, cols, cells, d } = tip;
+        return { rows, cols, cells: { poses: cells, notes: new Set([d]) } };
+      } else if (tip.type === 'group') {
+        const { cells, notes } = tip;
+        return { [tip.domain + 's']: new Set([tip[tip.domain]]), cells: { poses: cells, notes } };
       }
     }
-  }, [group, tip]);
+  }, [tip]);
 
   // event listeners
   useEffect(() => {
@@ -201,10 +189,10 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         }
       } else if (e.key === 'd') {
         deselectHandler();
-      } else if (e.key === 'g') {
-        groupHandler();
       } else if (e.key === 't') {
         tipHandler();
+      } else if (e.key === 'p') {
+        autoPlaceHandler();
       } else if (e.key === 'h' || e.key === 'ArrowLeft') {
         moveActivePos(0, -1);
       } else if (e.key === 'l' || e.key === 'ArrowRight') {
@@ -225,9 +213,9 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     };
   }, [
     autoNoteHandler,
+    autoPlaceHandler,
     deselectHandler,
     digitClickedHandler,
-    groupHandler,
     moveActivePos,
     startNewGameHandler,
     tipHandler,
@@ -244,8 +232,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   }, [initialPuzzle, puzzle]);
 
   useEffect(() => {
-    // clear group if values changed
-    setGroup(null);
     // clear tip if values changed
     setTip(null);
   }, [values]);
@@ -302,8 +288,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
           autoPlaceHandler={autoPlaceHandler}
           pointingHandler={pointingHandler}
           claimingHandler={claimingHandler}
-          group={group}
-          groupHandler={groupHandler}
           tip={tip}
           tipHandler={tipHandler}
         />

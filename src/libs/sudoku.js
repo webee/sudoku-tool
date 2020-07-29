@@ -637,11 +637,11 @@ function* comb(n, k) {
   yield* combx(0, n, k);
 }
 
-function* findNGroupFromLinks(links, n, type) {
+function* findNGroupFromLinks(links, n, cls) {
   const s = {};
   for (const link of links) {
-    const start = link[type];
-    const end = link[(type + 1) % 2];
+    const start = link[cls];
+    const end = link[(cls + 1) % 2];
     const v = s[start] || { start, ends: new Set() };
     v.ends.add(end);
     s[start] = v;
@@ -701,32 +701,32 @@ const getCellsLinks = (values, cells) => {
   return links;
 };
 
-function* findNGroup(values, n, type) {
+function* findNGroup(values, n, cls) {
   // rows
   for (let r = 0; r < 9; r++) {
     const links = getCellsLinks(values, getRowCells(r));
-    for (const group of findNGroupFromLinks(links, n, type)) {
-      const cells = group[type];
-      const notes = group[(type + 1) % 2];
-      yield { type, n, domain: 'row', row: r, cells, notes };
+    for (const group of findNGroupFromLinks(links, n, cls)) {
+      const cells = group[cls];
+      const notes = group[(cls + 1) % 2];
+      yield { cls, n, domain: 'row', row: r, cells, notes };
     }
   }
   // cols
   for (let c = 0; c < 9; c++) {
     const links = getCellsLinks(values, getColCells(c));
-    for (const group of findNGroupFromLinks(links, n, type)) {
-      const cells = group[type];
-      const notes = group[(type + 1) % 2];
-      yield { type, n, domain: 'col', col: c, cells, notes };
+    for (const group of findNGroupFromLinks(links, n, cls)) {
+      const cells = group[cls];
+      const notes = group[(cls + 1) % 2];
+      yield { cls, n, domain: 'col', col: c, cells, notes };
     }
   }
   // blocks
   for (let b = 0; b < 9; b++) {
     const links = getCellsLinks(values, getBlockCells(b));
-    for (const group of findNGroupFromLinks(links, n, type)) {
-      const cells = group[type];
-      const notes = group[(type + 1) % 2];
-      yield { type, n, domain: 'block', block: b, cells, notes };
+    for (const group of findNGroupFromLinks(links, n, cls)) {
+      const cells = group[cls];
+      const notes = group[(cls + 1) % 2];
+      yield { cls, n, domain: 'block', block: b, cells, notes };
     }
   }
 }
@@ -734,9 +734,11 @@ function* findNGroup(values, n, type) {
 export const findGroup = values => {
   for (let n = 1; n <= 5; n++) {
     // 0:naked group, 1: hidden group
-    for (const type of [0, 1]) {
-      for (const group of findNGroup(values, n, type)) {
+    for (const cls of [0, 1]) {
+      for (const group of findNGroup(values, n, cls)) {
         // only return the first group
+        group.type = 'group';
+        group.name = `${n}-group`;
         return group;
       }
     }
@@ -752,7 +754,7 @@ export const eliminateGroup = group => curValues => {
     const d = [...group.notes][0];
     values[row][col] = { ...value, value: d };
     updateRelatedNotes(values, row, col);
-  } else if (group.type === 0) {
+  } else if (group.cls === 0) {
     // naked
     // to eliminate other cells
     let otherCells = [];
@@ -774,7 +776,7 @@ export const eliminateGroup = group => curValues => {
         value: new Set([...value.value].filter(n => !group.notes.has(n))),
       };
     });
-  } else if (group.type === 1) {
+  } else if (group.cls === 1) {
     // hidden
     // to eliminate other notes
     const cells = [...group.cells].map(pos => decodePos(pos));
@@ -790,7 +792,7 @@ export const eliminateGroup = group => curValues => {
   return values;
 };
 
-function* scanNXwing(values, n, getCells, getOtherCells, yi) {
+function* scanNXwing(values, d, getCells, getOtherCells, yi) {
   const dist = {};
   for (let x = 0; x < 9; x++) {
     const ys = [];
@@ -800,7 +802,7 @@ function* scanNXwing(values, n, getCells, getOtherCells, yi) {
       if (typeof value === 'number') {
         return;
       }
-      if (value.has(n)) {
+      if (value.has(d)) {
         ys.push(y);
       }
     });
@@ -830,7 +832,7 @@ function* scanNXwing(values, n, getCells, getOtherCells, yi) {
     }
 
     let cleared = true;
-    // check if xwing is cleared
+    // check if x-wing is cleared
     const otherCells = [];
     for (const y of res.ys) {
       otherCells.push(...getOtherCells(y));
@@ -840,7 +842,7 @@ function* scanNXwing(values, n, getCells, getOtherCells, yi) {
       return !(typeof value === 'number' || cells.has(encodePos([x, y])));
     })) {
       const { value } = values[x][y];
-      if (value.has(n)) {
+      if (value.has(d)) {
         // need clear
         cleared = false;
         break;
@@ -849,38 +851,38 @@ function* scanNXwing(values, n, getCells, getOtherCells, yi) {
 
     if (!cleared) {
       yield {
-        type: 'XWing',
         name: `${s}-X-Wing`,
         domain: ['col', 'row'][yi],
         [['rows', 'cols'][yi]]: new Set(res.ys),
         cells,
-        n,
+        d,
       };
     }
   }
 }
 
-function* searchNXWing(values, n) {
+function* searchNXWing(values, d) {
   // rows
-  yield* scanNXwing(values, n, getRowCells, getColCells, 1);
+  yield* scanNXwing(values, d, getRowCells, getColCells, 1);
 
   // cols
-  yield* scanNXwing(values, n, getColCells, getRowCells, 0);
+  yield* scanNXwing(values, d, getColCells, getRowCells, 0);
 }
 
 function* searchXWing(values) {
-  for (let n = 1; n <= 9; n++) {
-    yield* searchNXWing(values, n);
+  for (let d = 1; d <= 9; d++) {
+    yield* searchNXWing(values, d);
   }
 }
 
 export const findXWing = values => {
   for (const res of searchXWing(values)) {
+    res.type = 'X-Wing';
     return res;
   }
 };
 
-export const eliminateXWing = (curValues, tip) => {
+export const eliminateXWing = tip => curValues => {
   const values = copyValues(curValues);
   const otherCells = [];
   if (tip.domain === 'row') {
@@ -901,7 +903,7 @@ export const eliminateXWing = (curValues, tip) => {
       const value = values[row][col];
       values[row][col] = {
         ...value,
-        value: new Set([...value.value].filter(n => n !== tip.n)),
+        value: new Set([...value.value].filter(n => n !== tip.d)),
       };
     });
 
@@ -909,12 +911,13 @@ export const eliminateXWing = (curValues, tip) => {
 };
 
 export const findTip = values => {
-  // || otherTip(values);
-  return findXWing(values);
+  return findGroup(values) || findXWing(values);
 };
 
 export const handleTip = tip => curValues => {
-  if (tip.type === 'XWing') {
-    return eliminateXWing(curValues, tip);
+  if (tip.type === 'group') {
+    return eliminateGroup(tip)(curValues);
+  } else if (tip.type === 'X-Wing') {
+    return eliminateXWing(tip)(curValues);
   }
 };

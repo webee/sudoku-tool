@@ -3,31 +3,19 @@ import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
 import * as sudoku from '../../../../../libs/sudoku';
 
-const noteClassName = (n, activeVal, marks) => {
+const noteClassName = (n, activeVal, notes) => {
   const classes = [styles.Note];
   if (n === activeVal) {
     classes.push(styles.ActiveValue);
   }
-  if (marks && marks.has(n)) {
+  if (notes && notes.has(n)) {
     classes.push(styles.MarkedValue);
   }
   return classes.join(' ');
 };
 
 const Cell = React.memo(
-  ({
-    value,
-    origin,
-    row,
-    col,
-    activePos,
-    activeVal,
-    available,
-    showAvail,
-    isNoting,
-    onClick,
-    marks,
-  }) => {
+  ({ value, origin, row, col, activePos, activeVal, available, showAvail, isNoting, onClick, marks }) => {
     const classes = [];
     let content = null;
     let isSelected = false;
@@ -40,19 +28,19 @@ const Cell = React.memo(
         // active
         isSelected = true;
         classes.push(styles.Selected);
-      } else if (
-        row === activeRow ||
-        col === activeCol ||
-        block === activeBlock
-      ) {
+      } else if (row === activeRow || col === activeCol || block === activeBlock) {
         // related area
         classes.push(styles.Related);
       }
     }
 
     let clickable = available;
-    if (available && showAvail) {
-      classes.push(styles.Available, isNoting ? styles.Note : styles.Place);
+    if (available) {
+      classes.push(styles.Available);
+      if (showAvail) {
+        // show background
+        classes.push(isNoting ? styles.Note : styles.Place);
+      }
     } else if (available === null) {
       // deselected
       classes.push(styles.Available);
@@ -80,7 +68,7 @@ const Cell = React.memo(
         }
       }
       if (marks.cells) {
-        if (marks.cells.has(sudoku.encodePos([row, col]))) {
+        if (marks.cells.poses.has(sudoku.encodePos([row, col]))) {
           cellMarked = true;
           classes.push(styles.Marked);
         }
@@ -101,7 +89,7 @@ const Cell = React.memo(
         classes.push(styles.ActiveValue);
       }
       // it's marked value
-      if (cellMarked && marks.values.has(value)) {
+      if (cellMarked && marks.cells.values && marks.cells.values.has(value)) {
         classes.push(styles.MarkedValue);
       }
 
@@ -114,89 +102,35 @@ const Cell = React.memo(
         content = (
           <>
             <div className={styles.RowNotes}>
-              <div
-                className={noteClassName(
-                  1,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(1, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(1) ? digits[1] : null}
               </div>
-              <div
-                className={noteClassName(
-                  2,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(2, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(2) ? digits[2] : null}
               </div>
-              <div
-                className={noteClassName(
-                  3,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(3, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(3) ? digits[3] : null}
               </div>
             </div>
             <div className={styles.RowNotes}>
-              <div
-                className={noteClassName(
-                  4,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(4, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(4) ? digits[4] : null}
               </div>
-              <div
-                className={noteClassName(
-                  5,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(5, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(5) ? digits[5] : null}
               </div>
-              <div
-                className={noteClassName(
-                  6,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(6, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(6) ? digits[6] : null}
               </div>
             </div>
             <div className={styles.RowNotes}>
-              <div
-                className={noteClassName(
-                  7,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(7, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(7) ? digits[7] : null}
               </div>
-              <div
-                className={noteClassName(
-                  8,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(8, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(8) ? digits[8] : null}
               </div>
-              <div
-                className={noteClassName(
-                  9,
-                  activeVal,
-                  cellMarked && marks.notes
-                )}
-              >
+              <div className={noteClassName(9, activeVal, cellMarked && marks.cells.notes)}>
                 {notes.has(9) ? digits[9] : null}
               </div>
             </div>
@@ -205,10 +139,7 @@ const Cell = React.memo(
       }
     }
     return (
-      <div
-        className={classes.join(' ')}
-        onClick={clickable ? () => onClick(row, col) : undefined}
-      >
+      <div className={classes.join(' ')} onClick={clickable ? () => onClick(row, col) : undefined}>
         {content}
       </div>
     );

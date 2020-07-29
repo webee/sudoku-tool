@@ -14,5 +14,11 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+
+    .Tip {
+      flex: 1 0;
+      display: flex;
+      justify-content: flex-end;
+    }
   }
 }

@@ -20,8 +20,6 @@ const Controls = ({
   autoPlaceHandler,
   pointingHandler,
   claimingHandler,
-  group,
-  groupHandler,
   tip,
   tipHandler,
 }) => {
@@ -51,13 +49,12 @@ const Controls = ({
         <Button onClick={autoNoteHandler}>note</Button>
         <Button onClick={pointingHandler}>point</Button>
         <Button onClick={claimingHandler}>claim</Button>
-        <Button type={group && 'On'} onClick={groupHandler}>
-          group
-        </Button>
-        <Button type={tip && 'On'} onClick={tipHandler}>
-          {tip ? tip.name : 'tip'}
-        </Button>
         <Button onClick={autoPlaceHandler}>place</Button>
+        <div className={styles.Tip}>
+          <Button type={tip && 'On'} onClick={tipHandler}>
+            {tip ? tip.name : 'tip'}
+          </Button>
+        </div>
       </div>
     </div>
   );
