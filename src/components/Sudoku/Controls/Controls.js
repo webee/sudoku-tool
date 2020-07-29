@@ -6,7 +6,6 @@ import * as sudoku from '../../../libs/sudoku';
 
 const Controls = ({
   values,
-  activePos,
   activeVal,
   availableDigits,
   digitClickedHandler,
@@ -23,6 +22,8 @@ const Controls = ({
   claimingHandler,
   group,
   groupHandler,
+  tip,
+  tipHandler,
 }) => {
   // calculated states
   const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [values]);
@@ -52,6 +53,9 @@ const Controls = ({
         <Button onClick={claimingHandler}>claim</Button>
         <Button type={group && 'On'} onClick={groupHandler}>
           group
+        </Button>
+        <Button type={tip && 'On'} onClick={tipHandler}>
+          {tip ? tip.name : 'tip'}
         </Button>
         <Button onClick={autoPlaceHandler}>place</Button>
       </div>

@@ -788,3 +788,108 @@ export const eliminateGroup = group => curValues => {
 
   return values;
 };
+
+function* scanNXwing(values, n, getCells, reverse) {
+  const dist = {};
+  for (let x = 0; x < 9; x++) {
+    const ys = [];
+    getCells(x).forEach(([x, y]) => {
+      const { value } = values[x][y];
+      if (typeof value === 'number') {
+        return;
+      }
+      if (value.has(n)) {
+        ys.push(y);
+      }
+    });
+    if (ys.length > 0) {
+      const key = ys.join('');
+      const res = dist[key] || { xs: [], ys };
+      dist[key] = res;
+      res.xs.push(x);
+    }
+  }
+  for (const res of Object.values(dist)) {
+    if (res.xs.length === res.ys.length) {
+      const s = res.xs.length;
+      const cells = new Set();
+      for (const x of res.xs) {
+        for (const y of res.ys) {
+          if (reverse) {
+            cells.add(encodePos([y, x]));
+          } else {
+            cells.add(encodePos([x, y]));
+          }
+        }
+      }
+      yield {
+        type: 'XWing',
+        name: `${s}-X-Wing`,
+        domain: reverse ? 'col' : 'row',
+        [reverse ? 'rows' : 'cols']: new Set(res.ys),
+        cells,
+        n,
+      };
+    }
+  }
+}
+
+function* searchNXWing(values, n) {
+  // rows
+  yield* scanNXwing(values, n, getRowCells, false);
+
+  // cols
+  yield* scanNXwing(values, n, getColCells, true);
+}
+
+function* searchXWing(values) {
+  for (let n = 1; n <= 9; n++) {
+    yield* searchNXWing(values, n);
+  }
+}
+
+export const findXWing = values => {
+  for (const res of searchXWing(values)) {
+    return res;
+  }
+};
+
+export const eliminateXWing = (curValues, tip) => {
+  const values = copyValues(curValues);
+  const otherCells = [];
+  if (tip.domain === 'row') {
+    for (const col of tip.cols) {
+      otherCells.push(...getColCells(col));
+    }
+  } else if (tip.domain === 'col') {
+    for (const row of tip.rows) {
+      otherCells.push(...getRowCells(row));
+    }
+  }
+  otherCells
+    .filter(([row, col]) => {
+      const value = values[row][col];
+      return !(typeof value.value === 'number' || tip.cells.has(encodePos([row, col])));
+    })
+    .forEach(([row, col]) => {
+      const value = values[row][col];
+      values[row][col] = {
+        ...value,
+        value: new Set([...value.value].filter(n => n !== tip.n)),
+      };
+      console.log(row, col, values[row][col]);
+    });
+
+  return values;
+};
+
+export const findTip = values => {
+  // || otherTip(values);
+  return findXWing(values);
+};
+
+export const handleTip = tip => curValues => {
+  if (tip.type === 'XWing') {
+    return eliminateXWing(curValues, tip);
+  }
+};

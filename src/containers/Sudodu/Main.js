@@ -18,6 +18,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
   const [group, setGroup] = useState(null);
+  const [tip, setTip] = useState(null);
 
   // calculated states
   const availableDigits = useMemo(() => sudoku.calcAvailableDigits(values, activePos), [activePos, values]);
@@ -47,25 +48,31 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   );
 
   const digitClickedHandler = useCallback(
-    d => {
-      if (!availableDigits.has(d)) {
-        return;
-      }
+    (d, force = false) => {
+      // force active specified digit
+      if (!force) {
+        if (!availableDigits.has(d)) {
+          return;
+        }
 
-      if (activePos) {
-        // place or note
-        const [activeRow, activeCol] = activePos;
-        setValues(sudoku.updateValues(isNoting, activeRow, activeCol, d));
+        if (activePos) {
+          // place or note
+          const [activeRow, activeCol] = activePos;
+          setValues(sudoku.updateValues(isNoting, activeRow, activeCol, d));
+        } else {
+          // active a value
+          setActiveState(({ val: curActiveVal }) => {
+            let val = d;
+            if (curActiveVal === d) {
+              // cancel active
+              val = 0;
+            }
+            return { pos: null, val };
+          });
+        }
       } else {
         // active a value
-        setActiveState(({ val: curActiveVal }) => {
-          let val = d;
-          if (curActiveVal === d) {
-            // cancel active
-            val = 0;
-          }
-          return { pos: null, val };
-        });
+        setActiveState({ pos: null, val: d });
       }
     },
     [activePos, availableDigits, isNoting]
@@ -132,6 +139,26 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     }
   }, [group, values]);
 
+  const tipHandler = useCallback(() => {
+    if (tip) {
+      // clear
+      setTip(null);
+
+      // handle tip
+      setValues(sudoku.handleTip(tip));
+    } else {
+      // find tip
+      const t = sudoku.findTip(values);
+      if (t) {
+        console.log(t);
+        setTip(t);
+        if (t.n) {
+          digitClickedHandler(t.n, true);
+        }
+      }
+    }
+  }, [digitClickedHandler, tip, values]);
+
   const moveActivePos = useCallback(
     (dRow, dCol) => {
       if (activePos) {
@@ -148,8 +175,13 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
     if (group) {
       const { cells, notes } = group;
       return { [group.domain + 's']: new Set([group[group.domain]]), cells, notes, values: new Set() };
+    } else if (tip) {
+      if (tip.type === 'XWing') {
+        const { rows, cols, cells, n } = tip;
+        return { rows, cols, cells, notes: new Set([n]), values: new Set([tip.n]) };
+      }
     }
-  }, [group]);
+  }, [group, tip]);
 
   // event listeners
   useEffect(() => {
@@ -171,6 +203,8 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         deselectHandler();
       } else if (e.key === 'g') {
         groupHandler();
+      } else if (e.key === 't') {
+        tipHandler();
       } else if (e.key === 'h' || e.key === 'ArrowLeft') {
         moveActivePos(0, -1);
       } else if (e.key === 'l' || e.key === 'ArrowRight') {
@@ -211,6 +245,8 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   useEffect(() => {
     // clear group if values changed
     setGroup(null);
+    // clear tip if values changed
+    setTip(null);
   }, [values]);
 
   let shareContent = null;
@@ -251,7 +287,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       <div className={styles.Controls}>
         <Controls
           values={values}
-          activePos={activePos}
           activeVal={activeVal}
           availableDigits={availableDigits}
           digitClickedHandler={digitClickedHandler}
@@ -268,6 +303,8 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
           claimingHandler={claimingHandler}
           group={group}
           groupHandler={groupHandler}
+          tip={tip}
+          tipHandler={tipHandler}
         />
       </div>
       <div className={styles.Info}></div>
