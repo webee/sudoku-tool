@@ -669,6 +669,7 @@ function* findNGroupFromLinks(links, n, type) {
       // check if group is cleared
       for (const p of points.filter(p => !starts.has(p.start))) {
         if ([...p.ends].filter(e => !ends.has(e)).length < p.ends.size) {
+          // other starts has end in ends
           // need clear
           cleared = false;
           break;
@@ -789,7 +790,7 @@ export const eliminateGroup = group => curValues => {
   return values;
 };
 
-function* scanNXwing(values, n, getCells, reverse) {
+function* scanNXwing(values, n, getCells, getOtherCells, reverse) {
   const dist = {};
   for (let x = 0; x < 9; x++) {
     const ys = [];
@@ -822,24 +823,45 @@ function* scanNXwing(values, n, getCells, reverse) {
           }
         }
       }
-      yield {
-        type: 'XWing',
-        name: `${s}-X-Wing`,
-        domain: reverse ? 'col' : 'row',
-        [reverse ? 'rows' : 'cols']: new Set(res.ys),
-        cells,
-        n,
-      };
+
+      let cleared = true;
+      // check if xwing is cleared
+      const otherCells = [];
+      for (const y of res.ys) {
+        otherCells.push(...getOtherCells(y));
+      }
+      for (const [x, y] of otherCells.filter(([x, y]) => {
+        const value = values[x][y];
+        return !(typeof value.value === 'number' || cells.has(encodePos([x, y])));
+      })) {
+        const { value } = values[x][y];
+        if (value.has(n)) {
+          // need clear
+          cleared = false;
+          break;
+        }
+      }
+
+      if (!cleared) {
+        yield {
+          type: 'XWing',
+          name: `${s}-X-Wing`,
+          domain: reverse ? 'col' : 'row',
+          [reverse ? 'rows' : 'cols']: new Set(res.ys),
+          cells,
+          n,
+        };
+      }
     }
   }
 }
 
 function* searchNXWing(values, n) {
   // rows
-  yield* scanNXwing(values, n, getRowCells, false);
+  yield* scanNXwing(values, n, getRowCells, getColCells, false);
 
   // cols
-  yield* scanNXwing(values, n, getColCells, true);
+  yield* scanNXwing(values, n, getColCells, getRowCells, true);
 }
 
 function* searchXWing(values) {
@@ -877,7 +899,6 @@ export const eliminateXWing = (curValues, tip) => {
         ...value,
         value: new Set([...value.value].filter(n => n !== tip.n)),
       };
-      console.log(row, col, values[row][col]);
     });
 
   return values;
