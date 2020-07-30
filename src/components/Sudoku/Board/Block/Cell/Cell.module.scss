@@ -24,15 +24,23 @@
     }
   }
 
-  &.MarkedDomain {
+  %Marked {
     border-radius: 0;
-    box-shadow: none;
+    box-shadow: none !important;
+  }
+
+  &.MarkedDomain {
+    @extend %Marked;
     background-color: #888;
   }
 
-  &.Marked {
-    border-radius: 0;
-    box-shadow: none !important;
+  &.MarkedEffect {
+    @extend %Marked;
+    background-color: pink;
+  }
+
+  &.MarkedHighlight {
+    @extend %Marked;
     outline: 2px dashed $marked-color !important;
     background-color: seagreen !important;
   }
@@ -69,9 +77,9 @@
     }
   }
 
-  &.Marked {
+  &.MarkedHighlight,
+  &.MarkedEffect {
     &.MarkedValue {
-      background-color: seagreen;
       @include digitColor($marked-color !important);
     }
   }
@@ -114,7 +122,8 @@
     }
   }
 
-  &.Marked {
+  &.MarkedHighlight,
+  &.MarkedEffect {
     .Note {
       &.MarkedValue {
         @include digitColor($marked-color);

@@ -135,9 +135,12 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         if (t.type === 'X-Wing') {
           console.log(t);
           digitClickedHandler(t.d, true);
+        } else if (t.type === 'X-Group') {
+          console.log(t);
+          digitClickedHandler(t.d, true);
         } else if (t.type === 'group') {
           console.log(
-            `group:${['naked', 'hidden'][t.cls]}-${t.n}:${t.domain}-${t[t.domain]}: [${[...t.cells]}],[${[...t.notes]}]`
+            `group:${['naked', 'hidden'][t.cls]}-${t.n}:${t.domain}-${t[t.domain]}: [${[...t.poses]}],[${[...t.notes]}]`
           );
           // deselect
           deselectHandler();
@@ -161,12 +164,31 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
 
   const marks = useMemo(() => {
     if (tip) {
-      if (tip.type === 'X-Wing') {
-        const { rows, cols, cells, d } = tip;
-        return { rows, cols, cells: { poses: cells, notes: new Set([d]) } };
-      } else if (tip.type === 'group') {
-        const { cells, notes } = tip;
-        return { [tip.domain + 's']: new Set([tip[tip.domain]]), cells: { poses: cells, notes } };
+      if (tip.type === 'group') {
+        const { cls, domain, poses, notes } = tip;
+        if (cls === 0) {
+          // naked
+          return { effect: { [domain + 's']: new Set([tip[domain]]) }, highlights: { poses, notes } };
+        } else if (cls === 1) {
+          // hidden
+          return { domain: { [domain + 's']: new Set([tip[domain]]) }, highlights: { poses, notes } };
+        }
+      } else if (tip.type === 'X-Wing') {
+        const { domain, rows, cols, poses, d } = tip;
+        if (domain === 'row') {
+          return { domain: { rows }, effect: { cols }, highlights: { poses, notes: new Set([d]) } };
+        } else if (domain === 'col') {
+          return { domain: { cols }, effect: { rows }, highlights: { poses, notes: new Set([d]) } };
+        }
+      } else if (tip.type === 'X-Group') {
+        const { domain, rows, cols, blocks, poses, d } = tip;
+        if (domain === 'row') {
+          return { domain: { rows }, effect: { cols, blocks }, highlights: { poses, notes: new Set([d]) } };
+        } else if (domain === 'col') {
+          return { domain: { cols }, effect: { rows, blocks }, highlights: { poses, notes: new Set([d]) } };
+        } else if (domain === 'block') {
+          return { domain: { blocks }, effect: { rows, cols }, highlights: { poses, notes: new Set([d]) } };
+        }
       }
     }
   }, [tip]);
