@@ -637,11 +637,11 @@ function* comb(n, k) {
   yield* combx(0, n, k);
 }
 
-function* findNGroupFromLinks(links, n, cls) {
+function* findNGroupFromLinks(links, n, order = 0) {
   const s = {};
   for (const link of links) {
-    const start = link[cls];
-    const end = link[(cls + 1) % 2];
+    const start = link[order];
+    const end = link[(order + 1) % 2];
     const v = s[start] || { start, ends: new Set() };
     v.ends.add(end);
     s[start] = v;
@@ -706,33 +706,33 @@ function* findNGroup(values, n, cls) {
   for (let r = 0; r < 9; r++) {
     const links = getCellsLinks(values, getRowCells(r));
     for (const group of findNGroupFromLinks(links, n, cls)) {
-      const cells = group[cls];
+      const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'row', row: r, cells, notes };
+      yield { cls, n, domain: 'row', row: r, poses, notes };
     }
   }
   // cols
   for (let c = 0; c < 9; c++) {
     const links = getCellsLinks(values, getColCells(c));
     for (const group of findNGroupFromLinks(links, n, cls)) {
-      const cells = group[cls];
+      const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'col', col: c, cells, notes };
+      yield { cls, n, domain: 'col', col: c, poses, notes };
     }
   }
   // blocks
   for (let b = 0; b < 9; b++) {
     const links = getCellsLinks(values, getBlockCells(b));
     for (const group of findNGroupFromLinks(links, n, cls)) {
-      const cells = group[cls];
+      const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'block', block: b, cells, notes };
+      yield { cls, n, domain: 'block', block: b, poses, notes };
     }
   }
 }
 
 export const findGroup = values => {
-  for (let n = 1; n <= 5; n++) {
+  for (let n = 1; n <= 8; n++) {
     // 0:naked group, 1: hidden group
     for (const cls of [0, 1]) {
       for (const group of findNGroup(values, n, cls)) {
@@ -749,7 +749,7 @@ export const eliminateGroup = group => curValues => {
   const values = copyValues(curValues);
   if (group.n === 1) {
     // place value
-    const [row, col] = [...group.cells][0];
+    const [row, col] = [...group.poses][0];
     const value = values[row][col];
     const d = [...group.notes][0];
     values[row][col] = { ...value, value: d };
@@ -767,7 +767,7 @@ export const eliminateGroup = group => curValues => {
     }
     otherCells = otherCells.filter(([row, col]) => {
       const value = values[row][col];
-      return !(typeof value.value === 'number' || group.cells.has(encodePos([row, col])));
+      return !(typeof value.value === 'number' || group.poses.has(encodePos([row, col])));
     });
     otherCells.forEach(([row, col]) => {
       const value = values[row][col];
@@ -779,7 +779,7 @@ export const eliminateGroup = group => curValues => {
   } else if (group.cls === 1) {
     // hidden
     // to eliminate other notes
-    const cells = [...group.cells].map(pos => decodePos(pos));
+    const cells = [...group.poses].map(pos => decodePos(pos));
     cells.forEach(([row, col]) => {
       const value = values[row][col];
       values[row][col] = {
@@ -820,13 +820,13 @@ function* scanNXwing(values, d, getCells, getOtherCells, yi) {
     }
 
     const s = res.xs.length;
-    const cells = new Set();
+    const poses = new Set();
     for (const x of res.xs) {
       for (const y of res.ys) {
         if (yi === 1) {
-          cells.add(encodePos([x, y]));
+          poses.add(encodePos([x, y]));
         } else {
-          cells.add(encodePos([y, x]));
+          poses.add(encodePos([y, x]));
         }
       }
     }
@@ -839,7 +839,7 @@ function* scanNXwing(values, d, getCells, getOtherCells, yi) {
     }
     for (const [x, y] of otherCells.filter(([x, y]) => {
       const { value } = values[x][y];
-      return !(typeof value === 'number' || cells.has(encodePos([x, y])));
+      return !(typeof value === 'number' || poses.has(encodePos([x, y])));
     })) {
       const { value } = values[x][y];
       if (value.has(d)) {
@@ -853,8 +853,9 @@ function* scanNXwing(values, d, getCells, getOtherCells, yi) {
       yield {
         name: `${s}-X-Wing`,
         domain: ['col', 'row'][yi],
+        [['cols', 'rows'][yi]]: new Set(res.xs),
         [['rows', 'cols'][yi]]: new Set(res.ys),
-        cells,
+        poses,
         d,
       };
     }
@@ -897,7 +898,132 @@ export const eliminateXWing = tip => curValues => {
   otherCells
     .filter(([row, col]) => {
       const value = values[row][col];
-      return !(typeof value.value === 'number' || tip.cells.has(encodePos([row, col])));
+      return !(typeof value.value === 'number' || tip.poses.has(encodePos([row, col])));
+    })
+    .forEach(([row, col]) => {
+      const value = values[row][col];
+      values[row][col] = {
+        ...value,
+        value: new Set([...value.value].filter(n => n !== tip.d)),
+      };
+    });
+
+  return values;
+};
+
+const getAToBLinks = (getCells, getEnd) => (values, d) => {
+  const links = [];
+  for (let a = 0; a < 9; a++) {
+    for (const [r, c] of getCells(a)) {
+      const { value } = values[r][c];
+      if (typeof value === 'number') {
+        continue;
+      }
+      if (value.has(d)) {
+        links.push([a, getEnd(r, c)]);
+      }
+    }
+  }
+  return links;
+};
+
+const getRowToColLinks = getAToBLinks(getRowCells, (r, c) => c);
+const getRowToBlockLinks = getAToBLinks(getRowCells, (r, c) => getCellBlock(r, c));
+const getColToBlockLinks = getAToBLinks(getColCells, (r, c) => getCellBlock(r, c));
+
+const getEncodedPosesForDigit = (values, d, cells) => {
+  const poses = [];
+  for (const [r, c] of cells) {
+    const { value } = values[r][c];
+    if (typeof value !== 'number' && value.has(d)) {
+      poses.push(encodePos([r, c]));
+    }
+  }
+  return poses;
+};
+
+function* findNXGroup(values, n) {
+  for (let d = 1; d <= 9; d++) {
+    // row->col
+    const rcLinks = getRowToColLinks(values, d);
+    for (const group of findNGroupFromLinks(rcLinks, n, 0)) {
+      const [rows, cols] = group;
+      const poses = [];
+      rows.forEach(r => poses.push(...getEncodedPosesForDigit(values, d, getRowCells(r))));
+      yield { name: `${n}-XRC-Group`, domain: 'row', effect: 'col', rows, cols, poses: new Set(poses), d };
+    }
+    // col->row
+    for (const group of findNGroupFromLinks(rcLinks, n, 1)) {
+      const [cols, rows] = group;
+      const poses = [];
+      cols.forEach(c => poses.push(...getEncodedPosesForDigit(values, d, getColCells(c))));
+      yield { name: `${n}-XCR-Group`, domain: 'col', effect: 'row', rows, cols, poses: new Set(poses), d };
+    }
+    // row->block, 1-xrb-group is claiming
+    const rbLinks = getRowToBlockLinks(values, d);
+    for (const group of findNGroupFromLinks(rbLinks, n, 0)) {
+      const [rows, blocks] = group;
+      const poses = [];
+      rows.forEach(c => poses.push(...getEncodedPosesForDigit(values, d, getRowCells(c))));
+      yield { name: `${n}-XRB-Group`, domain: 'row', effect: 'block', rows, blocks, poses: new Set(poses), d };
+    }
+    // block-row, 1-xbr-group is pointing
+    for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
+      const [blocks, rows] = group;
+      const poses = [];
+      blocks.forEach(b => poses.push(...getEncodedPosesForDigit(values, d, getBlockCells(b))));
+      yield { name: `${n}-XBR-Group`, domain: 'block', effect: 'row', rows, blocks, poses: new Set(poses), d };
+    }
+
+    // col->block, 1-xcb-group is claiming
+    const cbLinks = getColToBlockLinks(values, d);
+    for (const group of findNGroupFromLinks(cbLinks, n, 0)) {
+      const [cols, blocks] = group;
+      const poses = [];
+      cols.forEach(c => poses.push(...getEncodedPosesForDigit(values, d, getColCells(c))));
+      yield { name: `${n}-XCB-Group`, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
+    }
+
+    // block-col, 1-xbc-group is pointing
+    for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
+      const [blocks, cols] = group;
+      const poses = [];
+      blocks.forEach(b => poses.push(...getEncodedPosesForDigit(values, d, getBlockCells(b))));
+      yield { name: `${n}-XBC-Group`, domain: 'block', effect: 'row', cols, blocks, poses: new Set(poses), d };
+    }
+  }
+}
+
+export const findXGroup = values => {
+  for (let n = 1; n <= 8; n++) {
+    for (const group of findNXGroup(values, n)) {
+      group.type = 'X-Group';
+      return group;
+    }
+  }
+};
+
+const eliminateXGroup = tip => curValues => {
+  const values = copyValues(curValues);
+  const otherCells = [];
+  if (tip.effect === 'row') {
+    for (const row of tip.rows) {
+      otherCells.push(...getRowCells(row));
+    }
+  } else if (tip.effect === 'col') {
+    for (const col of tip.cols) {
+      otherCells.push(...getColCells(col));
+    }
+  } else if (tip.effect === 'block') {
+    for (const block of tip.blocks) {
+      otherCells.push(...getBlockCells(block));
+    }
+  }
+
+  otherCells
+    .filter(([row, col]) => {
+      const value = values[row][col];
+      return !(typeof value.value === 'number' || tip.poses.has(encodePos([row, col])));
     })
     .forEach(([row, col]) => {
       const value = values[row][col];
@@ -911,7 +1037,8 @@ export const eliminateXWing = tip => curValues => {
 };
 
 export const findTip = values => {
-  return findGroup(values) || findXWing(values);
+  // return findGroup(values) || findXWing(values) || findXGroup(values);
+  return findGroup(values) || findXGroup(values);
 };
 
 export const handleTip = tip => curValues => {
@@ -919,5 +1046,7 @@ export const handleTip = tip => curValues => {
     return eliminateGroup(tip)(curValues);
   } else if (tip.type === 'X-Wing') {
     return eliminateXWing(tip)(curValues);
+  } else if (tip.type === 'X-Group') {
+    return eliminateXGroup(tip)(curValues);
   }
 };
