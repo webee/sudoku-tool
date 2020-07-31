@@ -659,7 +659,7 @@ export const findGroup = values => {
       for (const group of findNGroup(values, n, cls)) {
         // only return the first group
         group.type = 'group';
-        group.name = `${n}-group`;
+        group.name = ['naked', 'hidden'][cls] + `-${n}-group`;
         return group;
       }
     }
