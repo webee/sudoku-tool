@@ -1,0 +1,15 @@
+{
+  "short_name": "SudokuTool",
+  "name": "a Sudoku game tool",
+  "icons": [
+    {
+      "src": "sudoku.png",
+      "type": "image/png",
+      "sizes": "319x320"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
