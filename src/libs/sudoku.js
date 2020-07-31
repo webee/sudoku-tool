@@ -908,7 +908,6 @@ function* findNXGroup(values, n) {
       yield { name, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
     }
 
-    console.log(cbLinks);
     // block-col, 1-xbc-group is pointing
     for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
       const [blocks, cols] = group;
