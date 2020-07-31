@@ -1,3 +1,5 @@
+import { findNGroupFromLinks } from './utils';
+
 const cellToBlockMapping = [
   [0, 0, 0, 1, 1, 1, 2, 2, 2],
   [0, 0, 0, 1, 1, 1, 2, 2, 2],
@@ -602,87 +604,6 @@ export const claiming = curValues => {
   return values;
 };
 
-// sets
-// const unionSets = (...sets) => {
-//   const res = new Set();
-//   for (const s of sets) {
-//     s.forEach(res.add, res);
-//   }
-//   return res;
-// };
-
-function* combx(d, n, k) {
-  if (n < k) {
-  } else if (k === 1) {
-    for (let i = d; i < n + d; i++) {
-      yield [i];
-    }
-  } else if (n === k) {
-    const res = [];
-    for (let i = d; i < n + d; i++) {
-      res.push(i);
-    }
-    yield res;
-  } else {
-    // with 0
-    for (const res of combx(d + 1, n - 1, k - 1)) {
-      yield [d, ...res];
-    }
-    // without 0
-    yield* combx(d + 1, n - 1, k);
-  }
-}
-
-function* comb(n, k) {
-  yield* combx(0, n, k);
-}
-
-function* findNGroupFromLinks(links, n, order = 0) {
-  const s = {};
-  for (const link of links) {
-    const start = link[order];
-    const end = link[(order + 1) % 2];
-    const v = s[start] || { start, ends: new Set() };
-    v.ends.add(end);
-    s[start] = v;
-  }
-  const points = Object.values(s);
-  if (points.length <= n) {
-    // only return group if count(starts) > n
-    return;
-  }
-
-  for (const idxes of comb(points.length, n)) {
-    // check
-    const starts = new Set();
-    const ends = new Set();
-    for (const idx of idxes) {
-      const point = points[idx];
-      starts.add(point.start);
-      point.ends.forEach(ends.add, ends);
-      if (ends.size > n) {
-        break;
-      }
-    }
-    if (ends.size === n) {
-      let cleared = true;
-      // check if group is cleared
-      for (const p of points.filter(p => !starts.has(p.start))) {
-        if ([...p.ends].filter(e => !ends.has(e)).length < p.ends.size) {
-          // other starts has end in ends
-          // need clear
-          cleared = false;
-          break;
-        }
-      }
-
-      if (!cleared) {
-        yield [starts, ends];
-      }
-    }
-  }
-}
-
 export const encodePos = pos => `${pos[0]}${pos[1]}`;
 export const decodePos = pos => [parseInt(pos[0]), parseInt(pos[1])];
 
@@ -965,14 +886,16 @@ function* findNXGroup(values, n) {
       const [rows, blocks] = group;
       const poses = [];
       rows.forEach(c => poses.push(...getEncodedPosesForDigit(values, d, getRowCells(c))));
-      yield { name: `${n}-XRB-Group`, domain: 'row', effect: 'block', rows, blocks, poses: new Set(poses), d };
+      const name = n === 1 ? 'claiming' : `${n}-XRB-Group`;
+      yield { name, domain: 'row', effect: 'block', rows, blocks, poses: new Set(poses), d };
     }
     // block-row, 1-xbr-group is pointing
     for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
       const [blocks, rows] = group;
       const poses = [];
       blocks.forEach(b => poses.push(...getEncodedPosesForDigit(values, d, getBlockCells(b))));
-      yield { name: `${n}-XBR-Group`, domain: 'block', effect: 'row', rows, blocks, poses: new Set(poses), d };
+      const name = n === 1 ? 'pointing' : `${n}-XBR-Group`;
+      yield { name, domain: 'block', effect: 'row', rows, blocks, poses: new Set(poses), d };
     }
 
     // col->block, 1-xcb-group is claiming
@@ -981,15 +904,18 @@ function* findNXGroup(values, n) {
       const [cols, blocks] = group;
       const poses = [];
       cols.forEach(c => poses.push(...getEncodedPosesForDigit(values, d, getColCells(c))));
-      yield { name: `${n}-XCB-Group`, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
+      const name = n === 1 ? 'claiming' : `${n}-XCB-Group`;
+      yield { name, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
     }
 
+    console.log(cbLinks);
     // block-col, 1-xbc-group is pointing
     for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
       const [blocks, cols] = group;
       const poses = [];
       blocks.forEach(b => poses.push(...getEncodedPosesForDigit(values, d, getBlockCells(b))));
-      yield { name: `${n}-XBC-Group`, domain: 'block', effect: 'row', cols, blocks, poses: new Set(poses), d };
+      const name = n === 1 ? 'pointing' : `${n}-XBC-Group`;
+      yield { name, domain: 'block', effect: 'row', cols, blocks, poses: new Set(poses), d };
     }
   }
 }

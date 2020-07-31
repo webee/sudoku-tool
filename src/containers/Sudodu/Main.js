@@ -137,7 +137,6 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
           digitClickedHandler(t.d, true);
         } else if (t.type === 'X-Group') {
           console.log(t);
-          digitClickedHandler(t.d, true);
         } else if (t.type === 'group') {
           console.log(
             `group:${['naked', 'hidden'][t.cls]}-${t.n}:${t.domain}-${t[t.domain]}: [${[...t.poses]}],[${[...t.notes]}]`
