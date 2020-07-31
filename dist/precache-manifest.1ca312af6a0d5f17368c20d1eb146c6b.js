@@ -1,11 +1,11 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "dcaf2256739ea69f3a36bbc83421858b",
+    "revision": "e5a9a6f567454218247b51dc727e15c8",
     "url": "/sudoku-game/index.html"
   },
   {
-    "revision": "63a0928d66c142a0b731",
-    "url": "/sudoku-game/static/css/main.826bf183.chunk.css"
+    "revision": "ac5f1c47042873b6a337",
+    "url": "/sudoku-game/static/css/main.4cd8462d.chunk.css"
   },
   {
     "revision": "85f010b18ab358dbf4f6",
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/sudoku-game/static/js/2.e09d607a.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "63a0928d66c142a0b731",
-    "url": "/sudoku-game/static/js/main.e229899e.chunk.js"
+    "revision": "ac5f1c47042873b6a337",
+    "url": "/sudoku-game/static/js/main.5ea65c7e.chunk.js"
   },
   {
     "revision": "4611a3462eeeb33518ca",
