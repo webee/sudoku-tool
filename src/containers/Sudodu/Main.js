@@ -28,9 +28,9 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
 
   // calculated states
   const cells = sudoku.cells;
-  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos), [activePos, sudoku]);
-  const availablePositions = useMemo(() => sudoku.calcAvailablePositions(activeVal), [activeVal, sudoku]);
-  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(), [sudoku]);
+  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos, cells), [activePos, sudoku, cells]);
+  const availablePositions = useMemo(() => sudoku.calcAvailablePositions(activeVal, cells), [activeVal, sudoku, cells]);
+  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(cells), [sudoku, cells]);
 
   // handlers
   const cellClickedHandler = useCallback(
@@ -113,16 +113,8 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
     sudoku.autoNote();
   }, [sudoku]);
 
-  const autoPlaceHandler = useCallback(() => {
-    sudoku.autoPlace();
-  }, [sudoku]);
-
-  const pointingHandler = useCallback(() => {
-    sudoku.pointing();
-  }, [sudoku]);
-
-  const claimingHandler = useCallback(() => {
-    sudoku.claiming();
+  const autoPlacePointingClaimingHandler = useCallback(() => {
+    sudoku.autoPlacePointingClaiming();
   }, [sudoku]);
 
   const tipHandler = useCallback(() => {
@@ -161,6 +153,19 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       }
     },
     [activePos]
+  );
+
+  const moveActiveVal = useCallback(
+    d => {
+      if (activeVal) {
+        console.log('xxxxxxxxx', d);
+        setActiveState(({ val: curVal }) => {
+          const val = ((curVal - 1 + d + 9) % 9) + 1;
+          return { pos: null, val };
+        });
+      }
+    },
+    [activeVal]
   );
 
   const marks = useMemo(() => {
@@ -210,20 +215,28 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         } else {
           toggleIsNotingHandler();
         }
+      } else if (e.key === 'b') {
+        if (!activeVal && !activePos) {
+          cellClickedHandler(getPosition(4, 4));
+        }
       } else if (e.key === 'd') {
         deselectHandler();
       } else if (e.key === 't') {
         tipHandler();
       } else if (e.key === 'p') {
-        autoPlaceHandler();
+        autoPlacePointingClaimingHandler();
       } else if (e.key === 'h' || e.key === 'ArrowLeft') {
         moveActivePos(0, -1);
+        moveActiveVal(-1);
       } else if (e.key === 'l' || e.key === 'ArrowRight') {
         moveActivePos(0, 1);
+        moveActiveVal(1);
       } else if (e.key === 'j' || e.key === 'ArrowDown') {
         moveActivePos(1, 0);
+        moveActiveVal(-1);
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
         moveActivePos(-1, 0);
+        moveActiveVal(1);
       } else {
         return;
       }
@@ -236,10 +249,11 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
     };
   }, [
     autoNoteHandler,
-    autoPlaceHandler,
+    autoPlacePointingClaimingHandler,
     deselectHandler,
     digitClickedHandler,
     moveActivePos,
+    moveActiveVal,
     startNewGameHandler,
     tipHandler,
     toggleIsNotingHandler,
@@ -301,9 +315,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
           toggleShowAvailHandler={toggleShowAvailHandler}
           toggleIsNotingHandler={toggleIsNotingHandler}
           autoNoteHandler={autoNoteHandler}
-          autoPlaceHandler={autoPlaceHandler}
-          pointingHandler={pointingHandler}
-          claimingHandler={claimingHandler}
+          autoPlacePointingClaimingHandler={autoPlacePointingClaimingHandler}
           tip={tip}
           tipHandler={tipHandler}
         />

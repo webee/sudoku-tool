@@ -1,12 +1,4 @@
-import {
-  flattenPositions,
-  getRelatedPositions,
-  getRelatedBlockPositions,
-  getRelatedRowPositions,
-  getRelatedColPositions,
-  mapPositionsTo,
-  rowColToBlock,
-} from './position';
+import { flattenPositions, getRelatedPositions, mapPositionsTo, rowColToBlock } from './position';
 import * as positions from './position';
 import { findNGroupFromLinks, console } from './utils';
 
@@ -85,12 +77,16 @@ export class Sudoku {
   }
 
   setPuzzle(puzzle) {
-    this.setCurCells(Sudoku.parse(puzzle));
+    this._setCells(Sudoku.parse(puzzle));
     this.puzzle = puzzle;
   }
 
   get cells() {
     return this._cells;
+  }
+
+  _setCells(cells) {
+    this._cells = cells;
   }
 
   get initialPuzzle() {
@@ -183,14 +179,6 @@ export class Sudoku {
     return res.join('');
   }
 
-  getCurCells() {
-    return this._cells;
-  }
-
-  setCurCells(cells) {
-    this._cells = cells;
-  }
-
   // calcuate available digits for cell at postion <pos>.
   calcAvailableDigits(pos) {
     const res = new Set([1, 2, 3, 4, 5, 6, 7, 8, 9]);
@@ -236,7 +224,7 @@ export class Sudoku {
         res[pos.row][pos.col] = false;
         if (value === d) {
           // clear
-          for (const [row, col] of getRelatedPositions(pos)) {
+          for (const { row, col } of getRelatedPositions(pos)) {
             res[row][col] = false;
           }
         }
@@ -277,35 +265,35 @@ export class Sudoku {
     return cells;
   }
 
-  getCell({ row, col }) {
+  getCurCells() {
     if (this._txCells) {
       // in transaction
-      return this._txCells[row][col];
+      return this._txCells;
     }
+    return this._cells;
+  }
+
+  getCell({ row, col }) {
     return this.getCurCells()[row][col];
   }
 
-  _startTx(tx) {
+  _startTx() {
     if (!this._txCells) {
       this._txCells = this.getCurCells();
     }
-    tx((pos, value) => {
-      this._txCells = this._txSetCellValue(this._txCells, pos, value);
-    });
   }
 
   _commit() {
-    if (this._txCells && this._txCells !== this.getCurCells()) {
-      this.setCurCells(this._txCells);
+    if (this._txCells && this._txCells !== this.cells) {
+      this._setCells(this._txCells);
       this._txCells = null;
       this._notify();
     }
   }
 
   setCellValue(pos, value) {
-    this._startTx(setPosValue => {
-      setPosValue(pos, value);
-    });
+    this._startTx();
+    this._txCells = this._txSetCellValue(this._txCells, pos, value);
   }
 
   // actions
@@ -314,16 +302,16 @@ export class Sudoku {
     NOTE: 'NOTE',
     UPDATE_CELL_VALUE: 'UPDATE_CELL_VALUE',
     AUTO_NOTE: 'AUTO_NOTE',
+    AUTO_POINTING: 'AUTO_POINTING',
+    AUTO_CLAIMING: 'AUTO_CLAIMING',
     AUTO_PLACE: 'AUTO_PLACE',
-    POINTING: 'POINTING',
-    CLAIMING: 'CLAIMING',
+    AUTO_PLACE_POINTING_CLAIMING: 'AUTO_PLACE_POINTING_CLAIMING',
     ELIMINATE_GROUP: 'ELIMINATE_GROUP',
-    ELIMINATE_XWING: 'eliminate_XWING',
     ELIMINATE_XGROUP: 'ELIMINATE_XGROUP',
     HANDLE_TIP: 'HANDLE_TIP',
   };
 
-  _handlActions(action, payload = {}, { commit = true }) {
+  _handlActions(action, payload = {}) {
     switch (action) {
       case Sudoku.actions.RESET:
         this.setPuzzle(this.puzzle);
@@ -337,20 +325,20 @@ export class Sudoku {
       case Sudoku.actions.AUTO_PLACE:
         this._autoPlace();
         break;
+      case Sudoku.actions.AUTO_POINTING:
+        this._autoPointing();
+        break;
+      case Sudoku.actions.AUTO_CLAIMING:
+        this._autoClaiming();
+        break;
+      case Sudoku.actions.AUTO_PLACE_POINTING_CLAIMING:
+        this._autoPlacePointingClaiming();
+        break;
       case Sudoku.actions.UPDATE_CELL_VALUE:
         this._updateCellValue(payload);
         break;
-      case Sudoku.actions.POINTING:
-        this._pointing();
-        break;
-      case Sudoku.actions.CLAIMING:
-        this._claiming();
-        break;
       case Sudoku.actions.ELIMINATE_GROUP:
         this._eliminateGroup(payload);
-        break;
-      case Sudoku.actions.ELIMINATE_XWING:
-        this._eliminateXWing(payload);
         break;
       case Sudoku.actions.ELIMINATE_XGROUP:
         this._eliminateXGroup(payload);
@@ -361,14 +349,26 @@ export class Sudoku {
       default:
         break;
     }
-    if (commit) {
-      this._commit();
-    }
   }
 
-  dispatch(action, payload, options = {}) {
-    console.log('[action]', action, payload, options);
+  dispatch(action, payload, options) {
+    options = { commit: true, log: true, ...(options || {}) };
+    if (options.log) {
+      console.group(`[${action}]`);
+      payload && console.log('->payload:', payload);
+      options && console.log('->options:', options);
+    }
+
+    this._startTx();
     this._handlActions(action, payload, options);
+
+    if (options.log) {
+      console.groupEnd();
+    }
+
+    if (options.commit) {
+      this._commit();
+    }
   }
 
   reset() {
@@ -387,24 +387,24 @@ export class Sudoku {
     this.dispatch(Sudoku.actions.AUTO_NOTE);
   }
 
+  autoPlacePointingClaiming() {
+    this.dispatch(Sudoku.actions.AUTO_PLACE_POINTING_CLAIMING);
+  }
+
   autoPlace() {
     this.dispatch(Sudoku.actions.AUTO_PLACE);
   }
 
-  pointing() {
-    this.dispatch(Sudoku.actions.POINTING);
+  autoPointing() {
+    this.dispatch(Sudoku.actions.AUTO_POINTING);
   }
 
-  claiming() {
-    this.dispatch(Sudoku.actions.CLAIMING);
+  autoClaiming() {
+    this.dispatch(Sudoku.actions.AUTO_CLAIMING);
   }
 
   eliminateGroup(group) {
     this.dispatch(Sudoku.actions.ELIMINATE_GROUP, { group });
-  }
-
-  eliminateXWing(tip) {
-    this.dispatch(Sudoku.actions.ELIMINATE_XWING, { tip });
   }
 
   eliminateXGroup(tip) {
@@ -425,64 +425,77 @@ export class Sudoku {
 
   _autoNote() {
     for (const pos of flattenPositions) {
-      this.dispatch(Sudoku.actions.NOTE, { pos }, { commit: false });
+      this.dispatch(Sudoku.actions.NOTE, { pos }, { commit: false, log: false });
+    }
+  }
+
+  _autoPlacePointingClaiming() {
+    try {
+      let count = 0;
+      do {
+        count = 0;
+        count += this._autoPlace();
+        this._commit();
+        count += this._autoPointing();
+        this._commit();
+        count += this._autoClaiming();
+        this._commit();
+      } while (count > 0);
+    } catch (error) {
+      console.log(error);
     }
   }
 
   // auto place naked/hidden single value
   _autoPlace() {
-    let placed = true;
+    let count = 0;
+    let placed = false;
 
-    console.group('[place]');
-    while (placed) {
+    console.group('[auto place]');
+    do {
       placed = false;
-      for (const pos of flattenPositions) {
-        const cell = this.getCell(pos);
-        if (!Notes.is(cell.value)) {
+      // 0:naked, 1:hidden
+      for (const cls of [0, 1]) {
+        for (const group of findNGroup(this.getCurCells(), 1, cls)) {
+          this.dispatch(Sudoku.actions.ELIMINATE_GROUP, { group }, { commit: false });
+          count++;
+          placed = true;
+          break;
+        }
+        /* use current cells for every find */
+        if (placed) {
           continue;
         }
-
-        // note cell
-        const notes = cell.value;
-        if (Notes.size(notes) === 1) {
-          placed = true;
-          // 1. naked single
-          const note = Notes.first(notes);
-          this.setCellValue(pos, note);
-          console.log(`naked single: ${note}@${pos}`);
-        } else {
-          // 1. hidden single/unique value of row, col or block;
-          const uv =
-            this.findUniqueNote(notes, getRelatedRowPositions(pos)) ||
-            this.findUniqueNote(notes, getRelatedColPositions(pos)) ||
-            this.findUniqueNote(notes, getRelatedBlockPositions(pos));
-          if (uv) {
-            placed = true;
-            this.setCellValue(pos, uv);
-            console.log(`hidden single: ${uv}@${pos}`);
-          }
-        }
       }
-    }
-
+    } while (placed);
     console.groupEnd();
+
+    return count;
   }
 
-  // find unique note of notes to cells.
-  findUniqueNote(notes, positions) {
-    let remNotes = new Set(Notes.entries(notes));
-    for (const pos of positions) {
-      const { value } = this.getCell(pos);
-      if (!Notes.is(value)) {
-        continue;
-      }
-      for (const n of Notes.entries(value)) {
-        remNotes.delete(n);
-      }
+  // block eliminate row/col
+  _autoPointing() {
+    let count = 0;
+    console.group('[auto pointing]');
+    for (const tip of findNXGroup(this.getCurCells(), 1, { br: true, bc: true })) {
+      console.log(tip);
+      this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, { tip }, { commit: false });
+      count++;
     }
-    if (remNotes.size === 1) {
-      return [...remNotes][0];
+    console.groupEnd();
+    return count;
+  }
+
+  // row/col eliminate block
+  _autoClaiming() {
+    let count = 0;
+    console.group('[auto claiming]');
+    for (const tip of findNXGroup(this.getCurCells(), 1, { rb: true, cb: true })) {
+      this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, { tip }, { commit: false });
+      count++;
     }
+    console.groupEnd();
+    return count;
   }
 
   _updateCellValue({ isNoting, pos, value }) {
@@ -526,204 +539,6 @@ export class Sudoku {
     this.setCellValue(pos, notes);
   }
 
-  // block eliminate row/col
-  _pointing() {
-    console.group('[pointing]');
-    for (const b of positions.blocks) {
-      // {pos:[row, col], to:null} / {to:[row|col],row|col,n} / false
-      const results = {};
-      for (const pos of positions.getBlockFlattenPositions(b)) {
-        const { value } = this.getCell(pos);
-        if (!Notes.is(value)) {
-          continue;
-        }
-        for (const n of Notes.entries(value)) {
-          if (!results.hasOwnProperty(n)) {
-            results[n] = { pos, to: null };
-            continue;
-          }
-          if (results[n] === false) {
-            continue;
-          }
-          switch (results[n].to) {
-            case 'row':
-              if (results[n].row !== pos.row) {
-                results[n] = false;
-              }
-              break;
-            case 'col':
-              if (results[n].col !== pos.col) {
-                results[n] = false;
-              }
-              break;
-            default:
-              if (results[n].pos.row === pos.row) {
-                results[n] = { to: 'row', row: pos.row, n };
-              } else if (results[n].pos.col === pos.col) {
-                results[n] = { to: 'col', col: pos.col, n };
-              } else {
-                results[n] = false;
-              }
-              break;
-          }
-        }
-      }
-      // results
-      for (const res of Object.values(results)) {
-        if (res === false || !res.to) {
-          continue;
-        }
-        if (res.to === 'row') {
-          // clear r.row for r.n
-          for (const col of positions.cols) {
-            const pos = positions.getPosition(res.row, col);
-            const { value } = this.getCell(pos);
-            if (!Notes.is(value)) {
-              continue;
-            }
-            if (b === rowColToBlock(res.row, col)) {
-              continue;
-            }
-
-            if (!Notes.has(value, res.n)) {
-              continue;
-            }
-
-            console.log(`block:${b}=>row:${res.row}, n:${res.n}, col:${col}`);
-
-            this.setCellValue(pos, Notes.delete(value, res.n));
-          }
-        } else if (res.to === 'col') {
-          // clear r.col for r.n
-          for (const row of positions.rows) {
-            const pos = positions.getPosition(row, res.col);
-            const { value } = this.getCell(pos);
-            if (!Notes.is(value)) {
-              continue;
-            }
-            if (b === rowColToBlock(row, res.col)) {
-              continue;
-            }
-
-            if (!Notes.has(value, res.n)) {
-              continue;
-            }
-
-            console.log(`block:${b}=>col:${res.col}, n:${res.n}, row:${row}`);
-
-            this.setCellValue(pos, Notes.delete(value, res.n));
-          }
-        }
-      }
-    }
-    console.groupEnd();
-  }
-
-  // row/col eliminate block
-  _claiming() {
-    console.group('[claiming]');
-    // rows
-    for (const row of positions.rows) {
-      // {block, n} / false
-      const results = {};
-      for (const col of positions.cols) {
-        const pos = positions.getPosition(row, col);
-        const { value } = this.getCell(pos);
-        if (!Notes.is(value)) {
-          continue;
-        }
-        for (const n of Notes.entries(value)) {
-          const block = rowColToBlock(row, col);
-          if (!results.hasOwnProperty(n)) {
-            results[n] = { block, n };
-            continue;
-          }
-          if (results[n] === false) {
-            continue;
-          }
-          if (results[n].block !== block) {
-            results[n] = false;
-          }
-        }
-      }
-      // results
-      for (const res of Object.values(results)) {
-        if (res === false) {
-          continue;
-        }
-
-        for (const pos of positions.getBlockFlattenPositions(res.block)) {
-          const { value } = this.getCell(pos);
-          if (!Notes.is(value)) {
-            continue;
-          }
-
-          if (row === pos.row) {
-            continue;
-          }
-
-          if (!Notes.has(value, res.n)) {
-            continue;
-          }
-          console.log(`row:${row}=>block:${res.block}, n:${res.n}, row:${pos.row}, col:${pos.col}`);
-
-          this.setCellValue(pos, Notes.delete(value, res.n));
-        }
-      }
-    }
-    // cols
-    for (const col of positions.cols) {
-      // {block, n} / false
-      const results = {};
-      for (const row of positions.rows) {
-        const pos = positions.getPosition(row, col);
-        const { value } = this.getCell(pos);
-        if (!Notes.is(value)) {
-          continue;
-        }
-        for (const n of Notes.entries(value)) {
-          const block = rowColToBlock(row, col);
-          if (!results.hasOwnProperty(n)) {
-            results[n] = { block, n };
-            continue;
-          }
-          if (results[n] === false) {
-            continue;
-          }
-          if (results[n].block !== block) {
-            results[n] = false;
-          }
-        }
-      }
-      // results
-      for (const res of Object.values(results)) {
-        if (res === false) {
-          continue;
-        }
-
-        for (const pos of positions.getBlockFlattenPositions(res.block)) {
-          const { value } = this.getCell(pos);
-          if (!Notes.is(value)) {
-            continue;
-          }
-
-          if (col === pos.col) {
-            continue;
-          }
-
-          if (!Notes.has(value, res.n)) {
-            continue;
-          }
-
-          console.log(`col:${col}=>block:${res.block}, n:${res.n}, row:${pos.row}, col:${pos.col}`);
-
-          this.setCellValue(pos, Notes.delete(value, res.n));
-        }
-      }
-    }
-    console.groupEnd();
-  }
-
   findGroup() {
     for (let n = 1; n <= 8; n++) {
       // 0:naked group, 1: hidden group
@@ -731,7 +546,6 @@ export class Sudoku {
         for (const group of findNGroup(this.getCurCells(), n, cls)) {
           // only return the first group
           group.type = 'group';
-          group.name = ['naked', 'hidden'][cls] + `-${n}-group`;
           return group;
         }
       }
@@ -774,34 +588,6 @@ export class Sudoku {
     }
   }
 
-  findXWing() {
-    for (const res of searchXWing(this.getCurCells())) {
-      res.type = 'X-Wing';
-      return res;
-    }
-  }
-
-  _eliminateXWing({ tip }) {
-    const otherPositions = [];
-    if (tip.domain === 'row') {
-      for (const col of tip.cols) {
-        otherPositions.push(...positions.getColPositions(col));
-      }
-    } else if (tip.domain === 'col') {
-      for (const row of tip.rows) {
-        otherPositions.push(...positions.getRowPositions(row));
-      }
-    }
-    otherPositions
-      .filter(pos => {
-        const { value } = this.getCell(pos);
-        return !(!Notes.is(value) || tip.poses.has(pos));
-      })
-      .forEach(pos => {
-        const { value } = this.getCell(pos);
-        this.setCellValue(pos, Notes.delete(value, tip.d));
-      });
-  }
   findXGroup() {
     for (let n = 1; n <= 8; n++) {
       for (const group of findNXGroup(this.getCurCells(), n)) {
@@ -873,7 +659,7 @@ function* findNGroup(cells, n, cls) {
     for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'row', row: row, poses, notes };
+      yield { cls, n, domain: 'row', row: row, poses, notes, name: ['naked', 'hidden'][cls] + `-${n}-group` };
     }
   }
   // cols
@@ -882,7 +668,7 @@ function* findNGroup(cells, n, cls) {
     for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'col', col: col, poses, notes };
+      yield { cls, n, domain: 'col', col: col, poses, notes, name: ['naked', 'hidden'][cls] + `-${n}-group` };
     }
   }
   // blocks
@@ -891,92 +677,8 @@ function* findNGroup(cells, n, cls) {
     for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'block', block: block, poses, notes };
+      yield { cls, n, domain: 'block', block: block, poses, notes, name: ['naked', 'hidden'][cls] + `-${n}-group` };
     }
-  }
-}
-
-function* scanNXwing(cells, d, getPositions, getOtherPositions, yi) {
-  const dist = {};
-  for (let x = 0; x < 9; x++) {
-    const ys = [];
-    getPositions(x).forEach(pos => {
-      const y = pos[yi];
-      const { value } = cells[pos.row][pos.col];
-      if (!Notes.is(value)) {
-        return;
-      }
-      if (Notes.has(value, d)) {
-        ys.push(y);
-      }
-    });
-    if (ys.length > 1) {
-      const key = ys.join('');
-      const res = dist[key] || { xs: [], ys };
-      dist[key] = res;
-      res.xs.push(x);
-    }
-  }
-  // handle dist
-  for (const res of Object.values(dist)) {
-    if (res.xs.length !== res.ys.length) {
-      continue;
-    }
-
-    const s = res.xs.length;
-    const poses = new Set();
-    for (const x of res.xs) {
-      for (const y of res.ys) {
-        if (yi === 'col') {
-          poses.add(positions.getPosition(x, y));
-        } else {
-          poses.add(positions.getPosition(y, x));
-        }
-      }
-    }
-
-    let cleared = true;
-    // check if x-wing is cleared
-    const otherPositions = [];
-    for (const y of res.ys) {
-      otherPositions.push(...getOtherPositions(y));
-    }
-    for (const pos of otherPositions.filter(pos => {
-      const { value } = cells[pos.row][pos.col];
-      return !(!Notes.is(value) || poses.has(pos));
-    })) {
-      const { value } = cells[pos.row][pos.col];
-      if (Notes.has(value, d)) {
-        // need clear
-        cleared = false;
-        break;
-      }
-    }
-
-    if (!cleared) {
-      yield {
-        name: `${s}-X-Wing`,
-        domain: yi,
-        [{ row: 'cols', col: 'rows' }[yi]]: new Set(res.xs),
-        [{ col: 'rows', row: 'cols' }[yi]]: new Set(res.ys),
-        poses,
-        d,
-      };
-    }
-  }
-}
-
-function* searchNXWing(cells, d) {
-  // rows
-  yield* scanNXwing(cells, d, positions.getRowPositions, positions.getColPositions, 'col');
-
-  // cols
-  yield* scanNXwing(cells, d, positions.getColPositions, positions.getRowPositions, 'row');
-}
-
-function* searchXWing(cells) {
-  for (let d = 1; d <= 9; d++) {
-    yield* searchNXWing(cells, d);
   }
 }
 
@@ -1011,82 +713,101 @@ const getPositionsForDigit = (cells, d, positions) => {
   return poses;
 };
 
-function* findNXGroup(cells, n) {
+function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true, cb: true, bc: true }) {
   for (let d = 1; d <= 9; d++) {
-    // row->col
-    const rcLinks = getRowToColLinks(cells, d);
-    for (const group of findNGroupFromLinks(rcLinks, n, 0)) {
-      const [rows, cols] = group;
-      const poses = [];
-      let isXWing = true;
-      for (const row of rows) {
-        const rowPositions = getPositionsForDigit(cells, d, positions.getRowPositions(row));
-        if (rowPositions.length !== n) {
-          isXWing = false;
+    if (types.rc || types.cr) {
+      // row->col
+      const rcLinks = getRowToColLinks(cells, d);
+      if (types.rc) {
+        for (const group of findNGroupFromLinks(rcLinks, n, 0)) {
+          const [rows, cols] = group;
+          const poses = [];
+          let isXWing = true;
+          for (const row of rows) {
+            const rowPositions = getPositionsForDigit(cells, d, positions.getRowPositions(row));
+            if (rowPositions.length !== n) {
+              isXWing = false;
+            }
+            poses.push(...rowPositions);
+          }
+          const name = isXWing ? `${n}-X-Wing` : `${n}-XRC-Group`;
+          yield { name, domain: 'row', effect: 'col', rows, cols, poses: new Set(poses), d };
         }
-        poses.push(...rowPositions);
       }
-      const name = isXWing ? `${n}-X-Wing` : `${n}-XRC-Group`;
-      yield { name, domain: 'row', effect: 'col', rows, cols, poses: new Set(poses), d };
-    }
-    // col->row
-    for (const group of findNGroupFromLinks(rcLinks, n, 1)) {
-      const [cols, rows] = group;
-      const poses = [];
-      let isXWing = true;
-      for (const col of cols) {
-        const colPositions = getPositionsForDigit(cells, d, positions.getColPositions(col));
-        if (colPositions.length !== n) {
-          isXWing = false;
+      // col->row
+      if (types.cr) {
+        for (const group of findNGroupFromLinks(rcLinks, n, 1)) {
+          const [cols, rows] = group;
+          const poses = [];
+          let isXWing = true;
+          for (const col of cols) {
+            const colPositions = getPositionsForDigit(cells, d, positions.getColPositions(col));
+            if (colPositions.length !== n) {
+              isXWing = false;
+            }
+            poses.push(...getPositionsForDigit(cells, d, positions.getColPositions(col)));
+          }
+          const name = isXWing ? `${n}-X-Wing` : `${n}-XCR-Group`;
+          yield { name, domain: 'col', effect: 'row', rows, cols, poses: new Set(poses), d };
         }
-        poses.push(...getPositionsForDigit(cells, d, positions.getColPositions(col)));
       }
-      const name = isXWing ? `${n}-X-Wing` : `${n}-XCR-Group`;
-      yield { name, domain: 'col', effect: 'row', rows, cols, poses: new Set(poses), d };
-    }
-    // row->block, 1-xrb-group is claiming
-    const rbLinks = getRowToBlockLinks(cells, d);
-    for (const group of findNGroupFromLinks(rbLinks, n, 0)) {
-      const [rows, blocks] = group;
-      const poses = [];
-      for (const row of rows) {
-        poses.push(...getPositionsForDigit(cells, d, positions.getRowPositions(row)));
-      }
-      const name = n === 1 ? 'claiming' : `${n}-XRB-Group`;
-      yield { name, domain: 'row', effect: 'block', rows, blocks, poses: new Set(poses), d };
-    }
-    // block-row, 1-xbr-group is pointing
-    for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
-      const [blocks, rows] = group;
-      const poses = [];
-      for (const block of blocks) {
-        poses.push(...getPositionsForDigit(cells, d, positions.getBlockFlattenPositions(block)));
-      }
-      const name = n === 1 ? 'pointing' : `${n}-XBR-Group`;
-      yield { name, domain: 'block', effect: 'row', rows, blocks, poses: new Set(poses), d };
     }
 
-    // col->block, 1-xcb-group is claiming
-    const cbLinks = getColToBlockLinks(cells, d);
-    for (const group of findNGroupFromLinks(cbLinks, n, 0)) {
-      const [cols, blocks] = group;
-      const poses = [];
-      for (const col of cols) {
-        poses.push(...getPositionsForDigit(cells, d, positions.getColPositions(col)));
+    if (types.rb || types.br) {
+      // row->block, 1-xrb-group is claiming
+      const rbLinks = getRowToBlockLinks(cells, d);
+      if (types.rb) {
+        for (const group of findNGroupFromLinks(rbLinks, n, 0)) {
+          const [rows, blocks] = group;
+          const poses = [];
+          for (const row of rows) {
+            poses.push(...getPositionsForDigit(cells, d, positions.getRowPositions(row)));
+          }
+          const name = n === 1 ? 'claiming' : `${n}-XRB-Group`;
+          yield { name, domain: 'row', effect: 'block', rows, blocks, poses: new Set(poses), d };
+        }
       }
-      const name = n === 1 ? 'claiming' : `${n}-XCB-Group`;
-      yield { name, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
+      // block-row, 1-xbr-group is pointing
+      if (types.br) {
+        for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
+          const [blocks, rows] = group;
+          const poses = [];
+          for (const block of blocks) {
+            poses.push(...getPositionsForDigit(cells, d, positions.getBlockFlattenPositions(block)));
+          }
+          const name = n === 1 ? 'pointing' : `${n}-XBR-Group`;
+          yield { name, domain: 'block', effect: 'row', rows, blocks, poses: new Set(poses), d };
+        }
+      }
     }
 
-    // block-col, 1-xbc-group is pointing
-    for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
-      const [blocks, cols] = group;
-      const poses = [];
-      for (const block of blocks) {
-        poses.push(...getPositionsForDigit(cells, d, positions.getBlockFlattenPositions(block)));
+    if (types.cb || types.bc) {
+      // col->block, 1-xcb-group is claiming
+      const cbLinks = getColToBlockLinks(cells, d);
+      if (types.cb) {
+        for (const group of findNGroupFromLinks(cbLinks, n, 0)) {
+          const [cols, blocks] = group;
+          const poses = [];
+          for (const col of cols) {
+            poses.push(...getPositionsForDigit(cells, d, positions.getColPositions(col)));
+          }
+          const name = n === 1 ? 'claiming' : `${n}-XCB-Group`;
+          yield { name, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
+        }
       }
-      const name = n === 1 ? 'pointing' : `${n}-XBC-Group`;
-      yield { name, domain: 'block', effect: 'row', cols, blocks, poses: new Set(poses), d };
+
+      // block-col, 1-xbc-group is pointing
+      if (types.bc) {
+        for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
+          const [blocks, cols] = group;
+          const poses = [];
+          for (const block of blocks) {
+            poses.push(...getPositionsForDigit(cells, d, positions.getBlockFlattenPositions(block)));
+          }
+          const name = n === 1 ? 'pointing' : `${n}-XBC-Group`;
+          yield { name, domain: 'block', effect: 'col', cols, blocks, poses: new Set(poses), d };
+        }
+      }
     }
   }
 }

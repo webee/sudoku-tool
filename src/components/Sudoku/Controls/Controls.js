@@ -16,9 +16,7 @@ const Controls = ({
   resetHandler,
   eraseValueHandler,
   autoNoteHandler,
-  autoPlaceHandler,
-  pointingHandler,
-  claimingHandler,
+  autoPlacePointingClaimingHandler,
   tip,
   tipHandler,
 }) => {
@@ -44,9 +42,7 @@ const Controls = ({
       />
       <div className={styles.Tools}>
         <Button onClick={autoNoteHandler}>note</Button>
-        <Button onClick={pointingHandler}>point</Button>
-        <Button onClick={claimingHandler}>claim</Button>
-        <Button onClick={autoPlaceHandler}>place</Button>
+        <Button onClick={autoPlacePointingClaimingHandler}>place/point/claim</Button>
         <div className={styles.Tip}>
           <Button type={tip && 'On'} onClick={tipHandler}>
             {tip ? tip.name : 'tip'}
