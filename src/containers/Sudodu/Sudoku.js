@@ -33,9 +33,6 @@ const Sudoku = () => {
       setPuzzleError(error);
     }
   }, []);
-  const emptyHandler = useCallback(() => {
-    newGameHandler();
-  }, [newGameHandler]);
 
   let content = null;
   if (isNewGame) {
@@ -43,7 +40,7 @@ const Sudoku = () => {
       <NewGame cancelNewGameHandler={cancelNewGameHandler} newGameHandler={newGameHandler} error={puzzleError} />
     );
   } else {
-    content = <Main sudoku={sudoku} startNewGameHandler={startNewGameHandler} emptyHandler={emptyHandler} />;
+    content = <Main sudoku={sudoku} startNewGameHandler={startNewGameHandler} emptyHandler={newGameHandler} />;
   }
 
   return <div className={styles.Sudoku}>{content}</div>;

@@ -97,7 +97,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
 
   const eraseValueHandler = useCallback(() => {
     if (activePos) {
-      sudoku.setCellValue(activePos, Notes.new());
+      sudoku.updateCellValue(false, activePos, Notes.new());
     }
   }, [activePos, sudoku]);
 
@@ -248,8 +248,11 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       document.removeEventListener('keydown', keydownHandler);
     };
   }, [
+    activePos,
+    activeVal,
     autoNoteHandler,
     autoPlacePointingClaimingHandler,
+    cellClickedHandler,
     deselectHandler,
     digitClickedHandler,
     moveActivePos,
