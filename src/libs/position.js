@@ -18,6 +18,7 @@ export const blockRows = block => {
 
 const _rowPositions = _baseArray.map(row =>
   _baseArray.map(col => ({
+    idx: row * 9 + col,
     row,
     col,
     block: rowColToBlock(row, col),

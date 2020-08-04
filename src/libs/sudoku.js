@@ -73,21 +73,61 @@ export class Sudoku {
 `;
   constructor(puzzle) {
     this.subscribers = [];
-    this.setPuzzle(puzzle || Sudoku.defaultPuzzle);
+    this._setPuzzle(puzzle || Sudoku.defaultPuzzle);
   }
 
-  setPuzzle(puzzle) {
-    this._setCells(Sudoku.parse(puzzle));
+  _setPuzzle(puzzle) {
+    // clear history
+    this._cellsHistory = [];
+    this._curCellsIdx = -1;
+    this._ops = 0;
+    this._setCells(Sudoku.parse(puzzle), 'init');
     this.puzzle = puzzle;
   }
 
   get cells() {
-    return this._cells;
+    return this._cellsHistory[this._curCellsIdx].cells;
   }
 
-  _setCells(cells) {
-    this._cells = cells;
+  get cellsRecord() {
+    return this._cellsHistory[this._curCellsIdx];
   }
+
+  _setCells(cells, desc = '') {
+    if (this._curCellsIdx + 1 < this._cellsHistory.length) {
+      this._cellsHistory = this._cellsHistory.slice(0, this._curCellsIdx + 1);
+    }
+    this._cellsHistory.push({ idx: this._ops, cells, desc });
+    this._curCellsIdx++;
+    this._ops++;
+  }
+
+  get hasPrev() {
+    return this._curCellsIdx > 0;
+  }
+
+  get hasNext() {
+    return this._curCellsIdx < this._cellsHistory.length - 1;
+  }
+
+  jump = steps => {
+    this._curCellsIdx += steps;
+    if (this._curCellsIdx < 0) {
+      this._curCellsIdx = 0;
+    } else if (this._curCellsIdx >= this._cellsHistory.length) {
+      this._curCellsIdx = this._cellsHistory.length - 1;
+    }
+
+    this._notify();
+  };
+
+  jumpToFirst = () => {
+    this.jump(this._curCellsIdx);
+  };
+
+  jumpToLast = () => {
+    this.jump(this._cellsHistory.length);
+  };
 
   get initialPuzzle() {
     return this.puzzle;
@@ -270,7 +310,7 @@ export class Sudoku {
       // in transaction
       return this._txCells;
     }
-    return this._cells;
+    return this.cells;
   }
 
   getCell({ row, col }) {
@@ -283,9 +323,9 @@ export class Sudoku {
     }
   }
 
-  _commit() {
+  _commit(desc = '') {
     if (this._txCells && this._txCells !== this.cells) {
-      this._setCells(this._txCells);
+      this._setCells(this._txCells, desc);
       this._txCells = null;
       this._notify();
     }
@@ -314,7 +354,7 @@ export class Sudoku {
   _handlActions(action, payload = {}) {
     switch (action) {
       case Sudoku.actions.RESET:
-        this.setPuzzle(this.puzzle);
+        this._setPuzzle(this.puzzle);
         break;
       case Sudoku.actions.NOTE:
         this._note(payload);
@@ -367,7 +407,7 @@ export class Sudoku {
     }
 
     if (options.commit) {
-      this._commit();
+      this._commit(action);
     }
   }
 
@@ -435,11 +475,11 @@ export class Sudoku {
       do {
         count = 0;
         count += this._autoPlace();
-        this._commit();
+        this._commit(Sudoku.actions.AUTO_PLACE);
         count += this._autoPointing();
-        this._commit();
+        this._commit(Sudoku.actions.AUTO_POINTING);
         count += this._autoClaiming();
-        this._commit();
+        this._commit(Sudoku.actions.AUTO_CLAIMING);
       } while (count > 0);
     } catch (error) {
       console.log(error);

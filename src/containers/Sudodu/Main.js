@@ -27,7 +27,9 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
   const [tip, setTip] = useState(null);
 
   // calculated states
-  const cells = sudoku.cells;
+  const cellsRecord = sudoku.cellsRecord;
+  const { cells } = cellsRecord;
+  // cells dependency is needed for memo check
   const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos, cells), [activePos, sudoku, cells]);
   const availablePositions = useMemo(() => sudoku.calcAvailablePositions(activeVal, cells), [activeVal, sudoku, cells]);
   const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(cells), [sudoku, cells]);
@@ -226,17 +228,37 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       } else if (e.key === 'p') {
         autoPlacePointingClaimingHandler();
       } else if (e.key === 'h' || e.key === 'ArrowLeft') {
-        moveActivePos(0, -1);
-        moveActiveVal(-1);
+        if (activePos) {
+          moveActivePos(0, -1);
+        } else if (activeVal) {
+          moveActiveVal(-1);
+        } else {
+          sudoku.jumpToFirst();
+        }
       } else if (e.key === 'l' || e.key === 'ArrowRight') {
-        moveActivePos(0, 1);
-        moveActiveVal(1);
+        if (activePos) {
+          moveActivePos(0, 1);
+        } else if (activeVal) {
+          moveActiveVal(1);
+        } else {
+          sudoku.jumpToLast();
+        }
       } else if (e.key === 'j' || e.key === 'ArrowDown') {
-        moveActivePos(1, 0);
-        moveActiveVal(-1);
+        if (activePos) {
+          moveActivePos(1, 0);
+        } else if (activeVal) {
+          moveActiveVal(-1);
+        } else {
+          sudoku.jump(-1);
+        }
       } else if (e.key === 'k' || e.key === 'ArrowUp') {
-        moveActivePos(-1, 0);
-        moveActiveVal(1);
+        if (activePos) {
+          moveActivePos(-1, 0);
+        } else if (activeVal) {
+          moveActiveVal(1);
+        } else {
+          sudoku.jump(1);
+        }
       } else {
         return;
       }
@@ -258,6 +280,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
     moveActivePos,
     moveActiveVal,
     startNewGameHandler,
+    sudoku,
     tipHandler,
     toggleIsNotingHandler,
   ]);
@@ -306,6 +329,12 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       </div>
       <div className={styles.Controls}>
         <Controls
+          cellsRecord={cellsRecord}
+          hasPrev={sudoku.hasPrev}
+          hasNext={sudoku.hasNext}
+          jump={sudoku.jump}
+          jumpToFirst={sudoku.jumpToFirst}
+          jumpToLast={sudoku.jumpToLast}
           remainingDigits={remainingDigits}
           activeVal={activeVal}
           availableDigits={availableDigits}

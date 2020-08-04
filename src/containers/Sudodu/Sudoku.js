@@ -34,13 +34,17 @@ const Sudoku = () => {
     }
   }, []);
 
+  const emptyHandler = useCallback(() => {
+    newGameHandler();
+  }, [newGameHandler]);
+
   let content = null;
   if (isNewGame) {
     content = (
       <NewGame cancelNewGameHandler={cancelNewGameHandler} newGameHandler={newGameHandler} error={puzzleError} />
     );
   } else {
-    content = <Main sudoku={sudoku} startNewGameHandler={startNewGameHandler} emptyHandler={newGameHandler} />;
+    content = <Main sudoku={sudoku} startNewGameHandler={startNewGameHandler} emptyHandler={emptyHandler} />;
   }
 
   return <div className={styles.Sudoku}>{content}</div>;

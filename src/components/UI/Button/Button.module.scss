@@ -10,19 +10,27 @@
   border: 1px solid black;
   white-space: nowrap;
 
-  &:hover,
-  &:active {
-    box-shadow: 0 2px 4px #ccc;
+  &:disabled {
+    cursor: default;
+    color: lightgray;
+    border-color: lightgray;
   }
 
-  &.On {
-    color: white;
-    background-color: green;
-    border-color: transparent;
-  }
+  &:not(:disabled) {
+    &:hover,
+    &:active {
+      box-shadow: 0 2px 4px #ccc;
+    }
 
-  &.Off {
-    color: gray;
-    border-color: gray;
+    &.On {
+      color: white;
+      background-color: green;
+      border-color: transparent;
+    }
+
+    &.Off {
+      color: gray;
+      border-color: gray;
+    }
   }
 }

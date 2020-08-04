@@ -4,6 +4,12 @@ import Button from '../../UI/Button/Button';
 import styles from './Controls.module.scss';
 
 const Controls = ({
+  cellsRecord,
+  hasPrev,
+  hasNext,
+  jump,
+  jumpToFirst,
+  jumpToLast,
   remainingDigits,
   activeVal,
   availableDigits,
@@ -22,6 +28,22 @@ const Controls = ({
 }) => {
   return (
     <div className={styles.Controls}>
+      <div className={styles.History}>
+        <Button disabled={!hasPrev} onClick={jumpToFirst}>
+          first
+        </Button>
+        <Button disabled={!hasPrev} onClick={() => jump(-1)}>
+          prev
+        </Button>
+        <span>#{cellsRecord.idx}</span>
+        <Button disabled={!hasNext} onClick={() => jump(1)}>
+          next
+        </Button>
+        <Button disabled={!hasNext} onClick={jumpToLast}>
+          last
+        </Button>
+        <span>{cellsRecord.desc}</span>
+      </div>
       <div className={styles.Panel}>
         <Button onClick={resetHandler}>Reset</Button>
         <Button onClick={eraseValueHandler}>Erase</Button>
