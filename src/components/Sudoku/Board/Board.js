@@ -1,148 +1,38 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
 import styles from './Board.module.scss';
-import * as sudoku from '../../../libs/sudoku';
+import * as positions from '../../../libs/position';
 
-const Board = ({
-  values,
-  activeVal,
-  activePos,
-  cellClickedHandler,
-  showAvail,
-  isNoting,
-  marks,
-}) => {
-  // calculated states
-  const availableCells = useMemo(
-    () => sudoku.calcAvailableCells(values, activeVal),
-    [activeVal, values]
-  );
-
+const Board = ({ availablePositions, cells, activeVal, activePos, cellClickedHandler, showAvail, isNoting, marks }) => {
   // active value
   if (activePos) {
     // no active value, then selected value is active value for board
-    const [row, col] = activePos;
-    activeVal = values[row][col].value;
+    const { row, col } = activePos;
+    activeVal = cells[row][col].value;
   }
 
   return (
     <AspectRatioBox ratio={1.0}>
       <div className={styles.SudokuBoard}>
-        <div className={styles.Row}>
-          <Block
-            rowStart={0}
-            colStart={0}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-          <Block
-            rowStart={0}
-            colStart={3}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-          <Block
-            rowStart={0}
-            colStart={6}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-        </div>
-        <div className={styles.Row}>
-          <Block
-            rowStart={3}
-            colStart={0}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-          <Block
-            rowStart={3}
-            colStart={3}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-          <Block
-            rowStart={3}
-            colStart={6}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-        </div>
-        <div className={styles.Row}>
-          <Block
-            rowStart={6}
-            colStart={0}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-          <Block
-            rowStart={6}
-            colStart={3}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-          <Block
-            rowStart={6}
-            colStart={6}
-            activePos={activePos}
-            activeVal={activeVal}
-            values={values}
-            availableCells={availableCells}
-            cellClickedHandler={cellClickedHandler}
-            showAvail={showAvail}
-            isNoting={isNoting}
-            marks={marks}
-          />
-        </div>
+        {positions.blockShape.map((rows, idx) => (
+          <div key={idx} className={styles.Row}>
+            {rows.map(b => (
+              <Block
+                key={b}
+                block={b}
+                cells={cells}
+                activePos={activePos}
+                activeVal={activeVal}
+                availableCells={availablePositions}
+                cellClickedHandler={cellClickedHandler}
+                showAvail={showAvail}
+                isNoting={isNoting}
+                marks={marks}
+              />
+            ))}
+          </div>
+        ))}
       </div>
     </AspectRatioBox>
   );

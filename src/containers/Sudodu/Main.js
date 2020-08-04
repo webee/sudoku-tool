@@ -1,17 +1,24 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Button from '../../components/UI/Button/Button';
 import Board from '../../components/Sudoku/Board/Board';
 import Controls from '../../components/Sudoku/Controls/Controls';
 import Modal from '../../components/UI/Modal/Modal';
 import QRCode from 'qrcode.react';
 import styles from './Main.module.scss';
-import * as sudoku from '../../libs/sudoku';
-import { useMemo } from 'react';
+import * as sudokus from '../../libs/sudoku2';
+import { Notes } from '../../libs/sudoku2';
+import { getPosition } from '../../libs/position';
 
-const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
+const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), startNewGameHandler, emptyHandler }) => {
   const [showShare, setShowShare] = useState(false);
-  const [values, setValues] = useState(() => sudoku.parsePuzzle(puzzle));
-  const [initialPuzzle, setInitialPuzzle] = useState(() => sudoku.stringify(values));
+  const [, setChanged] = useState(0);
+  useEffect(() => {
+    sudoku.subscribe(setChanged);
+    return () => {
+      sudoku.unsubscribe(setChanged);
+    };
+  }, [sudoku]);
+
   // {pos:[row, col], val:0}
   const [activeState, setActiveState] = useState({ pos: null, val: 0 });
   const { pos: activePos, val: activeVal } = activeState;
@@ -20,21 +27,22 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   const [tip, setTip] = useState(null);
 
   // calculated states
-  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(values, activePos), [activePos, values]);
+  const cells = sudoku.cells;
+  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos), [activePos, sudoku]);
+  const availablePositions = useMemo(() => sudoku.calcAvailablePositions(activeVal), [activeVal, sudoku]);
+  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(), [sudoku]);
 
   // handlers
   const cellClickedHandler = useCallback(
-    (row, col) => {
+    pos => {
       if (activeVal !== 0) {
         // place or note
-        setValues(sudoku.updateValues(isNoting, row, col, activeVal));
+        sudoku.updateCellValue(isNoting, pos, activeVal);
       } else {
         // select position
         setActiveState(({ pos: curActivePos }) => {
-          let pos = [row, col];
           if (curActivePos) {
-            const [curRow, curCol] = curActivePos;
-            if (row === curRow && col === curCol) {
+            if (pos === curActivePos) {
               // cancel current selected
               pos = null;
             }
@@ -43,7 +51,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         });
       }
     },
-    [activeVal, isNoting, setActiveState, setValues]
+    [activeVal, isNoting, sudoku]
   );
 
   const digitClickedHandler = useCallback(
@@ -56,8 +64,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
 
         if (activePos) {
           // place or note
-          const [activeRow, activeCol] = activePos;
-          setValues(sudoku.updateValues(isNoting, activeRow, activeCol, d));
+          sudoku.updateCellValue(isNoting, activePos, d);
         } else {
           // active a value
           setActiveState(({ val: curActiveVal }) => {
@@ -74,7 +81,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
         setActiveState({ pos: null, val: d });
       }
     },
-    [activePos, availableDigits, isNoting]
+    [activePos, availableDigits, isNoting, sudoku]
   );
 
   const deselectHandler = useCallback(() => {
@@ -83,17 +90,16 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
 
   const resetHandler = useCallback(() => {
     if (!window.confirm || window.confirm('Are you sure to reset?')) {
-      setValues(sudoku.parsePuzzle(initialPuzzle));
+      sudoku.reset();
       deselectHandler();
     }
-  }, [deselectHandler, initialPuzzle]);
+  }, [deselectHandler, sudoku]);
 
   const eraseValueHandler = useCallback(() => {
     if (activePos) {
-      const [activeRow, activeCol] = activePos;
-      setValues(sudoku.updateValues(isNoting, activeRow, activeCol, new Set()));
+      sudoku.setCellValue(activePos, Notes.new());
     }
-  }, [activePos, isNoting]);
+  }, [activePos, sudoku]);
 
   const toggleShowAvailHandler = useCallback(() => {
     setShowAvail(showAvail => !showAvail);
@@ -104,20 +110,20 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   }, []);
 
   const autoNoteHandler = useCallback(() => {
-    setValues(sudoku.autoNote);
-  }, []);
+    sudoku.autoNote();
+  }, [sudoku]);
 
   const autoPlaceHandler = useCallback(() => {
-    setValues(sudoku.autoPlace);
-  }, []);
+    sudoku.autoPlace();
+  }, [sudoku]);
 
   const pointingHandler = useCallback(() => {
-    setValues(sudoku.pointing);
-  }, []);
+    sudoku.pointing();
+  }, [sudoku]);
 
   const claimingHandler = useCallback(() => {
-    setValues(sudoku.claiming);
-  }, [setValues]);
+    sudoku.claiming();
+  }, [sudoku]);
 
   const tipHandler = useCallback(() => {
     if (tip) {
@@ -125,35 +131,31 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       setTip(null);
 
       // handle tip
-      setValues(sudoku.handleTip(tip));
+      sudoku.handleTip(tip);
     } else {
       // find tip
-      const t = sudoku.findTip(values);
+      const t = sudoku.findTip();
       if (t) {
         console.group('[tip]');
         setTip(t);
+        console.log(t);
         if (t.type === 'X-Wing') {
-          console.log(t);
           digitClickedHandler(t.d, true);
         } else if (t.type === 'X-Group') {
-          console.log(t);
         } else if (t.type === 'group') {
-          console.log(
-            `group:${['naked', 'hidden'][t.cls]}-${t.n}:${t.domain}-${t[t.domain]}: [${[...t.poses]}],[${[...t.notes]}]`
-          );
           // deselect
           deselectHandler();
         }
         console.groupEnd();
       }
     }
-  }, [deselectHandler, digitClickedHandler, tip, values]);
+  }, [deselectHandler, digitClickedHandler, sudoku, tip]);
 
   const moveActivePos = useCallback(
     (dRow, dCol) => {
       if (activePos) {
-        setActiveState(({ pos: [curRow, curCol] }) => {
-          const pos = [(curRow + 9 + dRow) % 9, (curCol + 9 + dCol) % 9];
+        setActiveState(({ pos: { row: curRow, col: curCol } }) => {
+          const pos = getPosition((curRow + 9 + dRow) % 9, (curCol + 9 + dCol) % 9);
           return { val: 0, pos };
         });
       }
@@ -244,23 +246,15 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
   ]);
 
   useEffect(() => {
-    // start new puzzle if receiving puzzle
-    if (puzzle !== initialPuzzle) {
-      const values = sudoku.parsePuzzle(puzzle);
-      setInitialPuzzle(sudoku.stringify(values));
-      setValues(values);
-    }
-  }, [initialPuzzle, puzzle]);
-
-  useEffect(() => {
     // clear tip if values changed
     setTip(null);
-  }, [values]);
+  }, [cells]);
 
   let shareContent = null;
   if (showShare) {
     const url = new URL(window.location);
-    const curPuzzle = sudoku.stringify(values);
+    const initialPuzzle = sudoku.initialPuzzle;
+    const curPuzzle = sudoku.stringify();
     url.search = '?puzzle=' + curPuzzle;
     shareContent = (
       <div className={styles.QRCode}>
@@ -283,7 +277,8 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       </div>
       <div className={styles.Board}>
         <Board
-          values={values}
+          cells={cells}
+          availablePositions={availablePositions}
           activeVal={activeVal}
           activePos={activePos}
           cellClickedHandler={cellClickedHandler}
@@ -294,7 +289,7 @@ const Sudoku = ({ puzzle, startNewGameHandler, emptyHandler }) => {
       </div>
       <div className={styles.Controls}>
         <Controls
-          values={values}
+          remainingDigits={remainingDigits}
           activeVal={activeVal}
           availableDigits={availableDigits}
           digitClickedHandler={digitClickedHandler}

@@ -1,3 +1,6 @@
+const debug = process.env.NODE_ENV !== 'production';
+const nilFunc = () => {};
+
 function* combx(d, n, k) {
   if (n < k) {
   } else if (k === 1) {
@@ -24,7 +27,7 @@ export function* comb(n, k) {
   yield* combx(0, n, k);
 }
 
-export function* findNGroupFromLinks(links, n, order = 0) {
+export function* findNGroupFromLinks(links, n, order = 0, options = { checkClear: true }) {
   const s = {};
   for (const link of links) {
     const start = link[order];
@@ -35,7 +38,7 @@ export function* findNGroupFromLinks(links, n, order = 0) {
   }
   const points = Object.values(s);
   const xpoints = points.filter(p => p.ends.size <= n);
-  if (xpoints.length <= n) {
+  if (options.checkClear && points.length <= n) {
     // only return group if count(starts) > n
     return;
   }
@@ -53,14 +56,17 @@ export function* findNGroupFromLinks(links, n, order = 0) {
       }
     }
     if (ends.size === n) {
-      let cleared = true;
-      // check if group is cleared
-      for (const p of points.filter(p => !starts.has(p.start))) {
-        if ([...p.ends].filter(e => !ends.has(e)).length < p.ends.size) {
-          // other starts has end in ends
-          // need clear
-          cleared = false;
-          break;
+      let cleared = options.checkClear;
+      if (cleared) {
+        // n is 1, no need to check.
+        // check if group is cleared
+        for (const p of points.filter(p => !starts.has(p.start))) {
+          if ([...p.ends].filter(e => !ends.has(e)).length < p.ends.size) {
+            // other starts has end in ends
+            // need clear
+            cleared = false;
+            break;
+          }
         }
       }
 
@@ -82,4 +88,13 @@ export const memorize = f => (...args) => {
     data.res = f(...args);
   }
   return data.res;
+};
+
+const _console = (window || global || {}).console || {};
+
+export const console = {
+  group: (debug && _console.group) || nilFunc,
+  groupEnd: (debug && _console.groupEnd) || nilFunc,
+  log: (debug && _console.log) || nilFunc,
+  error: (debug && _console.error) || nilFunc,
 };

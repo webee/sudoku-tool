@@ -1,11 +1,10 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import Digits from './Digits/Digits';
 import Button from '../../UI/Button/Button';
 import styles from './Controls.module.scss';
-import * as sudoku from '../../../libs/sudoku';
 
 const Controls = ({
-  values,
+  remainingDigits,
   activeVal,
   availableDigits,
   digitClickedHandler,
@@ -23,8 +22,6 @@ const Controls = ({
   tip,
   tipHandler,
 }) => {
-  // calculated states
-  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(values), [values]);
   return (
     <div className={styles.Controls}>
       <div className={styles.Panel}>

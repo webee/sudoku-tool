@@ -2,29 +2,16 @@ import React, { useState, useCallback } from 'react';
 import Main from './Main';
 import NewGame from './NewGame';
 import styles from './Sudoku.module.scss';
-import * as sudoku from '../../libs/sudoku';
-
-const defaultPuzzle = `
-000000000
-000000000
-000000000
-000000000
-000000000
-000000000
-000000000
-000000000
-000000000
-`;
+import * as sudokus from '../../libs/sudoku2';
 
 const Sudoku = () => {
-  const [puzzle, setPuzzle] = useState(() => {
+  const [sudoku, setSudoku] = useState(() => {
     // get puzzle from url search parameter: puzzle
     const puzzle = new URLSearchParams(window.location.search).get('puzzle');
     try {
-      sudoku.simpleCheckPuzzle(puzzle);
-      return puzzle;
+      return new sudokus.Sudoku(puzzle);
     } catch (error) {
-      return defaultPuzzle;
+      return new sudokus.Sudoku();
     }
   });
   const [isNewGame, setIsNewGame] = useState(false);
@@ -34,41 +21,29 @@ const Sudoku = () => {
   const startNewGameHandler = useCallback(() => {
     setIsNewGame(true);
   }, []);
-  const emptyHandler = useCallback(() => {
-    setPuzzle(defaultPuzzle);
-  }, []);
-
   const cancelNewGameHandler = useCallback(() => {
     setIsNewGame(false);
   }, []);
 
   const newGameHandler = useCallback(puzzle => {
     try {
-      sudoku.simpleCheckPuzzle(puzzle);
-      setPuzzle(puzzle);
+      setSudoku(new sudokus.Sudoku(puzzle));
       setIsNewGame(false);
     } catch (error) {
       setPuzzleError(error);
     }
   }, []);
+  const emptyHandler = useCallback(() => {
+    newGameHandler();
+  }, [newGameHandler]);
 
   let content = null;
   if (isNewGame) {
     content = (
-      <NewGame
-        cancelNewGameHandler={cancelNewGameHandler}
-        newGameHandler={newGameHandler}
-        error={puzzleError}
-      />
+      <NewGame cancelNewGameHandler={cancelNewGameHandler} newGameHandler={newGameHandler} error={puzzleError} />
     );
   } else {
-    content = (
-      <Main
-        puzzle={puzzle}
-        startNewGameHandler={startNewGameHandler}
-        emptyHandler={emptyHandler}
-      />
-    );
+    content = <Main sudoku={sudoku} startNewGameHandler={startNewGameHandler} emptyHandler={emptyHandler} />;
   }
 
   return <div className={styles.Sudoku}>{content}</div>;

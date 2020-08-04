@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
-import * as sudoku from '../../../../../libs/sudoku';
+import { Notes } from '../../../../../libs/sudoku2';
 
 const noteClassName = (n, activeVal, notes) => {
   const classes = [styles.Note];
@@ -15,15 +15,14 @@ const noteClassName = (n, activeVal, notes) => {
 };
 
 const Cell = React.memo(
-  ({ value, origin, row, col, activePos, activeVal, available, showAvail, isNoting, onClick, marks }) => {
-    const block = sudoku.getCellBlock(row, col);
+  ({ value, origin, pos, activePos, activeVal, available, showAvail, isNoting, onClick, marks }) => {
+    const { block, row, col } = pos;
     const classes = [];
     let content = null;
     let isSelected = false;
 
     if (activePos) {
-      const [activeRow, activeCol] = activePos;
-      const activeBlock = sudoku.getCellBlock(activeRow, activeCol);
+      const { row: activeRow, col: activeCol, block: activeBlock } = activePos;
       if (row === activeRow && col === activeCol) {
         // active
         isSelected = true;
@@ -81,7 +80,7 @@ const Cell = React.memo(
           effectMarked = true;
         }
       }
-      if (highlights && highlights.poses.has(sudoku.encodePos([row, col]))) {
+      if (highlights && highlights.poses.has(pos)) {
         highlighted = true;
       }
     }
@@ -95,7 +94,7 @@ const Cell = React.memo(
 
     const valueMarked = highlighted || effectMarked;
 
-    if (typeof value === 'number') {
+    if (!Notes.is(value)) {
       classes.push(styles.Value);
       // it's placed value
       !origin && classes.push(styles.Placed);
@@ -113,40 +112,40 @@ const Cell = React.memo(
       classes.push(styles.Notes);
       // Set: [1-9]
       const notes = value;
-      if (notes.size > 0) {
+      if (Notes.size(notes) > 0) {
         content = (
           <>
             <div className={styles.RowNotes}>
               <div className={noteClassName(1, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(1) ? digits[1] : null}
+                {Notes.has(notes, 1) ? digits[1] : null}
               </div>
               <div className={noteClassName(2, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(2) ? digits[2] : null}
+                {Notes.has(notes, 2) ? digits[2] : null}
               </div>
               <div className={noteClassName(3, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(3) ? digits[3] : null}
+                {Notes.has(notes, 3) ? digits[3] : null}
               </div>
             </div>
             <div className={styles.RowNotes}>
               <div className={noteClassName(4, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(4) ? digits[4] : null}
+                {Notes.has(notes, 4) ? digits[4] : null}
               </div>
               <div className={noteClassName(5, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(5) ? digits[5] : null}
+                {Notes.has(notes, 5) ? digits[5] : null}
               </div>
               <div className={noteClassName(6, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(6) ? digits[6] : null}
+                {Notes.has(notes, 6) ? digits[6] : null}
               </div>
             </div>
             <div className={styles.RowNotes}>
               <div className={noteClassName(7, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(7) ? digits[7] : null}
+                {Notes.has(notes, 7) ? digits[7] : null}
               </div>
               <div className={noteClassName(8, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(8) ? digits[8] : null}
+                {Notes.has(notes, 8) ? digits[8] : null}
               </div>
               <div className={noteClassName(9, activeVal, valueMarked && marks.highlights.notes)}>
-                {notes.has(9) ? digits[9] : null}
+                {Notes.has(notes, 9) ? digits[9] : null}
               </div>
             </div>
           </>
@@ -154,7 +153,7 @@ const Cell = React.memo(
       }
     }
     return (
-      <div className={classes.join(' ')} onClick={clickable ? () => onClick(row, col) : undefined}>
+      <div className={classes.join(' ')} onClick={clickable ? () => onClick(pos) : undefined}>
         {content}
       </div>
     );
