@@ -5,8 +5,8 @@ import Controls from '../../components/Sudoku/Controls/Controls';
 import Modal from '../../components/UI/Modal/Modal';
 import QRCode from 'qrcode.react';
 import styles from './Main.module.scss';
-import * as sudokus from '../../libs/sudoku2';
-import { Notes } from '../../libs/sudoku2';
+import * as sudokus from '../../libs/sudoku';
+import { Notes } from '../../libs/sudoku';
 import { getPosition } from '../../libs/position';
 
 const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), startNewGameHandler, emptyHandler }) => {

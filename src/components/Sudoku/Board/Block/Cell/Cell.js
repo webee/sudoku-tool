@@ -1,7 +1,7 @@
 import React from 'react';
 import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
-import { Notes } from '../../../../../libs/sudoku2';
+import { Notes } from '../../../../../libs/sudoku';
 
 const noteClassName = (n, activeVal, notes) => {
   const classes = [styles.Note];

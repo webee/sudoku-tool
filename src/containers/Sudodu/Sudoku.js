@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import Main from './Main';
 import NewGame from './NewGame';
 import styles from './Sudoku.module.scss';
-import * as sudokus from '../../libs/sudoku2';
+import * as sudokus from '../../libs/sudoku';
 
 const Sudoku = () => {
   const [sudoku, setSudoku] = useState(() => {
