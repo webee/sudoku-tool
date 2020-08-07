@@ -1,4 +1,12 @@
-import { flattenPositions, getRelatedPositions, mapPositionsTo, rowColToBlock } from './position';
+import {
+  flattenPositions,
+  getRelatedPositions,
+  mapPositionsTo,
+  rowColToBlock,
+  getRelatedRowPositions,
+  getRelatedColPositions,
+  getRelatedBlockPositions,
+} from './position';
 import * as positions from './position';
 import { findNGroupFromLinks, console } from './utils';
 
@@ -50,7 +58,7 @@ export class Notes {
   }
 
   static has(value, n) {
-    return (value & (1 << n)) !== 0;
+    return Notes.is(value) && (value & (1 << n)) !== 0;
   }
 
   static add(value, n) {
@@ -82,7 +90,11 @@ export class Sudoku {
     this._curCellsIdx = -1;
     this._ops = 0;
     this._setCells(Sudoku.parse(puzzle), 'init');
-    this.puzzle = puzzle;
+    this.puzzle = this.stringify();
+  }
+
+  get initialPuzzle() {
+    return this.puzzle;
   }
 
   get cells() {
@@ -128,10 +140,6 @@ export class Sudoku {
   jumpToLast = () => {
     this.jump(this._cellsHistory.length);
   };
-
-  get initialPuzzle() {
-    return this.puzzle;
-  }
 
   subscribe(f) {
     this.subscribers.push(f);
@@ -348,6 +356,7 @@ export class Sudoku {
     AUTO_PLACE_POINTING_CLAIMING: 'AUTO_PLACE_POINTING_CLAIMING',
     ELIMINATE_GROUP: 'ELIMINATE_GROUP',
     ELIMINATE_XGROUP: 'ELIMINATE_XGROUP',
+    ELIMINATE_CHAIN: 'ELIMINATE_CHAIN',
     HANDLE_TIP: 'HANDLE_TIP',
   };
 
@@ -382,6 +391,9 @@ export class Sudoku {
         break;
       case Sudoku.actions.ELIMINATE_XGROUP:
         this._eliminateXGroup(payload);
+        break;
+      case Sudoku.actions.ELIMINATE_CHAIN:
+        this._eliminateChain(payload);
         break;
       case Sudoku.actions.HANDLE_TIP:
         this._handleTip(payload);
@@ -449,6 +461,10 @@ export class Sudoku {
 
   eliminateXGroup(tip) {
     this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, { tip });
+  }
+
+  eliminateChain(tip) {
+    this.dispatch(Sudoku.actions.ELIMINATE_CHAIN, { tip });
   }
 
   handleTip(tip) {
@@ -665,7 +681,7 @@ export class Sudoku {
 
   findTip() {
     const cells = this.getCurCells();
-    return this.findGroup(cells) || this.findXGroup(cells);
+    return this.findGroup(cells) || this.findXGroup(cells) || this.findChain(cells);
   }
 
   _handleTip({ tip }) {
@@ -673,8 +689,148 @@ export class Sudoku {
       this.eliminateGroup(tip);
     } else if (tip.type === 'X-Group') {
       this.eliminateXGroup(tip);
+    } else if (tip.type === 'chain') {
+      this.eliminateChain(tip);
     }
   }
+
+  findChain() {
+    const cells = this.getCurCells();
+    const [dPoses, dLinks] = getDigitPosesAndLinks(cells);
+    for (const tryCellLinks of [false, true]) {
+      let dRes = null;
+      for (let d = 1; d <= 9; d++) {
+        for (const pos of dPoses[d] || []) {
+          const val = false;
+          const startNode = { pos, d, val };
+          for (const chain of searchChain([], startNode, { dLinks, cells, td: d, tryCellLinks })) {
+            chain.type = 'chain';
+            chain.name = 'chain';
+            if (!dRes || dRes.chain.length > chain.chain.length) {
+              dRes = chain;
+            }
+          }
+        }
+      }
+      if (dRes) {
+        return dRes;
+      }
+    }
+  }
+
+  _eliminateChain({ tip }) {
+    for (const pos of tip.effectedPoses) {
+      const { value } = this.getCell(pos);
+      if (!Notes.is(value)) {
+        continue;
+      }
+      this.setCellValue(pos, Notes.delete(value, tip.d));
+    }
+  }
+}
+
+function* searchChain(chain, node, extraData) {
+  extraData = { tryCellLinks: false, ...extraData };
+  const { pos, d, val } = node;
+  const { dLinks, cells, td } = extraData;
+
+  if (d === td && val === true) {
+    // strong target
+    // check if intersection related positions has d
+    const effectedPoses = new Set();
+    for (const cpos of positions.getCommonRelatedPositions(chain[0].pos, pos)) {
+      const { value } = positions.getCell(cells, cpos);
+      if (Notes.has(value, d)) {
+        effectedPoses.add(cpos);
+      }
+    }
+    if (effectedPoses.size > 0) {
+      yield { chain: [...chain, node], effectedPoses, d };
+    }
+  }
+  // try related links
+  const targets = dLinks[d][pos][val];
+  for (const tpos of targets) {
+    const nextNode = { pos: tpos, val: !val, d };
+
+    if (chainHasNode(chain, nextNode)) {
+      continue;
+    }
+
+    yield* searchChain([...chain, node], nextNode, extraData);
+  }
+
+  if (extraData.tryCellLinks) {
+    // try cell links
+    for (const cd of dLinks[d][pos].cell[val]) {
+      const nextNode = { pos, val: !val, d: cd };
+
+      if (chainHasNode(chain, nextNode)) {
+        continue;
+      }
+
+      yield* searchChain([...chain, node], nextNode, extraData);
+    }
+  }
+}
+
+const chainHasNode = (chain, node) => {
+  for (const n of chain) {
+    if (n.pos === node.pos && n.val === node.val && n.d === node.d) {
+      return true;
+    }
+  }
+  return false;
+};
+
+function getDigitPosesAndLinks(cells) {
+  const dLinks = {};
+  const dPoses = {};
+  for (const pos of positions.flattenPositions) {
+    const { value } = positions.getCell(cells, pos);
+    if (!Notes.is(value)) {
+      continue;
+    }
+    const ds = Notes.entries(value);
+    for (const d of ds) {
+      if (!dPoses[d]) {
+        dPoses[d] = [];
+      }
+      const poses = dPoses[d];
+      if (!dLinks[d]) {
+        dLinks[d] = {};
+      }
+      const links = dLinks[d];
+
+      poses.push(pos);
+      // strong: false->true, weak: true->false
+      const strongTargets = new Set();
+      const weakTargets = new Set();
+      for (const getRelatedPositions of [getRelatedRowPositions, getRelatedColPositions, getRelatedBlockPositions]) {
+        let count = 0;
+        let strongPos = null;
+        for (const rpos of getRelatedPositions(pos)) {
+          const { value } = positions.getCell(cells, rpos);
+          if (!Notes.has(value, d)) {
+            continue;
+          }
+          weakTargets.add(rpos);
+          count++;
+          strongPos = rpos;
+        }
+        if (count === 1) {
+          strongTargets.add(strongPos);
+        }
+      }
+      const otherDs = ds.filter(v => v !== d);
+      links[pos] = {
+        false: [...strongTargets],
+        true: [...weakTargets],
+        cell: { false: ds.length === 2 ? otherDs : [], true: otherDs },
+      };
+    }
+  }
+  return [dPoses, dLinks];
 }
 
 function getPositionsLinks(cells, positions) {

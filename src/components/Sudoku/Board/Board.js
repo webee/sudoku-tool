@@ -15,6 +15,7 @@ const Board = ({ availablePositions, cells, activeVal, activePos, cellClickedHan
   return (
     <AspectRatioBox ratio={1.0}>
       <div className={styles.SudokuBoard}>
+        <div className={styles.Arrow} />
         {positions.blockShape.map((rows, idx) => (
           <div key={idx} className={styles.Row}>
             {rows.map(b => (

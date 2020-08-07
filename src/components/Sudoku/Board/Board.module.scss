@@ -5,6 +5,20 @@
   flex-direction: column;
   background-color: black;
   border: 1px solid black;
+  position: relative;
+
+  .Arrow {
+    user-select: none;
+    position: absolute;
+    border: 1px solid red;
+    width: 50%;
+    // left: (1 + 2 * 1)/18 * 100%;
+    // top: (1 + 2 * 2)/18 * 100%;
+    // right: (1- (1 + 2 * 4)/18) * 100%;
+    // bottom: (1- (1 + 2 * 5)/18) * 100%;
+    // transform: rotate(45deg);
+    transform: translate(0, 120px);
+  }
 
   .Row {
     display: flex;

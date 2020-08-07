@@ -130,20 +130,12 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       // find tip
       const t = sudoku.findTip();
       if (t) {
-        console.group('[tip]');
         setTip(t);
-        console.log(t);
-        if (t.type === 'X-Wing') {
-          digitClickedHandler(t.d, true);
-        } else if (t.type === 'X-Group') {
-        } else if (t.type === 'group') {
-          // deselect
-          deselectHandler();
-        }
-        console.groupEnd();
       }
     }
-  }, [deselectHandler, digitClickedHandler, sudoku, tip]);
+    // deselect
+    deselectHandler();
+  }, [deselectHandler, sudoku, tip]);
 
   const moveActivePos = useCallback(
     (dRow, dCol) => {
@@ -160,7 +152,6 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
   const moveActiveVal = useCallback(
     d => {
       if (activeVal) {
-        console.log('xxxxxxxxx', d);
         setActiveState(({ val: curVal }) => {
           const val = ((curVal - 1 + d + 9) % 9) + 1;
           return { pos: null, val };
@@ -181,13 +172,6 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
           // hidden
           return { domain: { [domain + 's']: new Set([tip[domain]]) }, highlights: { poses, notes } };
         }
-      } else if (tip.type === 'X-Wing') {
-        const { domain, rows, cols, poses, d } = tip;
-        if (domain === 'row') {
-          return { domain: { rows }, effect: { cols }, highlights: { poses, notes: new Set([d]) } };
-        } else if (domain === 'col') {
-          return { domain: { cols }, effect: { rows }, highlights: { poses, notes: new Set([d]) } };
-        }
       } else if (tip.type === 'X-Group') {
         const { domain, rows, cols, blocks, poses, d } = tip;
         if (domain === 'row') {
@@ -197,6 +181,10 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         } else if (domain === 'block') {
           return { domain: { blocks }, effect: { rows, cols }, highlights: { poses, notes: new Set([d]) } };
         }
+      } else if (tip.type === 'chain') {
+        const { chain, effectedPoses, d } = tip;
+        const poses = new Set(chain.map(p => p.pos));
+        return { effect: { poses: effectedPoses }, highlights: { poses, notes: new Set([d]) } };
       }
     }
   }, [tip]);

@@ -84,16 +84,32 @@ export const getRelatedPositions = ({ row, col }) => _relatedPositions[row][col]
 
 // all positions from left to right, top to bottom.
 // used to iterate all positions
-const _flattenPositions = [];
+export const flattenPositions = _rowPositions.flat();
+
 const _keyPositionMapping = {};
-_rowPositions.forEach(rows => {
-  _flattenPositions.push(...rows);
-  for (const pos of rows) {
-    _keyPositionMapping[pos.key] = pos;
-  }
+flattenPositions.forEach(pos => {
+  _keyPositionMapping[pos.key] = pos;
 });
 
-export const flattenPositions = _flattenPositions;
 export const getPositionByKey = key => _keyPositionMapping[key];
 
 export const mapPositionsTo = f => _baseArray.map(row => _baseArray.map(col => f(row, col)));
+
+export const getCell = (cells, pos) => cells[pos.row][pos.col];
+
+const _intersection = (a, b) => {
+  const sb = new Set(b);
+  return a.filter(v => sb.has(v));
+};
+
+export const getCommonRelatedPositions = (...poses) => {
+  switch (poses.length) {
+    case 0:
+      return [];
+    case 1:
+      return getRelatedPositions(poses[0]);
+    default:
+      const [pos, ...rposes] = poses;
+      return _intersection(getRelatedPositions(pos), getCommonRelatedPositions(...rposes));
+  }
+};
