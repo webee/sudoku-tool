@@ -36,7 +36,7 @@
 
   &.MarkedEffect {
     @extend %Marked;
-    background-color: pink;
+    background-color: #82216a;
   }
 
   &.MarkedHighlight {
@@ -81,6 +81,9 @@
   &.MarkedEffect {
     &.MarkedValue {
       @include digitColor($marked-color !important);
+    }
+    &.MarkedNoteValue {
+      @include digitColor($marked-note-color);
     }
   }
 }
@@ -127,6 +130,9 @@
     .Note {
       &.MarkedValue {
         @include digitColor($marked-color);
+      }
+      &.MarkedNoteValue {
+        @include digitColor($marked-note-color);
       }
     }
   }

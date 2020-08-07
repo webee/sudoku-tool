@@ -167,24 +167,27 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         const { cls, domain, poses, notes } = tip;
         if (cls === 0) {
           // naked
-          return { effect: { [domain + 's']: new Set([tip[domain]]) }, highlights: { poses, notes } };
+          return { effect: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { poses, notes } };
         } else if (cls === 1) {
           // hidden
-          return { domain: { [domain + 's']: new Set([tip[domain]]) }, highlights: { poses, notes } };
+          return { domain: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { poses, notes } };
         }
       } else if (tip.type === 'X-Group') {
         const { domain, rows, cols, blocks, poses, d } = tip;
+        const notes = new Set([d]);
         if (domain === 'row') {
-          return { domain: { rows }, effect: { cols, blocks }, highlights: { poses, notes: new Set([d]) } };
+          return { domain: { rows }, effect: { cols, blocks, notes }, highlights: { poses, notes } };
         } else if (domain === 'col') {
-          return { domain: { cols }, effect: { rows, blocks }, highlights: { poses, notes: new Set([d]) } };
+          return { domain: { cols }, effect: { rows, blocks, notes }, highlights: { poses, notes } };
         } else if (domain === 'block') {
-          return { domain: { blocks }, effect: { rows, cols }, highlights: { poses, notes: new Set([d]) } };
+          return { domain: { blocks }, effect: { rows, cols, notes }, highlights: { poses, notes } };
         }
       } else if (tip.type === 'chain') {
         const { chain, effectedPoses, d } = tip;
         const poses = new Set(chain.map(p => p.pos));
-        return { effect: { poses: effectedPoses }, highlights: { poses, notes: new Set([d]) } };
+        const subNotes = new Set(chain.map(p => p.d).filter(v => v !== d));
+        const notes = new Set([d]);
+        return { effect: { poses: effectedPoses, notes }, highlights: { poses, notes, subNotes } };
       }
     }
   }, [tip]);
@@ -209,7 +212,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         if (!activeVal && !activePos) {
           cellClickedHandler(getPosition(4, 4));
         }
-      } else if (e.key === 'd') {
+      } else if (e.key === 'd' || e.key === 'Escape') {
         deselectHandler();
       } else if (e.key === 't') {
         tipHandler();

@@ -2,15 +2,32 @@ import React from 'react';
 import styles from './Cell.module.scss';
 import digits from '../../../../UI/Digits/Digits';
 import { Notes } from '../../../../../libs/sudoku';
+import * as positions from '../../../../../libs/position';
 
-const noteClassName = (n, activeVal, notes) => {
+const noteClassName = (n, activeVal, highlighted, effectMarked, marks) => {
   const classes = [styles.Note];
   if (n === activeVal) {
     classes.push(styles.ActiveValue);
   }
-  if (notes && notes.has(n)) {
-    classes.push(styles.MarkedValue);
+
+  if (marks) {
+    let src = null;
+    if (highlighted) {
+      src = marks.highlights;
+    } else if (effectMarked) {
+      src = marks.effect;
+    }
+
+    if (src) {
+      const { notes, subNotes } = src;
+      if (notes && notes.has(n)) {
+        classes.push(styles.MarkedNoteValue);
+      } else if (subNotes && subNotes.has(n)) {
+        classes.push(styles.MarkedValue);
+      }
+    }
   }
+
   return classes.join(' ');
 };
 
@@ -95,8 +112,6 @@ const Cell = React.memo(
       classes.push(styles.MarkedEffect);
     }
 
-    const valueMarked = highlighted || effectMarked;
-
     if (!Notes.is(value)) {
       classes.push(styles.Value);
       // it's placed value
@@ -106,7 +121,7 @@ const Cell = React.memo(
         classes.push(styles.ActiveValue);
       }
       // it's marked value
-      if (valueMarked && marks.highlights.values && marks.highlights.values.has(value)) {
+      if (highlighted && marks.highlights.values && marks.highlights.values.has(value)) {
         classes.push(styles.MarkedValue);
       }
 
@@ -116,43 +131,15 @@ const Cell = React.memo(
       // Set: [1-9]
       const notes = value;
       if (Notes.size(notes) > 0) {
-        content = (
-          <>
-            <div className={styles.RowNotes}>
-              <div className={noteClassName(1, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 1) ? digits[1] : null}
+        content = positions.blockShape.map((rows, idx) => (
+          <div key={idx} className={styles.RowNotes}>
+            {rows.map(i => (
+              <div key={i} className={noteClassName(i + 1, activeVal, highlighted, effectMarked, marks)}>
+                {Notes.has(notes, i + 1) ? digits[i + 1] : null}
               </div>
-              <div className={noteClassName(2, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 2) ? digits[2] : null}
-              </div>
-              <div className={noteClassName(3, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 3) ? digits[3] : null}
-              </div>
-            </div>
-            <div className={styles.RowNotes}>
-              <div className={noteClassName(4, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 4) ? digits[4] : null}
-              </div>
-              <div className={noteClassName(5, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 5) ? digits[5] : null}
-              </div>
-              <div className={noteClassName(6, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 6) ? digits[6] : null}
-              </div>
-            </div>
-            <div className={styles.RowNotes}>
-              <div className={noteClassName(7, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 7) ? digits[7] : null}
-              </div>
-              <div className={noteClassName(8, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 8) ? digits[8] : null}
-              </div>
-              <div className={noteClassName(9, activeVal, valueMarked && marks.highlights.notes)}>
-                {Notes.has(notes, 9) ? digits[9] : null}
-              </div>
-            </div>
-          </>
-        );
+            ))}
+          </div>
+        ));
       }
     }
     return (
