@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import * as positions from '../../../libs/position';
 
 // shortend arrow length, to avoid tail-head contact.
-const dd = 0.03;
+const dd = 0.02;
 // percentage for a cell
 const pc = (1 - 1.5 / 100) / 9;
 
