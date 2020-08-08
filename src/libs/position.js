@@ -1,3 +1,4 @@
+export const getDigitLocalPos = d => [Math.floor((d - 1) / 3), (d - 1) % 3];
 const _baseArray = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 export const blockShape = [
   [0, 1, 2],

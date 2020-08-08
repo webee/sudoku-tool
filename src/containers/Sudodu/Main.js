@@ -8,6 +8,7 @@ import styles from './Main.module.scss';
 import * as sudokus from '../../libs/sudoku';
 import { Notes } from '../../libs/sudoku';
 import { getPosition } from '../../libs/position';
+import { console } from '../../libs/utils';
 
 const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), startNewGameHandler, emptyHandler }) => {
   const [showShare, setShowShare] = useState(false);
@@ -130,6 +131,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       // find tip
       const t = sudoku.findTip();
       if (t) {
+        console.log('tip:', t);
         setTip(t);
       }
     }
@@ -184,10 +186,23 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         }
       } else if (tip.type === 'chain') {
         const { chain, effectedPoses, d } = tip;
-        const poses = new Set(chain.map(p => p.pos));
-        const subNotes = new Set(chain.map(p => p.d).filter(v => v !== d));
+        const poses = new Set(chain.map(n => n.pos));
+        const subNotes = new Set(chain.map(n => n.d).filter(v => v !== d));
         const notes = new Set([d]);
-        return { effect: { poses: effectedPoses, notes }, highlights: { poses, notes, subNotes } };
+
+        const arrows = [];
+        let startNode = chain[0];
+        for (const endNode of chain.slice(1)) {
+          arrows.push({
+            startPos: startNode.pos,
+            startDigit: startNode.d,
+            endPos: endNode.pos,
+            endDigit: endNode.d,
+            type: endNode.val ? 'solid' : 'dashed',
+          });
+          startNode = endNode;
+        }
+        return { arrows, effect: { poses: effectedPoses, notes }, highlights: { poses, notes, subNotes } };
       }
     }
   }, [tip]);

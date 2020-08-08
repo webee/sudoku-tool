@@ -1,6 +1,7 @@
 import React from 'react';
 import Block from './Block/Block';
 import AspectRatioBox from '../../UI/AspectRatio/AspectRatioBox';
+import Arrow from './Arrow';
 import styles from './Board.module.scss';
 import * as positions from '../../../libs/position';
 
@@ -12,10 +13,13 @@ const Board = ({ availablePositions, cells, activeVal, activePos, cellClickedHan
     activeVal = cells[row][col].value;
   }
 
+  console.log(marks && marks.arrows);
   return (
     <AspectRatioBox ratio={1.0}>
       <div className={styles.SudokuBoard}>
-        <div className={styles.Arrow} />
+        {marks &&
+          marks.arrows &&
+          marks.arrows.map(arrow => <Arrow key={`${arrow.startPos}-${arrow.endPos}`} {...arrow} />)}
         {positions.blockShape.map((rows, idx) => (
           <div key={idx} className={styles.Row}>
             {rows.map(b => (
