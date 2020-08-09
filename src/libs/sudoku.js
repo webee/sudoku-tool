@@ -715,8 +715,6 @@ export class Sudoku {
               maxLength,
             };
             for (const chain of searchChain([], startNode, extraData)) {
-              chain.type = 'chain';
-              chain.name = 'chain';
               if (chain.chain.length < maxLength) {
                 dRes = chain;
                 maxLength = dRes.chain.length;
@@ -726,6 +724,27 @@ export class Sudoku {
           }
         }
         if (dRes) {
+          dRes.type = 'chain';
+          const d = dRes.d;
+          let hasMulti = false;
+          let hasGroup = false;
+          for (const node of dRes.chain) {
+            if (node.d !== d) {
+              hasMulti = true;
+            }
+            if (node.pos.isGroup) {
+              hasGroup = true;
+            }
+            if (hasMulti && hasGroup) {
+              break;
+            }
+          }
+          const parts = [dRes.chain.length - 1];
+          if (hasGroup) {
+            parts.push('Group');
+          }
+          parts.push(hasMulti ? 'XY' : 'X', 'Chain');
+          dRes.name = parts.join('-');
           return dRes;
         }
         // 2. single and group pos
@@ -1032,6 +1051,7 @@ function getDigitPosesAndLinks(cells) {
         link = links[pos.pos];
       }
       link.group = getGroupPosLink(dGroupPoses[d], pos);
+      link.cell = { false: [], true: [] };
     }
   }
 

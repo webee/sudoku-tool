@@ -132,6 +132,10 @@ const calcPosDistance = (aPos, bPos) => {
 };
 
 export const findClosedPosPair = (aPoses, bPoses) => {
+  if (aPoses.length === 1 && bPoses === 1) {
+    return [aPoses[0], bPoses[0]];
+  }
+
   let minDistance = Number.MAX_VALUE;
   let a = null;
   let b = null;

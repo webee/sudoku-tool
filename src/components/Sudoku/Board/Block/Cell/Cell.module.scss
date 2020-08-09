@@ -80,7 +80,7 @@
   &.MarkedHighlight,
   &.MarkedEffect {
     &.MarkedValue {
-      @include digitColor($marked-color !important);
+      @include digitColor($marked-value-color !important);
     }
     &.MarkedNoteValue {
       @include digitColor($marked-note-color);
@@ -129,7 +129,7 @@
   &.MarkedEffect {
     .Note {
       &.MarkedValue {
-        @include digitColor($marked-color);
+        @include digitColor($marked-value-color);
       }
       &.MarkedNoteValue {
         @include digitColor($marked-note-color);
