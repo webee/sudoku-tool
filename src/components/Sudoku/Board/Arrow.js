@@ -1,12 +1,10 @@
 import React from 'react';
 import styles from './Arrow.module.scss';
 import styled from 'styled-components';
-import * as positions from '../../../libs/position';
+import * as calc from './calc';
 
 // shortend arrow length, to avoid tail-head contact.
 const dd = 0.02;
-// percentage for a cell
-const pc = (1 - 1.5 / 100) / 9;
 
 const Arrow = styled.div`
   user-select: none;
@@ -20,34 +18,11 @@ const Arrow = styled.div`
     rotate(${({ deg }) => deg}deg) translate(${({ distance }) => (dd / 2 / distance) * 100}%);
 `;
 
-const getCoord = (pos, d) => {
-  const { row, col } = pos;
-  const [localRow, localCol] = positions.getDigitLocalPos(d);
-
-  // block margin: 0.25%
-  // cell margin:1%, padding: 2.5% of block
-  const x = (col + (localCol + 0.5) / 3 + 0.35 / 100) * pc + ((Math.floor(col / 3) + 1) * 0.5 - 0.25) / 100;
-  const y = (row + (localRow + 0.5) / 3 + 0.35 / 100) * pc + ((Math.floor(row / 3) + 1) * 0.5 - 0.25) / 100;
-
-  return [x, y];
-};
-
-const calcDistance = ([sx, sy], [ex, ey]) => {
-  const [dx, dy] = [ex - sx, ey - sy];
-
-  return Math.sqrt(dx * dx + dy * dy);
-};
-
-const calcDeg = ([sx, sy], [ex, ey], d) => {
-  const [dx, dy] = [ex - sx, ey - sy];
-  return ((Math.acos(dx / d) * (dy < 0 ? -1 : 1)) / Math.PI) * 180;
-};
-
 export default ({ type = 'solid', startPos, startDigit, endPos, endDigit }) => {
-  const sc = getCoord(startPos, startDigit);
-  const ec = getCoord(endPos, endDigit);
-  const distance = calcDistance(sc, ec);
-  const deg = calcDeg(sc, ec, distance);
+  const sc = calc.getCoord(startPos, startDigit);
+  const ec = calc.getCoord(endPos, endDigit);
+  const distance = calc.calcDistance(sc, ec);
+  const deg = calc.calcDeg(sc, ec, distance);
 
   return (
     <Arrow x={sc[0]} y={sc[1]} distance={distance - dd} deg={deg} type={type}>

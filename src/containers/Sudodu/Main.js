@@ -197,8 +197,16 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         const subNotes = new Set(chain.map(n => n.d).filter(v => v !== d));
         const notes = new Set([d]);
 
+        const frames = [];
         const arrows = [];
         let startNode = chain[0];
+
+        chain.forEach(({ pos }) => {
+          if (pos.isGroup) {
+            const { key, domain, block, row, col } = pos;
+            frames.push({ key, domain: [...domain][0], block, row, col });
+          }
+        });
         for (const endNode of chain.slice(1)) {
           let startPos = startNode.pos;
           if (startNode.pos.isGroup) {
@@ -218,7 +226,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
           });
           startNode = endNode;
         }
-        return { arrows, effect: { poses: effectedPoses, notes }, highlights: { poses, notes, subNotes } };
+        return { frames, arrows, effect: { poses: effectedPoses, notes }, highlights: { poses, notes, subNotes } };
       }
     }
   }, [tip]);

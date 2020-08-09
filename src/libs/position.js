@@ -10,10 +10,18 @@ export const blocks = _baseArray;
 export const rows = _baseArray;
 export const cols = _baseArray;
 
+// (row, col)->block
 export const rowColToBlock = (row, col) => Math.floor(row / 3) * 3 + Math.floor(col / 3);
+// (row, col)-> index in block
 export const blockRowColIndex = (row, col) => (row % 3) * 3 + (col % 3);
+// rows of block
 export const blockRows = block => {
   const start = Math.floor(block / 3) * 3;
+  return [start, start + 1, start + 2];
+};
+// cols of block
+export const blockCols = block => {
+  const start = (block % 3) * 3;
   return [start, start + 1, start + 2];
 };
 
