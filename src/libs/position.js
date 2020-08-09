@@ -124,3 +124,27 @@ export const getCommonRelatedPositions = (...poses) => {
       return _intersection(getRelatedPositions(pos), getCommonRelatedPositions(...rposes));
   }
 };
+
+const calcPosDistance = (aPos, bPos) => {
+  const dRow = aPos.row - bPos.row;
+  const dCol = aPos.col - bPos.col;
+  return dRow * dRow + dCol * dCol;
+};
+
+export const findClosedPosPair = (aPoses, bPoses) => {
+  let minDistance = Number.MAX_VALUE;
+  let a = null;
+  let b = null;
+  for (const aPos of aPoses) {
+    for (const bPos of bPoses) {
+      const d = calcPosDistance(aPos, bPos);
+      if (d < minDistance) {
+        minDistance = d;
+        a = aPos;
+        b = bPos;
+      }
+    }
+  }
+
+  return [a, b];
+};

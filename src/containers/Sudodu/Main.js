@@ -3,14 +3,16 @@ import Button from '../../components/UI/Button/Button';
 import Board from '../../components/Sudoku/Board/Board';
 import Controls from '../../components/Sudoku/Controls/Controls';
 import Modal from '../../components/UI/Modal/Modal';
+import Loading from '../../components/UI/Loading/Loading';
 import QRCode from 'qrcode.react';
 import styles from './Main.module.scss';
 import * as sudokus from '../../libs/sudoku';
 import { Notes } from '../../libs/sudoku';
-import { getPosition } from '../../libs/position';
+import { getPosition, findClosedPosPair } from '../../libs/position';
 import { console } from '../../libs/utils';
 
 const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), startNewGameHandler, emptyHandler }) => {
+  const [isLoading, setIsLoading] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [, setChanged] = useState(0);
   useEffect(() => {
@@ -129,11 +131,15 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       sudoku.handleTip(tip);
     } else {
       // find tip
-      const t = sudoku.findTip();
-      if (t) {
-        console.log('tip:', t);
-        setTip(t);
-      }
+      setIsLoading(true);
+      setTimeout(() => {
+        const t = sudoku.findTip();
+        setIsLoading(false);
+        if (t) {
+          console.log('tip:', t);
+          setTip(t);
+        }
+      }, 0);
     }
     // deselect
     deselectHandler();
@@ -198,24 +204,23 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         const notes = new Set([d]);
 
         const frames = [];
-        const arrows = [];
-        let startNode = chain[0];
 
+        // frames
         chain.forEach(({ pos }) => {
           if (pos.isGroup) {
             const { key, domain, block, row, col } = pos;
             frames.push({ key, domain: [...domain][0], block, row, col });
           }
         });
+
+        // arrows
+        const arrows = [];
+        let startNode = chain[0];
         for (const endNode of chain.slice(1)) {
-          let startPos = startNode.pos;
-          if (startNode.pos.isGroup) {
-            startPos = startNode.pos.poses[0];
-          }
-          let endPos = endNode.pos;
-          if (endNode.pos.isGroup) {
-            endPos = endNode.pos.poses[0];
-          }
+          const [startPos, endPos] = findClosedPosPair(
+            startNode.pos.isGroup ? startNode.pos.poses : [startNode.pos],
+            endNode.pos.isGroup ? endNode.pos.poses : [endNode.pos]
+          );
 
           arrows.push({
             startPos,
@@ -337,6 +342,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
 
   return (
     <>
+      {isLoading && <Loading />}
       <Modal show={showShare} close={() => setShowShare(false)}>
         {shareContent}
       </Modal>

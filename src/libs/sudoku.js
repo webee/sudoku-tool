@@ -698,18 +698,29 @@ export class Sudoku {
     const cells = this.getCurCells();
     const [dPoses, dGroupPoses, dLinks] = getDigitPosesAndLinks(cells);
     console.log('chain info:', dGroupPoses, dLinks);
-    for (const tryCellLinks of [false]) {
-      for (const tryGroupLinks of [true]) {
+    for (const tryCellLinks of [false, true]) {
+      for (const tryGroupLinks of [false, true]) {
         let dRes = null;
+        let maxLength = Number.MAX_VALUE;
         for (let d = 1; d <= 9; d++) {
           for (const pos of dPoses[d] || []) {
             const val = false;
             const startNode = { pos, d, val };
-            for (const chain of searchChain([], startNode, { dLinks, cells, td: d, tryGroupLinks, tryCellLinks })) {
+            const extraData = {
+              dLinks,
+              cells,
+              td: d,
+              tryGroupLinks,
+              tryCellLinks,
+              maxLength,
+            };
+            for (const chain of searchChain([], startNode, extraData)) {
               chain.type = 'chain';
               chain.name = 'chain';
-              if (!dRes || dRes.chain.length > chain.chain.length) {
+              if (chain.chain.length < maxLength) {
                 dRes = chain;
+                maxLength = dRes.chain.length;
+                extraData.maxLength = maxLength;
               }
             }
           }
@@ -739,7 +750,11 @@ export class Sudoku {
 }
 
 function* searchChain(chain, node, extraData) {
-  extraData = { tryGroupLinks: false, tryCellLinks: false, ...extraData };
+  // optimize
+  if (chain.length + 1 >= extraData.maxLength) {
+    return;
+  }
+
   const { pos, d, val } = node;
   const { dLinks, cells, td } = extraData;
 

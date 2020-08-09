@@ -3,13 +3,13 @@ import styled from 'styled-components';
 import * as positions from '../../../libs/position';
 import * as calc from './calc';
 
-const dd = 0.5;
+const dd = 0.8;
 
 const Frame = styled.div`
   user-select: none;
   pointer-events: none;
   position: absolute;
-  border: 1px solid #d1ff1a;
+  border: 1px solid red;
   top: ${({ sy }) => sy * 100 - dd}%;
   left: ${({ sx }) => sx * 100 - dd}%;
   right: ${({ ex }) => (1 - ex) * 100 - dd}%;
