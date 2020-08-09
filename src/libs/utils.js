@@ -98,3 +98,10 @@ export const console = {
   log: (debug && _console.log) || nilFunc,
   error: (debug && _console.error) || nilFunc,
 };
+
+export const getAttrDefault = (obj, name, defVal) => {
+  if (obj[name] === undefined) {
+    obj[name] = defVal;
+  }
+  return obj[name];
+};

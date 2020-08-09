@@ -8,7 +8,7 @@ import {
   getRelatedBlockPositions,
 } from './position';
 import * as positions from './position';
-import { findNGroupFromLinks, console } from './utils';
+import { findNGroupFromLinks, console, getAttrDefault } from './utils';
 
 export class Notes {
   static _base = 1 << 16;
@@ -696,24 +696,33 @@ export class Sudoku {
 
   findChain() {
     const cells = this.getCurCells();
-    const [dPoses, dLinks] = getDigitPosesAndLinks(cells);
-    for (const tryCellLinks of [false, true]) {
-      let dRes = null;
-      for (let d = 1; d <= 9; d++) {
-        for (const pos of dPoses[d] || []) {
-          const val = false;
-          const startNode = { pos, d, val };
-          for (const chain of searchChain([], startNode, { dLinks, cells, td: d, tryCellLinks })) {
-            chain.type = 'chain';
-            chain.name = 'chain';
-            if (!dRes || dRes.chain.length > chain.chain.length) {
-              dRes = chain;
+    const [dPoses, dGroupPoses, dLinks] = getDigitPosesAndLinks(cells);
+    console.log('chain info:', dGroupPoses, dLinks);
+    for (const tryCellLinks of [false]) {
+      for (const tryGroupLinks of [true]) {
+        let dRes = null;
+        for (let d = 1; d <= 9; d++) {
+          for (const pos of dPoses[d] || []) {
+            const val = false;
+            const startNode = { pos, d, val };
+            for (const chain of searchChain([], startNode, { dLinks, cells, td: d, tryGroupLinks, tryCellLinks })) {
+              chain.type = 'chain';
+              chain.name = 'chain';
+              if (!dRes || dRes.chain.length > chain.chain.length) {
+                dRes = chain;
+              }
             }
           }
         }
-      }
-      if (dRes) {
-        return dRes;
+        if (dRes) {
+          return dRes;
+        }
+        // 2. single and group pos
+        // for (let d = 1;d<=9;d++) {
+        //   for (const pos of dGroupPoses[d]||[]) {
+        //     //
+        //   }
+        // }
       }
     }
   }
@@ -730,7 +739,7 @@ export class Sudoku {
 }
 
 function* searchChain(chain, node, extraData) {
-  extraData = { tryCellLinks: false, ...extraData };
+  extraData = { tryGroupLinks: false, tryCellLinks: false, ...extraData };
   const { pos, d, val } = node;
   const { dLinks, cells, td } = extraData;
 
@@ -738,7 +747,19 @@ function* searchChain(chain, node, extraData) {
     // strong target
     // check if intersection related positions has d
     const effectedPoses = new Set();
-    for (const cpos of positions.getCommonRelatedPositions(chain[0].pos, pos)) {
+    const startPos = chain[0].pos;
+    const poses = [];
+    if (startPos.isGroup) {
+      poses.push(...startPos.poses);
+    } else {
+      poses.push(startPos);
+    }
+    if (pos.isGroup) {
+      poses.push(...pos.poses);
+    } else {
+      poses.push(pos);
+    }
+    for (const cpos of positions.getCommonRelatedPositions(...poses)) {
       const { value } = positions.getCell(cells, cpos);
       if (Notes.has(value, d)) {
         effectedPoses.add(cpos);
@@ -748,16 +769,17 @@ function* searchChain(chain, node, extraData) {
       yield { chain: [...chain, node], effectedPoses, d };
     }
   }
-  // try related links
-  const targets = dLinks[d][pos][val];
-  for (const tpos of targets) {
-    const nextNode = { pos: tpos, val: !val, d };
+  // try related links or group links
+  for (const targets of [dLinks[d][pos][val], extraData.tryGroupLinks ? dLinks[d][pos].group[val] : []]) {
+    for (const tpos of targets) {
+      const nextNode = { pos: tpos, val: !val, d };
 
-    if (chainHasNode(chain, nextNode)) {
-      continue;
+      if (chainHasNode(chain, nextNode)) {
+        continue;
+      }
+
+      yield* searchChain([...chain, node], nextNode, extraData);
     }
-
-    yield* searchChain([...chain, node], nextNode, extraData);
   }
 
   if (extraData.tryCellLinks) {
@@ -783,7 +805,184 @@ const chainHasNode = (chain, node) => {
   return false;
 };
 
+const newGroupPos = (domain, val, block, poses) => {
+  if (poses.length > 1) {
+    return {
+      key: `${domain}${val}block${block}`,
+      isGroup: true,
+      domain: new Set([domain]),
+      [domain]: val,
+      block,
+      poses,
+      toString() {
+        return this.key;
+      },
+    };
+  }
+  const pos = poses[0];
+  return {
+    key: pos.key,
+    isGroup: false,
+    domain: new Set([domain]),
+    [domain]: val,
+    block,
+    pos,
+    poses,
+    toString() {
+      return this.key;
+    },
+  };
+};
+
+// for row/col in block, like claiming.
+function getDigitGroupPoses(cells) {
+  const dGroupPoses = {};
+  for (const [domain, xPositions] of [
+    ['row', positions.rowPositions],
+    ['col', positions.colPositions],
+  ]) {
+    for (const xPoses of xPositions) {
+      const blockDigitPoses = {};
+      let val = 0;
+      for (const pos of xPoses) {
+        val = pos[domain];
+        const { value } = positions.getCell(cells, pos);
+        if (!Notes.is(value)) {
+          continue;
+        }
+        const digitPoses = getAttrDefault(blockDigitPoses, pos.block, {});
+        for (const d of Notes.entries(value)) {
+          const poses = getAttrDefault(digitPoses, d, []);
+          poses.push(pos);
+        }
+      }
+      for (const [sblock, digitGroups] of Object.entries(blockDigitPoses)) {
+        for (const [sd, poses] of Object.entries(digitGroups)) {
+          const block = parseInt(sblock);
+          const d = parseInt(sd);
+          const groupPoses = getAttrDefault(dGroupPoses, d, []);
+          if (poses.length > 1) {
+            groupPoses.push(newGroupPos(domain, val, block, poses));
+          } else {
+            const pos = poses[0];
+            let groupPos = groupPoses.filter(gp => gp.pos === pos)[0];
+            if (!groupPos) {
+              groupPos = newGroupPos(domain, val, block, poses);
+              groupPoses.push(groupPos);
+            }
+            groupPos.domain.add(domain);
+            groupPos[domain] = val;
+          }
+        }
+      }
+    }
+  }
+  return dGroupPoses;
+}
+
+const hasCommon = (a, b) => {
+  const sb = new Set(b);
+  return a.filter(v => sb.has(v)).length > 0;
+};
+
+const getOtherRowGroupPositions = (groupPoses = [], pos) => {
+  return groupPoses.filter(gpos => pos.row && gpos.row === pos.row && gpos !== pos);
+};
+
+const getOtherColGroupPositions = (groupPoses = [], pos) => {
+  return groupPoses.filter(gpos => pos.col && gpos.col === pos.col && gpos !== pos);
+};
+
+const getOtherBlockGroupPositions = (groupPoses = [], pos) => {
+  const filteredGroupPoses = groupPoses.filter(
+    gpos => gpos.block === pos.block && gpos !== pos && !hasCommon(gpos.poses, pos.poses)
+  );
+  const res = filteredGroupPoses.filter(gpos => gpos.isGroup);
+  for (const gpos of filteredGroupPoses.filter(gpos => !gpos.isGroup)) {
+    let ok = true;
+    for (const rpos of res) {
+      if (hasCommon(rpos.poses, gpos.poses)) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      res.push(gpos);
+    }
+  }
+  return res;
+};
+
+function getGroupPosLink(groupPoses, pos) {
+  // strong: false->true, weak: true->false
+  const strongTargets = new Set();
+  const weakTargets = new Set();
+  for (const [domain, getOtherGroupPositions] of [
+    ['row', getOtherRowGroupPositions],
+    ['col', getOtherColGroupPositions],
+    ['block', getOtherBlockGroupPositions],
+  ]) {
+    if (domain !== 'block' && !pos.domain.has(domain)) {
+      continue;
+    }
+
+    let count = 0;
+    let strongPos = null;
+    for (const opos of getOtherGroupPositions(groupPoses, pos)) {
+      if (pos.isGroup || opos.isGroup) {
+        weakTargets.add(opos.isGroup ? opos : opos.pos);
+      }
+      count++;
+      strongPos = opos;
+    }
+    if (count === 1) {
+      if (pos.isGroup || strongPos.isGroup) {
+        strongTargets.add(strongPos.isGroup ? strongPos : strongPos.pos);
+      }
+    }
+  }
+  return { false: [...strongTargets], true: [...weakTargets] };
+}
+
+function getPosLink(cells, d, pos) {
+  // strong: false->true, weak: true->false
+  const strongTargets = new Set();
+  const weakTargets = new Set();
+  for (const [domain, getRelatedPositions] of [
+    ['row', getRelatedRowPositions],
+    ['col', getRelatedColPositions],
+    ['block', getRelatedBlockPositions],
+  ]) {
+    let spos = pos;
+    let filterPoses = new Set();
+    if (pos.isGroup) {
+      if (domain !== 'block' && !pos.domain.has(domain)) {
+        continue;
+      }
+      spos = pos.poses[0];
+      filterPoses = new Set(pos.poses);
+    }
+
+    let count = 0;
+    let strongPos = null;
+    for (const rpos of getRelatedPositions(spos).filter(p => !filterPoses.has(p))) {
+      const { value } = positions.getCell(cells, rpos);
+      if (!Notes.has(value, d)) {
+        continue;
+      }
+      weakTargets.add(rpos);
+      count++;
+      strongPos = rpos;
+    }
+    if (count === 1) {
+      strongTargets.add(strongPos);
+    }
+  }
+  return { false: [...strongTargets], true: [...weakTargets] };
+}
+
 function getDigitPosesAndLinks(cells) {
+  const dGroupPoses = getDigitGroupPoses(cells);
   const dLinks = {};
   const dPoses = {};
   for (const pos of positions.flattenPositions) {
@@ -793,44 +992,35 @@ function getDigitPosesAndLinks(cells) {
     }
     const ds = Notes.entries(value);
     for (const d of ds) {
-      if (!dPoses[d]) {
-        dPoses[d] = [];
-      }
-      const poses = dPoses[d];
-      if (!dLinks[d]) {
-        dLinks[d] = {};
-      }
-      const links = dLinks[d];
-
+      const poses = getAttrDefault(dPoses, d, []);
       poses.push(pos);
-      // strong: false->true, weak: true->false
-      const strongTargets = new Set();
-      const weakTargets = new Set();
-      for (const getRelatedPositions of [getRelatedRowPositions, getRelatedColPositions, getRelatedBlockPositions]) {
-        let count = 0;
-        let strongPos = null;
-        for (const rpos of getRelatedPositions(pos)) {
-          const { value } = positions.getCell(cells, rpos);
-          if (!Notes.has(value, d)) {
-            continue;
-          }
-          weakTargets.add(rpos);
-          count++;
-          strongPos = rpos;
-        }
-        if (count === 1) {
-          strongTargets.add(strongPos);
-        }
-      }
+
+      const links = getAttrDefault(dLinks, d, {});
+      const link = getPosLink(cells, d, pos);
+      links[pos] = link;
+
       const otherDs = ds.filter(v => v !== d);
-      links[pos] = {
-        false: [...strongTargets],
-        true: [...weakTargets],
-        cell: { false: ds.length === 2 ? otherDs : [], true: otherDs },
-      };
+      link.group = { false: [], true: [] };
+      link.cell = { false: ds.length === 2 ? otherDs : [], true: otherDs };
     }
   }
-  return [dPoses, dLinks];
+  // group position links
+  for (const [sd, groupPoses] of Object.entries(dGroupPoses)) {
+    const d = parseInt(sd);
+    for (const pos of groupPoses) {
+      const links = getAttrDefault(dLinks, d, {});
+      let link = null;
+      if (pos.isGroup) {
+        link = getPosLink(cells, d, pos);
+        links[pos] = link;
+      } else {
+        link = links[pos.pos];
+      }
+      link.group = getGroupPosLink(dGroupPoses[d], pos);
+    }
+  }
+
+  return [dPoses, dGroupPoses, dLinks];
 }
 
 function getPositionsLinks(cells, positions) {

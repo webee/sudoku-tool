@@ -19,20 +19,22 @@ export const blockRows = block => {
 
 const _rowPositions = _baseArray.map(row =>
   _baseArray.map(col => ({
+    key: `r${row}c${col}`,
     idx: row * 9 + col,
     row,
     col,
     block: rowColToBlock(row, col),
-    key: `r${row}c${col}`,
     toString() {
       return this.key;
     },
   }))
 );
+export const rowPositions = _rowPositions;
 
 // row positions without col
 const _rowRelatedPositions = _baseArray.map(r => _baseArray.map(c => _rowPositions[r].filter(pos => pos.col !== c)));
 const _colPositions = _baseArray.map(c => _baseArray.map(r => _rowPositions[r][c]));
+export const colPositions = _colPositions;
 // col positions without row
 const _colRelatedPositions = _baseArray.map(c => _baseArray.map(r => _colPositions[c].filter(pos => pos.row !== r)));
 

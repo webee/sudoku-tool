@@ -13,7 +13,6 @@ const Board = ({ availablePositions, cells, activeVal, activePos, cellClickedHan
     activeVal = cells[row][col].value;
   }
 
-  console.log(marks && marks.arrows);
   return (
     <AspectRatioBox ratio={1.0}>
       <div className={styles.SudokuBoard}>

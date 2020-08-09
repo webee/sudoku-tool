@@ -186,17 +186,33 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         }
       } else if (tip.type === 'chain') {
         const { chain, effectedPoses, d } = tip;
-        const poses = new Set(chain.map(n => n.pos));
+        const poses = new Set();
+        chain.forEach(({ pos }) => {
+          if (pos.isGroup) {
+            pos.poses.forEach(p => poses.add(p));
+          } else {
+            poses.add(pos);
+          }
+        });
         const subNotes = new Set(chain.map(n => n.d).filter(v => v !== d));
         const notes = new Set([d]);
 
         const arrows = [];
         let startNode = chain[0];
         for (const endNode of chain.slice(1)) {
+          let startPos = startNode.pos;
+          if (startNode.pos.isGroup) {
+            startPos = startNode.pos.poses[0];
+          }
+          let endPos = endNode.pos;
+          if (endNode.pos.isGroup) {
+            endPos = endNode.pos.poses[0];
+          }
+
           arrows.push({
-            startPos: startNode.pos,
+            startPos,
             startDigit: startNode.d,
-            endPos: endNode.pos,
+            endPos,
             endDigit: endNode.d,
             type: endNode.val ? 'solid' : 'dashed',
           });

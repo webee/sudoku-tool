@@ -48,7 +48,6 @@ export default ({ type = 'solid', startPos, startDigit, endPos, endDigit }) => {
   const ec = getCoord(endPos, endDigit);
   const distance = calcDistance(sc, ec);
   const deg = calcDeg(sc, ec, distance);
-  console.log(type);
 
   return (
     <Arrow x={sc[0]} y={sc[1]} distance={distance - dd} deg={deg} type={type}>
