@@ -773,6 +773,8 @@ export class Sudoku {
   }
 }
 
+const checkExistAndEqual = (a, b) => a !== undefined && a === b;
+
 function* searchChain(chain, node, extraData) {
   // optimize
   if (chain.length + 1 >= extraData.maxLength) {
@@ -834,7 +836,11 @@ function* searchChain(chain, node, extraData) {
       } else {
         if (!pos.isGroup) {
           if (!(startPos.isGroup && new Set(startPos.poses).has(pos))) {
-            if (pos.row === startPos.row || pos.col === startPos.col || pos.block === startPos.block) {
+            if (
+              checkExistAndEqual(pos.row, startPos.row) ||
+              checkExistAndEqual(pos.col, startPos.col) ||
+              checkExistAndEqual(pos.block, startPos.block)
+            ) {
               const { value } = positions.getCell(cells, pos);
               if (Notes.has(value, td)) {
                 yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
@@ -843,8 +849,12 @@ function* searchChain(chain, node, extraData) {
           }
         } else {
           // group
-          if (!(!startPos.isGroup && new Set(pos.poses).has(startPos))) {
-            if (pos.row === startPos.row || pos.col === startPos.col || pos.block === startPos.block) {
+          if (!hasCommon(pos.poses, startPos.isGroup ? startPos.poses : [startPos])) {
+            if (
+              checkExistAndEqual(pos.row, startPos.row) ||
+              checkExistAndEqual(pos.col, startPos.col) ||
+              checkExistAndEqual(pos.block, startPos.block)
+            ) {
               const ds = new Set();
               for (const p of pos.poses) {
                 const { value } = positions.getCell(cells, p);
@@ -903,10 +913,11 @@ const chainHasNode = (chain, node) => {
   return false;
 };
 
-const newGroupPos = (domain, val, block, poses) => {
+const newGroupPos = (domain, val, block, poses, d) => {
   if (poses.length > 1) {
     return {
-      key: `${domain}${val}block${block}`,
+      key: `${d}@${domain}${val}block${block}`,
+      d,
       isGroup: true,
       domain: new Set([domain]),
       [domain]: val,
@@ -920,6 +931,7 @@ const newGroupPos = (domain, val, block, poses) => {
   const pos = poses[0];
   return {
     key: pos.key,
+    d,
     isGroup: false,
     domain: new Set([domain]),
     [domain]: val,
@@ -962,12 +974,12 @@ function getDigitGroupPoses(cells) {
           const d = parseInt(sd);
           const groupPoses = getAttrDefault(dGroupPoses, d, []);
           if (poses.length > 1) {
-            groupPoses.push(newGroupPos(domain, val, block, poses));
+            groupPoses.push(newGroupPos(domain, val, block, poses, d));
           } else {
             const pos = poses[0];
             let groupPos = groupPoses.filter(gp => gp.pos === pos)[0];
             if (!groupPos) {
-              groupPos = newGroupPos(domain, val, block, poses);
+              groupPos = newGroupPos(domain, val, block, poses, d);
               groupPoses.push(groupPos);
             }
             groupPos.domain.add(domain);
