@@ -4,7 +4,7 @@ import digits from '../../../../UI/Digits/Digits';
 import { Notes } from '../../../../../libs/sudoku';
 import * as positions from '../../../../../libs/position';
 
-const noteClassName = (n, activeVal, highlighted, effectMarked, marks) => {
+const noteClassName = (n, activeVal, highlighted, effectMarked, marks, pos) => {
   const classes = [styles.Note];
   if (n === activeVal) {
     classes.push(styles.ActiveValue);
@@ -19,11 +19,22 @@ const noteClassName = (n, activeVal, highlighted, effectMarked, marks) => {
     }
 
     if (src) {
-      const { notes, subNotes } = src;
+      const { posNotes, posSubNotes } = src;
+      let { notes, subNotes } = src;
+      if (posNotes && posSubNotes) {
+        notes = posNotes[pos];
+        subNotes = posSubNotes[pos];
+      }
       if (notes && notes.has(n)) {
         classes.push(styles.MarkedNoteValue);
       } else if (subNotes && subNotes.has(n)) {
         classes.push(styles.MarkedValue);
+      }
+
+      if (highlighted && effectMarked) {
+        if (marks.effect.notes.has(n)) {
+          classes.push(styles.Effected);
+        }
       }
     }
   }
@@ -106,9 +117,13 @@ const Cell = React.memo(
     }
     if (highlighted) {
       classes.push(styles.MarkedHighlight);
+      if (marks.highlights.withoutOutlinePoses && marks.highlights.withoutOutlinePoses.has(pos)) {
+        classes.push(styles.WithoutOutline);
+      }
     } else if (domainMarked) {
       classes.push(styles.MarkedDomain);
-    } else if (effectMarked) {
+    }
+    if (effectMarked) {
       classes.push(styles.MarkedEffect);
     }
 
@@ -134,7 +149,7 @@ const Cell = React.memo(
         content = positions.blockShape.map((rows, idx) => (
           <div key={idx} className={styles.RowNotes}>
             {rows.map(i => (
-              <div key={i} className={noteClassName(i + 1, activeVal, highlighted, effectMarked, marks)}>
+              <div key={i} className={noteClassName(i + 1, activeVal, highlighted, effectMarked, marks, pos)}>
                 {Notes.has(notes, i + 1) ? digits[i + 1] : null}
               </div>
             ))}

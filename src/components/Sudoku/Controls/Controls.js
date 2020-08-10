@@ -25,6 +25,7 @@ const Controls = ({
   autoPlacePointingClaimingHandler,
   tip,
   tipHandler,
+  changeChainStepHandler,
 }) => {
   return (
     <div className={styles.Controls}>
@@ -69,6 +70,12 @@ const Controls = ({
           <Button type={tip && 'On'} onClick={tipHandler}>
             {tip ? tip.name : 'tip'}
           </Button>
+          {tip && tip.type === 'chain' && (
+            <>
+              <Button onClick={() => changeChainStepHandler(-1)}>&lt;</Button>
+              <Button onClick={() => changeChainStepHandler(1)}>&gt;</Button>
+            </>
+          )}
         </div>
       </div>
     </div>

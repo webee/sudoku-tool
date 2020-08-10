@@ -36,13 +36,16 @@
 
   &.MarkedEffect {
     @extend %Marked;
-    background-color: #82216a;
+    background-color: $marked-effected-color;
   }
 
   &.MarkedHighlight {
     @extend %Marked;
-    outline: 2px dashed $marked-color !important;
+    outline: 2px dashed $marked-color;
     background-color: seagreen !important;
+    &.WithoutOutline {
+      outline: none;
+    }
   }
 }
 
@@ -80,10 +83,13 @@
   &.MarkedHighlight,
   &.MarkedEffect {
     &.MarkedValue {
-      @include digitColor($marked-value-color !important);
+      @include digitColor($marked-value-color);
     }
     &.MarkedNoteValue {
       @include digitColor($marked-note-color);
+    }
+    &.Effected {
+      @include digitColor($marked-effected-color);
     }
   }
 }
@@ -133,6 +139,9 @@
       }
       &.MarkedNoteValue {
         @include digitColor($marked-note-color);
+      }
+      &.Effected {
+        @include digitColor($marked-effected-color);
       }
     }
   }

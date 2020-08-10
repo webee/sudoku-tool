@@ -28,6 +28,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
   const [tip, setTip] = useState(null);
+  const [chainStep, setChainStep] = useState(2);
 
   // calculated states
   const cellsRecord = sudoku.cellsRecord;
@@ -138,6 +139,9 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         if (t) {
           console.log('tip:', t);
           setTip(t);
+          if (t.type === 'chain') {
+            setChainStep(t.chain.length);
+          }
         }
       }, 0);
     }
@@ -191,22 +195,49 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
           return { domain: { blocks }, effect: { rows, cols, notes }, highlights: { poses, notes } };
         }
       } else if (tip.type === 'chain') {
-        const { chain, effectedPoses, d } = tip;
-        const poses = new Set();
-        chain.forEach(({ pos }) => {
+        const { chain, effectedPoses, d, effectedDs } = tip;
+        const curChain = chain.slice(0, chainStep);
+        const allPoses = [];
+        curChain.forEach(({ pos }) => {
           if (pos.isGroup) {
-            pos.poses.forEach(p => poses.add(p));
+            pos.poses.forEach(p => allPoses.push(p));
           } else {
-            poses.add(pos);
+            allPoses.push(pos);
           }
         });
-        const subNotes = new Set(chain.map(n => n.d).filter(v => v !== d));
-        const notes = new Set([d]);
+        const poses = new Set(allPoses);
+        const withoutOutlinePoses = new Set(allPoses);
+        // remove head and tail
+        sudokus.getRealPoses(chain[0].pos).forEach(p => withoutOutlinePoses.delete(p));
+        sudokus.getRealPoses(chain[chain.length - 1].pos).forEach(p => withoutOutlinePoses.delete(p));
+
+        const effectedNotes = effectedDs ? effectedDs : new Set([d]);
+        const posNotes = {};
+        const posSubNotes = {};
+        for (const n of curChain) {
+          let _posNotes = posNotes;
+          if (n.d !== d) {
+            _posNotes = posSubNotes;
+          }
+          const { pos } = n;
+          for (const p of sudokus.getRealPoses(pos)) {
+            const subNotes = _posNotes[p] || new Set();
+            _posNotes[p] = subNotes;
+            subNotes.add(n.d);
+            // if (effectedPoses.has(p)) {
+            //   if (posNotes[p]) {
+            //     posNotes[p].add(d);
+            //   } else {
+            //     posNotes[p] = new Set([d]);
+            //   }
+            // }
+          }
+        }
 
         const frames = [];
 
         // frames
-        chain.forEach(({ pos }) => {
+        curChain.forEach(({ pos }) => {
           if (pos.isGroup) {
             const { key, domain, block, row, col } = pos;
             frames.push({ key, domain: [...domain][0], block, row, col });
@@ -215,8 +246,8 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
 
         // arrows
         const arrows = [];
-        let startNode = chain[0];
-        for (const endNode of chain.slice(1)) {
+        let startNode = curChain[0];
+        for (const endNode of curChain.slice(1)) {
           const [startPos, endPos] = findClosedPosPair(
             startNode.pos.isGroup ? startNode.pos.poses : [startNode.pos],
             endNode.pos.isGroup ? endNode.pos.poses : [endNode.pos]
@@ -231,10 +262,28 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
           });
           startNode = endNode;
         }
-        return { frames, arrows, effect: { poses: effectedPoses, notes }, highlights: { poses, notes, subNotes } };
+        return {
+          frames,
+          arrows,
+          effect: { poses: effectedPoses, notes: effectedNotes },
+          highlights: { poses, posNotes, posSubNotes, withoutOutlinePoses },
+        };
       }
     }
-  }, [tip]);
+  }, [chainStep, tip]);
+
+  const changeChainStepHandler = useCallback(
+    d => {
+      if (tip && tip.type === 'chain') {
+        const len = tip.chain.length;
+        console.log(chainStep, len, ((chainStep - 1 + d + len) % len) + 1);
+        setChainStep(s => {
+          return ((s - 1 + d + len) % len) + 1;
+        });
+      }
+    },
+    [chainStep, tip]
+  );
 
   // event listeners
   useEffect(() => {
@@ -386,6 +435,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
           autoPlacePointingClaimingHandler={autoPlacePointingClaimingHandler}
           tip={tip}
           tipHandler={tipHandler}
+          changeChainStepHandler={changeChainStepHandler}
         />
       </div>
       <div className={styles.Info}></div>
