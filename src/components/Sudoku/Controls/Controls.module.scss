@@ -30,6 +30,12 @@
       flex: 1 0;
       display: flex;
       justify-content: flex-end;
+      align-items: center;
+
+      .ChainSteper {
+        cursor: pointer;
+        margin: auto 1.5%;
+      }
     }
   }
 }

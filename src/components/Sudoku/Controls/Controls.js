@@ -72,8 +72,12 @@ const Controls = ({
           </Button>
           {tip && tip.type === 'chain' && (
             <>
-              <Button onClick={() => changeChainStepHandler(-1)}>&lt;</Button>
-              <Button onClick={() => changeChainStepHandler(1)}>&gt;</Button>
+              <span className={styles.ChainSteper} onClick={() => changeChainStepHandler(-1)}>
+                &lt;
+              </span>
+              <span className={styles.ChainSteper} onClick={() => changeChainStepHandler(1)}>
+                &gt;
+              </span>
             </>
           )}
         </div>

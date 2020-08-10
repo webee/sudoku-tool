@@ -224,13 +224,6 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
             const subNotes = _posNotes[p] || new Set();
             _posNotes[p] = subNotes;
             subNotes.add(n.d);
-            // if (effectedPoses.has(p)) {
-            //   if (posNotes[p]) {
-            //     posNotes[p].add(d);
-            //   } else {
-            //     posNotes[p] = new Set([d]);
-            //   }
-            // }
           }
         }
 
