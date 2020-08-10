@@ -701,59 +701,56 @@ export class Sudoku {
     for (const maxLen of [20, Number.MAX_VALUE]) {
       for (const tryCellLinks of [false, true]) {
         for (const tryGroupLinks of [false, true]) {
-          let dRes = null;
-          let maxLength = maxLen;
-          for (let d = 1; d <= 9; d++) {
-            for (const pos of dPoses[d] || []) {
-              const val = false;
-              const startNode = { pos, d, val };
-              const extraData = {
-                dLinks,
-                cells,
-                td: d,
-                tryGroupLinks,
-                tryCellLinks,
-                maxLength,
-              };
-              for (const chain of searchChain([], startNode, extraData)) {
-                if (chain.chain.length < maxLength) {
-                  dRes = chain;
-                  maxLength = dRes.chain.length;
-                  extraData.maxLength = maxLength;
+          //for (const getPoses of [d => dPoses[d] || [] /*, d => (dGroupPoses[d] || []).filter(p => p.isGroup)*/]) {
+          for (const getPoses of [d => dPoses[d] || [], d => (dGroupPoses[d] || []).filter(p => p.isGroup)]) {
+            let dRes = null;
+            let maxLength = maxLen;
+            for (let d = 1; d <= 9; d++) {
+              for (const pos of getPoses(d)) {
+                const val = false;
+                const startNode = { pos, d, val };
+                const extraData = {
+                  dLinks,
+                  cells,
+                  td: d,
+                  tryGroupLinks,
+                  tryCellLinks,
+                  maxLength,
+                };
+                for (const chain of searchChain([], startNode, extraData)) {
+                  if (chain.chain.length < maxLength) {
+                    dRes = chain;
+                    maxLength = dRes.chain.length;
+                    extraData.maxLength = maxLength;
+                  }
                 }
               }
             }
-          }
-          if (dRes) {
-            dRes.type = 'chain';
-            const d = dRes.d;
-            let hasMulti = false;
-            let hasGroup = false;
-            for (const node of dRes.chain) {
-              if (node.d !== d) {
-                hasMulti = true;
+            if (dRes) {
+              dRes.type = 'chain';
+              const d = dRes.d;
+              let hasMulti = false;
+              let hasGroup = false;
+              for (const node of dRes.chain) {
+                if (node.d !== d) {
+                  hasMulti = true;
+                }
+                if (node.pos.isGroup) {
+                  hasGroup = true;
+                }
+                if (hasMulti && hasGroup) {
+                  break;
+                }
               }
-              if (node.pos.isGroup) {
-                hasGroup = true;
+              const parts = [dRes.chain.length - 1];
+              if (hasGroup) {
+                parts.push('Group');
               }
-              if (hasMulti && hasGroup) {
-                break;
-              }
+              parts.push(hasMulti ? 'XY' : 'X', 'Chain');
+              dRes.name = parts.join('-');
+              return dRes;
             }
-            const parts = [dRes.chain.length - 1];
-            if (hasGroup) {
-              parts.push('Group');
-            }
-            parts.push(hasMulti ? 'XY' : 'X', 'Chain');
-            dRes.name = parts.join('-');
-            return dRes;
           }
-          // 2. single and group pos
-          // for (let d = 1;d<=9;d++) {
-          //   for (const pos of dGroupPoses[d]||[]) {
-          //     //
-          //   }
-          // }
         }
       }
     }
@@ -814,29 +811,50 @@ function* searchChain(chain, node, extraData) {
     } else {
       // xy-chain
       const { pos: startPos } = chain[0];
-      if (startPos === pos) {
-        const { value } = positions.getCell(cells, pos);
-        if (Notes.size(value) > 2) {
+      if (startPos.key === pos.key) {
+        const poses = pos.isGroup ? [...pos.poses, ...startPos.poses] : [pos];
+        const ds = new Set();
+        for (const p of poses) {
+          const { value } = positions.getCell(cells, p);
+          Notes.entries(value).forEach(d => ds.add(d));
+        }
+        if (ds.size > 2) {
           // eliminate other digits of this position
+          ds.delete(d);
+          ds.delete(td);
           yield {
             chain: [...chain, node],
-            effectedPoses: new Set([pos]),
+            effectedPoses: new Set(poses),
             d: td,
-            effectedDs: new Set(Notes.entries(value).filter(v => v !== d && v !== td)),
+            effectedDs: ds,
             keep: true,
             keepDs: [d, td],
           };
         }
       } else {
         if (!pos.isGroup) {
-          const { value } = positions.getCell(cells, pos);
-          if (Notes.has(value, td)) {
+          if (!(startPos.isGroup && new Set(startPos.poses).has(pos))) {
             if (pos.row === startPos.row || pos.col === startPos.col || pos.block === startPos.block) {
-              yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
+              const { value } = positions.getCell(cells, pos);
+              if (Notes.has(value, td)) {
+                yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
+              }
             }
           }
         } else {
-          // TODO: group
+          // group
+          if (!(!startPos.isGroup && new Set(pos.poses).has(startPos))) {
+            if (pos.row === startPos.row || pos.col === startPos.col || pos.block === startPos.block) {
+              const ds = new Set();
+              for (const p of pos.poses) {
+                const { value } = positions.getCell(cells, p);
+                Notes.entries(value).forEach(d => ds.add(d));
+              }
+              if (ds.has(td)) {
+                yield { chain: [...chain, node], effectedPoses: new Set(pos.poses), d: td };
+              }
+            }
+          }
         }
       }
     }
@@ -870,8 +888,16 @@ function* searchChain(chain, node, extraData) {
 
 const chainHasNode = (chain, node) => {
   for (const n of chain) {
-    if (n.pos === node.pos && n.val === node.val && n.d === node.d) {
-      return true;
+    if (n.val === node.val && n.d === node.d) {
+      if (n.pos === node.pos) {
+        return true;
+      }
+      if (n.pos.isGroup && new Set(n.pos.poses).has(node.pos)) {
+        return true;
+      }
+      if (node.pos.isGroup && new Set(node.pos.poses).has(n.pos)) {
+        return true;
+      }
     }
   }
   return false;
@@ -960,34 +986,34 @@ const hasCommon = (a, b) => {
 };
 
 const getOtherRowGroupPositions = (groupPoses = [], pos) => {
-  return groupPoses.filter(gpos => pos.row && gpos.row === pos.row && gpos !== pos);
+  return groupPoses.filter(p => pos.row !== undefined && p.row === pos.row && p.key !== pos.key);
 };
 
 const getOtherColGroupPositions = (groupPoses = [], pos) => {
-  return groupPoses.filter(gpos => pos.col && gpos.col === pos.col && gpos !== pos);
+  return groupPoses.filter(p => pos.col !== undefined && p.col === pos.col && p.key !== pos.key);
 };
 
 const getOtherBlockGroupPositions = (groupPoses = [], pos) => {
   const filteredGroupPoses = groupPoses.filter(
-    gpos => gpos.block === pos.block && gpos !== pos && !hasCommon(gpos.poses, pos.poses)
+    p => p.block === pos.block && p.key !== pos.key && !hasCommon(p.poses, pos.isGroup ? pos.poses : [pos])
   );
-  const res = filteredGroupPoses.filter(gpos => gpos.isGroup);
-  for (const gpos of filteredGroupPoses.filter(gpos => !gpos.isGroup)) {
+  const res = filteredGroupPoses.filter(p => p.isGroup);
+  for (const p of filteredGroupPoses.filter(p => !p.isGroup)) {
     let ok = true;
     for (const rpos of res) {
-      if (hasCommon(rpos.poses, gpos.poses)) {
+      if (hasCommon(rpos.poses, p.poses)) {
         ok = false;
         break;
       }
     }
     if (ok) {
-      res.push(gpos);
+      res.push(p);
     }
   }
   return res;
 };
 
-function getGroupPosLink(groupPoses, pos) {
+function getGroupPosLink(groupPoses, pos, d) {
   // strong: false->true, weak: true->false
   const strongTargets = new Set();
   const weakTargets = new Set();
@@ -996,23 +1022,28 @@ function getGroupPosLink(groupPoses, pos) {
     ['col', getOtherColGroupPositions],
     ['block', getOtherBlockGroupPositions],
   ]) {
-    if (domain !== 'block' && !pos.domain.has(domain)) {
+    if (pos.isGroup && domain !== 'block' && !pos.domain.has(domain)) {
       continue;
     }
 
     let count = 0;
     let strongPos = null;
     for (const opos of getOtherGroupPositions(groupPoses, pos)) {
-      if (pos.isGroup || opos.isGroup) {
-        weakTargets.add(opos.isGroup ? opos : opos.pos);
-      }
       count++;
-      strongPos = opos;
-    }
-    if (count === 1) {
-      if (pos.isGroup || strongPos.isGroup) {
-        strongTargets.add(strongPos.isGroup ? strongPos : strongPos.pos);
+      if (opos.isGroup) {
+        if (pos.isGroup) {
+          // group pos
+          weakTargets.add(opos);
+          strongPos = opos;
+        } else if (!new Set(opos.poses).has(pos)) {
+          // pos
+          weakTargets.add(opos);
+          strongPos = opos;
+        }
       }
+    }
+    if (count === 1 && strongPos) {
+      strongTargets.add(strongPos);
     }
   }
   return { false: [...strongTargets], true: [...weakTargets] };
@@ -1072,26 +1103,21 @@ function getDigitPosesAndLinks(cells) {
       const links = getAttrDefault(dLinks, d, {});
       const link = getPosLink(cells, d, pos);
       links[pos] = link;
+      link.group = getGroupPosLink(dGroupPoses[d], pos, d);
 
       const otherDs = ds.filter(v => v !== d);
-      link.group = { false: [], true: [] };
       link.cell = { false: ds.length === 2 ? otherDs : [], true: otherDs };
     }
   }
   // group position links
   for (const [sd, groupPoses] of Object.entries(dGroupPoses)) {
     const d = parseInt(sd);
-    for (const pos of groupPoses) {
-      const links = getAttrDefault(dLinks, d, {});
-      let link = null;
-      if (pos.isGroup) {
-        link = getPosLink(cells, d, pos);
-        links[pos] = link;
-      } else {
-        link = links[pos.pos];
-      }
+    const links = getAttrDefault(dLinks, d, {});
+    for (const pos of groupPoses.filter(p => p.isGroup)) {
+      const link = getPosLink(cells, d, pos);
+      links[pos] = link;
       link.group = getGroupPosLink(dGroupPoses[d], pos);
-      link.cell = link.cell || { false: [], true: [] };
+      link.cell = { false: [], true: [] };
     }
   }
 
