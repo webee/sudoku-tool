@@ -698,61 +698,63 @@ export class Sudoku {
     const cells = this.getCurCells();
     const [dPoses, dGroupPoses, dLinks] = getDigitPosesAndLinks(cells);
     console.log('chain info:', dGroupPoses, dLinks);
-    for (const tryCellLinks of [false, true]) {
-      for (const tryGroupLinks of [false, true]) {
-        let dRes = null;
-        let maxLength = Number.MAX_VALUE;
-        for (let d = 1; d <= 9; d++) {
-          for (const pos of dPoses[d] || []) {
-            const val = false;
-            const startNode = { pos, d, val };
-            const extraData = {
-              dLinks,
-              cells,
-              td: d,
-              tryGroupLinks,
-              tryCellLinks,
-              maxLength,
-            };
-            for (const chain of searchChain([], startNode, extraData)) {
-              if (chain.chain.length < maxLength) {
-                dRes = chain;
-                maxLength = dRes.chain.length;
-                extraData.maxLength = maxLength;
+    for (const maxLen of [20, Number.MAX_VALUE]) {
+      for (const tryCellLinks of [false, true]) {
+        for (const tryGroupLinks of [false, true]) {
+          let dRes = null;
+          let maxLength = maxLen;
+          for (let d = 1; d <= 9; d++) {
+            for (const pos of dPoses[d] || []) {
+              const val = false;
+              const startNode = { pos, d, val };
+              const extraData = {
+                dLinks,
+                cells,
+                td: d,
+                tryGroupLinks,
+                tryCellLinks,
+                maxLength,
+              };
+              for (const chain of searchChain([], startNode, extraData)) {
+                if (chain.chain.length < maxLength) {
+                  dRes = chain;
+                  maxLength = dRes.chain.length;
+                  extraData.maxLength = maxLength;
+                }
               }
             }
           }
-        }
-        if (dRes) {
-          dRes.type = 'chain';
-          const d = dRes.d;
-          let hasMulti = false;
-          let hasGroup = false;
-          for (const node of dRes.chain) {
-            if (node.d !== d) {
-              hasMulti = true;
+          if (dRes) {
+            dRes.type = 'chain';
+            const d = dRes.d;
+            let hasMulti = false;
+            let hasGroup = false;
+            for (const node of dRes.chain) {
+              if (node.d !== d) {
+                hasMulti = true;
+              }
+              if (node.pos.isGroup) {
+                hasGroup = true;
+              }
+              if (hasMulti && hasGroup) {
+                break;
+              }
             }
-            if (node.pos.isGroup) {
-              hasGroup = true;
+            const parts = [dRes.chain.length - 1];
+            if (hasGroup) {
+              parts.push('Group');
             }
-            if (hasMulti && hasGroup) {
-              break;
-            }
+            parts.push(hasMulti ? 'XY' : 'X', 'Chain');
+            dRes.name = parts.join('-');
+            return dRes;
           }
-          const parts = [dRes.chain.length - 1];
-          if (hasGroup) {
-            parts.push('Group');
-          }
-          parts.push(hasMulti ? 'XY' : 'X', 'Chain');
-          dRes.name = parts.join('-');
-          return dRes;
+          // 2. single and group pos
+          // for (let d = 1;d<=9;d++) {
+          //   for (const pos of dGroupPoses[d]||[]) {
+          //     //
+          //   }
+          // }
         }
-        // 2. single and group pos
-        // for (let d = 1;d<=9;d++) {
-        //   for (const pos of dGroupPoses[d]||[]) {
-        //     //
-        //   }
-        // }
       }
     }
   }
@@ -763,7 +765,13 @@ export class Sudoku {
       if (!Notes.is(value)) {
         continue;
       }
-      this.setCellValue(pos, Notes.delete(value, tip.d));
+      let newValue = value;
+      if (tip.keep) {
+        newValue = Notes.new(...tip.keepDs);
+      } else {
+        newValue = Notes.delete(value, tip.d);
+      }
+      this.setCellValue(pos, newValue);
     }
   }
 }
@@ -777,30 +785,60 @@ function* searchChain(chain, node, extraData) {
   const { pos, d, val } = node;
   const { dLinks, cells, td } = extraData;
 
-  if (d === td && val === true) {
+  if (val === true) {
     // strong target
-    // check if intersection related positions has d
-    const effectedPoses = new Set();
-    const startPos = chain[0].pos;
-    const poses = [];
-    if (startPos.isGroup) {
-      poses.push(...startPos.poses);
-    } else {
-      poses.push(startPos);
-    }
-    if (pos.isGroup) {
-      poses.push(...pos.poses);
-    } else {
-      poses.push(pos);
-    }
-    for (const cpos of positions.getCommonRelatedPositions(...poses)) {
-      const { value } = positions.getCell(cells, cpos);
-      if (Notes.has(value, d)) {
-        effectedPoses.add(cpos);
+    if (d === td) {
+      // check if intersection related positions has d
+      const effectedPoses = new Set();
+      const startPos = chain[0].pos;
+      const poses = [];
+      if (startPos.isGroup) {
+        poses.push(...startPos.poses);
+      } else {
+        poses.push(startPos);
       }
-    }
-    if (effectedPoses.size > 0) {
-      yield { chain: [...chain, node], effectedPoses, d };
+      if (pos.isGroup) {
+        poses.push(...pos.poses);
+      } else {
+        poses.push(pos);
+      }
+      for (const cpos of positions.getCommonRelatedPositions(...poses)) {
+        const { value } = positions.getCell(cells, cpos);
+        if (Notes.has(value, d)) {
+          effectedPoses.add(cpos);
+        }
+      }
+      if (effectedPoses.size > 0) {
+        yield { chain: [...chain, node], effectedPoses, d: td };
+      }
+    } else {
+      // xy-chain
+      const { pos: startPos } = chain[0];
+      if (startPos === pos) {
+        const { value } = positions.getCell(cells, pos);
+        if (Notes.size(value) > 2) {
+          // eliminate other digits of this position
+          yield {
+            chain: [...chain, node],
+            effectedPoses: new Set([pos]),
+            d: td,
+            effectedDs: new Set(Notes.entries(value).filter(v => v !== d && v !== td)),
+            keep: true,
+            keepDs: [d, td],
+          };
+        }
+      } else {
+        if (!pos.isGroup) {
+          const { value } = positions.getCell(cells, pos);
+          if (Notes.has(value, td)) {
+            if (pos.row === startPos.row || pos.col === startPos.col || pos.block === startPos.block) {
+              yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
+            }
+          }
+        } else {
+          // TODO: group
+        }
+      }
     }
   }
   // try related links or group links
@@ -867,6 +905,8 @@ const newGroupPos = (domain, val, block, poses) => {
     },
   };
 };
+
+export const getRealPoses = pos => (pos.isGroup ? pos.poses : [pos]);
 
 // for row/col in block, like claiming.
 function getDigitGroupPoses(cells) {
@@ -1051,7 +1091,7 @@ function getDigitPosesAndLinks(cells) {
         link = links[pos.pos];
       }
       link.group = getGroupPosLink(dGroupPoses[d], pos);
-      link.cell = { false: [], true: [] };
+      link.cell = link.cell || { false: [], true: [] };
     }
   }
 
