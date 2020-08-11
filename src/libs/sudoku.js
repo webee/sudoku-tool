@@ -343,6 +343,10 @@ export class Sudoku {
     }
   }
 
+  _rollback() {
+    this._txCells = null;
+  }
+
   setCellValue(pos, value) {
     this._startTx();
     this._txCells = this._txSetCellValue(this._txCells, pos, value);

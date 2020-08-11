@@ -293,6 +293,8 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
         } else {
           toggleIsNotingHandler();
         }
+      } else if (e.key === 'e') {
+        eraseValueHandler();
       } else if (e.key === 'b') {
         if (!activeVal && !activePos) {
           cellClickedHandler(getPosition(4, 4));
@@ -353,6 +355,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
     cellClickedHandler,
     deselectHandler,
     digitClickedHandler,
+    eraseValueHandler,
     moveActivePos,
     moveActiveVal,
     startNewGameHandler,
