@@ -137,7 +137,7 @@ export class Sudoku {
   };
 
   jumpToFirst = () => {
-    this.jump(this._curCellsIdx);
+    this.jump(-this._curCellsIdx);
   };
 
   jumpToLast = () => {
