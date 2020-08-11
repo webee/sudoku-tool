@@ -89,8 +89,11 @@ export class Sudoku {
     this._cellsHistory = [];
     this._curCellsIdx = -1;
     this._ops = 0;
+    this._txCells = null;
     this._setCells(Sudoku.parse(puzzle), 'init');
     this.puzzle = this.stringify();
+    // FIXME:
+    this._notify();
   }
 
   get initialPuzzle() {
@@ -205,10 +208,11 @@ export class Sudoku {
     return cells;
   }
 
-  stringify() {
+  stringify(cells) {
+    cells = cells || this.cells;
     const res = [];
     for (const pos of flattenPositions) {
-      const { origin, value } = this.getCell(pos);
+      const { origin, value } = cells[pos.row][pos.col];
       if (Notes.is(value)) {
         // notes
         if (Notes.isEmpty(value)) {
@@ -474,6 +478,10 @@ export class Sudoku {
   _note({ pos }) {
     const { value } = this.getCell(pos);
     if (!Notes.is(value)) {
+      return;
+    }
+    if (Notes.size(value) > 0) {
+      // only note empty cell. erase before re-note.
       return;
     }
     this.setCellValue(pos, Notes.new(...this.calcAvailableDigits(pos)));
@@ -897,15 +905,13 @@ function* searchChain(chain, node, extraData) {
 }
 
 const chainHasNode = (chain, node) => {
+  const poses = node.pos.isGroup ? node.pos.poses : [node.pos];
   for (const n of chain) {
-    if (n.val === node.val && n.d === node.d) {
-      if (n.pos === node.pos) {
-        return true;
-      }
-      if (n.pos.isGroup && new Set(n.pos.poses).has(node.pos)) {
-        return true;
-      }
-      if (node.pos.isGroup && new Set(node.pos.poses).has(n.pos)) {
+    if (n.val === node.val && n.d === node.d && n.pos === node.pos) {
+      return true;
+    }
+    if (n.pos.isGroup || node.pos.isGroup) {
+      if (hasCommon(poses, n.pos.isGroup ? n.pos.poses : [n.pos])) {
         return true;
       }
     }

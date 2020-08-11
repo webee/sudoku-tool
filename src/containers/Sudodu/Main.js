@@ -269,13 +269,12 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
     d => {
       if (tip && tip.type === 'chain') {
         const len = tip.chain.length;
-        console.log(chainStep, len, ((chainStep - 1 + d + len) % len) + 1);
         setChainStep(s => {
           return ((s - 1 + d + len) % len) + 1;
         });
       }
     },
-    [chainStep, tip]
+    [tip]
   );
 
   // event listeners
