@@ -723,6 +723,7 @@ export class Sudoku {
                 const startNode = { pos, d, val };
                 const extraData = {
                   dLinks,
+                  val: false,
                   cells,
                   td: d,
                   tryGroupLinks,
@@ -734,33 +735,15 @@ export class Sudoku {
                     dRes = chain;
                     maxLength = dRes.chain.length;
                     extraData.maxLength = maxLength;
+                    if (maxLength <= 8) {
+                      return prepareChainResult(dRes);
+                    }
                   }
                 }
               }
             }
             if (dRes) {
-              dRes.type = 'chain';
-              const d = dRes.d;
-              let hasMulti = false;
-              let hasGroup = false;
-              for (const node of dRes.chain) {
-                if (node.d !== d) {
-                  hasMulti = true;
-                }
-                if (node.pos.isGroup) {
-                  hasGroup = true;
-                }
-                if (hasMulti && hasGroup) {
-                  break;
-                }
-              }
-              const parts = [dRes.chain.length - 1];
-              if (hasGroup) {
-                parts.push('Group');
-              }
-              parts.push(hasMulti ? 'XY' : 'X', 'Chain');
-              dRes.name = parts.join('-');
-              return dRes;
+              return prepareChainResult(dRes);
             }
           }
         }
@@ -785,6 +768,31 @@ export class Sudoku {
   }
 }
 
+const prepareChainResult = res => {
+  res.type = 'chain';
+  const d = res.d;
+  let hasMulti = false;
+  let hasGroup = false;
+  for (const node of res.chain) {
+    if (node.d !== d) {
+      hasMulti = true;
+    }
+    if (node.pos.isGroup) {
+      hasGroup = true;
+    }
+    if (hasMulti && hasGroup) {
+      break;
+    }
+  }
+  const parts = [res.chain.length - 1];
+  if (hasGroup) {
+    parts.push('Group');
+  }
+  parts.push(hasMulti ? 'XY' : 'X', 'Chain');
+  res.name = parts.join('-');
+  return res;
+};
+
 const checkExistAndEqual = (a, b) => a !== undefined && a === b;
 
 function* searchChain(chain, node, extraData) {
@@ -796,76 +804,60 @@ function* searchChain(chain, node, extraData) {
   const { pos, d, val } = node;
   const { dLinks, cells, td } = extraData;
 
-  if (val === true) {
-    // strong target
-    if (d === td) {
-      // check if intersection related positions has d
-      const effectedPoses = new Set();
-      const startPos = chain[0].pos;
-      const poses = [];
-      if (startPos.isGroup) {
-        poses.push(...startPos.poses);
-      } else {
-        poses.push(startPos);
-      }
-      if (pos.isGroup) {
-        poses.push(...pos.poses);
-      } else {
-        poses.push(pos);
-      }
-      for (const cpos of positions.getCommonRelatedPositions(...poses)) {
-        const { value } = positions.getCell(cells, cpos);
-        if (Notes.has(value, d)) {
-          effectedPoses.add(cpos);
-        }
-      }
-      if (effectedPoses.size > 0) {
-        yield { chain: [...chain, node], effectedPoses, d: td };
-      }
-    } else {
-      // xy-chain
-      const { pos: startPos } = chain[0];
-      if (startPos.key === pos.key) {
-        const poses = pos.isGroup ? [...pos.poses, ...startPos.poses] : [pos];
-        const ds = new Set();
-        for (const p of poses) {
-          const { value } = positions.getCell(cells, p);
-          Notes.entries(value).forEach(d => ds.add(d));
-        }
-        if (ds.size > 2) {
-          // eliminate other digits of this position
-          ds.delete(d);
-          ds.delete(td);
-          yield {
-            chain: [...chain, node],
-            effectedPoses: new Set(poses),
-            d: td,
-            effectedDs: ds,
-            keep: true,
-            keepDs: [d, td],
-          };
-        }
-      } else {
-        if (!pos.isGroup) {
-          if (!(startPos.isGroup && new Set(startPos.poses).has(pos))) {
-            if (
-              checkExistAndEqual(pos.row, startPos.row) ||
-              checkExistAndEqual(pos.col, startPos.col) ||
-              checkExistAndEqual(pos.block, startPos.block)
-            ) {
-              const { value } = positions.getCell(cells, pos);
-              if (Notes.has(value, td)) {
-                yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
-              }
-            }
+  if (extraData.val === false && val === true) {
+    // strong link
+    const startPos = chain[0].pos;
+    // strong link is reversable.
+    // digit(startPos) -> group(endPos)
+    if (!(startPos.isGroup && !pos.isGroup)) {
+      if (d === td) {
+        // check if intersection related positions has d
+        const effectedPoses = new Set();
+        const poses = [...getRealPoses(startPos), ...getRealPoses(pos)];
+
+        for (const cpos of positions.getCommonRelatedPositions(...poses)) {
+          const { value } = positions.getCell(cells, cpos);
+          if (Notes.has(value, d)) {
+            effectedPoses.add(cpos);
           }
+        }
+        if (effectedPoses.size > 0) {
+          yield { chain: [...chain, node], effectedPoses, d: td };
+        }
+      } else {
+        // xy-chain
+        // two types:
+        // 1. same pos
+        if (startPos.key === pos.key) {
+          // pos and startPos are groups of not.
+          const poses = pos.isGroup ? [...pos.poses, ...startPos.poses] : [pos];
+          const ds = new Set();
+          for (const p of poses) {
+            const { value } = positions.getCell(cells, p);
+            Notes.entries(value).forEach(d => ds.add(d));
+          }
+          if (ds.size > 2) {
+            // eliminate other digits of this position
+            ds.delete(d);
+            ds.delete(td);
+            yield {
+              chain: [...chain, node],
+              effectedPoses: new Set(poses),
+              d: td,
+              effectedDs: ds,
+              keep: true,
+              keepDs: [d, td],
+            };
+          }
+          // 2. different poses
         } else {
-          // group
-          if (!hasCommon(pos.poses, startPos.isGroup ? startPos.poses : [startPos])) {
+          if (pos.isGroup) {
+            // group
             if (
-              checkExistAndEqual(pos.row, startPos.row) ||
-              checkExistAndEqual(pos.col, startPos.col) ||
-              checkExistAndEqual(pos.block, startPos.block)
+              !hasCommon(pos.poses, getRealPoses(startPos)) &&
+              (checkExistAndEqual(pos.row, startPos.row) ||
+                checkExistAndEqual(pos.col, startPos.col) ||
+                checkExistAndEqual(pos.block, startPos.block))
             ) {
               const ds = new Set();
               for (const p of pos.poses) {
@@ -874,6 +866,19 @@ function* searchChain(chain, node, extraData) {
               }
               if (ds.has(td)) {
                 yield { chain: [...chain, node], effectedPoses: new Set(pos.poses), d: td };
+              }
+            }
+          } else {
+            // pos is cell then startPos should also be cell.
+            // pos is one of startPos's related positions.
+            if (
+              checkExistAndEqual(pos.row, startPos.row) ||
+              checkExistAndEqual(pos.col, startPos.col) ||
+              checkExistAndEqual(pos.block, startPos.block)
+            ) {
+              const { value } = positions.getCell(cells, pos);
+              if (Notes.has(value, td)) {
+                yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
               }
             }
           }

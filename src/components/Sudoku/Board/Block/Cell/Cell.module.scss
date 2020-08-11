@@ -41,7 +41,7 @@
 
   &.MarkedHighlight {
     @extend %Marked;
-    outline: 2px dashed $marked-color;
+    outline: 1px dashed $marked-color;
     background-color: seagreen !important;
     &.WithoutOutline {
       outline: none;
