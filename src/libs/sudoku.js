@@ -713,7 +713,7 @@ export class Sudoku {
     for (const maxLen of [20, Number.MAX_VALUE]) {
       for (const tryCellLinks of [false, true]) {
         for (const tryGroupLinks of [false, true]) {
-          //for (const getPoses of [d => dPoses[d] || [] /*, d => (dGroupPoses[d] || []).filter(p => p.isGroup)*/]) {
+          // for (const getPoses of [d => dPoses[d] || [] /*, d => (dGroupPoses[d] || []).filter(p => p.isGroup)*/]) {
           for (const getPoses of [d => dPoses[d] || [], d => (dGroupPoses[d] || []).filter(p => p.isGroup)]) {
             let dRes = null;
             let maxLength = maxLen;
@@ -770,6 +770,9 @@ export class Sudoku {
 
 const prepareChainResult = res => {
   res.type = 'chain';
+  const startPos = res.chain[0].pos;
+  const endNode = res.chain[res.chain.length - 1];
+  const endPos = endNode.pos;
   const d = res.d;
   let hasMulti = false;
   let hasGroup = false;
@@ -786,9 +789,10 @@ const prepareChainResult = res => {
   }
   const parts = [res.chain.length - 1];
   if (hasGroup) {
-    parts.push('Group');
+    parts.push('G');
   }
   parts.push(hasMulti ? 'XY' : 'X', 'Chain');
+  parts.push([startPos.isGroup ? 'g' : 'd', endPos.isGroup ? 'g' : 'd', endNode.d === d ? '-x' : '-xy'].join(''));
   res.name = parts.join('-');
   return res;
 };
@@ -811,6 +815,7 @@ function* searchChain(chain, node, extraData) {
     // digit(startPos) -> group(endPos)
     if (!(startPos.isGroup && !pos.isGroup)) {
       if (d === td) {
+        // start and end shouldn't be the same position.
         // check if intersection related positions has d
         const effectedPoses = new Set();
         const poses = [...getRealPoses(startPos), ...getRealPoses(pos)];
@@ -829,8 +834,11 @@ function* searchChain(chain, node, extraData) {
         // two types:
         // 1. same pos
         if (startPos.key === pos.key) {
-          // pos and startPos are groups of not.
-          const poses = pos.isGroup ? [...pos.poses, ...startPos.poses] : [pos];
+          // pos and startPos are all groups of all not.
+          //
+          // but at this case, start and end poses must not be groups.
+          // diffrenet digits' group keys are all different.
+          const poses = pos.isGroup ? [...pos.poses] : [pos];
           const ds = new Set();
           for (const p of poses) {
             const { value } = positions.getCell(cells, p);
@@ -851,24 +859,7 @@ function* searchChain(chain, node, extraData) {
           }
           // 2. different poses
         } else {
-          if (pos.isGroup) {
-            // group
-            if (
-              !hasCommon(pos.poses, getRealPoses(startPos)) &&
-              (checkExistAndEqual(pos.row, startPos.row) ||
-                checkExistAndEqual(pos.col, startPos.col) ||
-                checkExistAndEqual(pos.block, startPos.block))
-            ) {
-              const ds = new Set();
-              for (const p of pos.poses) {
-                const { value } = positions.getCell(cells, p);
-                Notes.entries(value).forEach(d => ds.add(d));
-              }
-              if (ds.has(td)) {
-                yield { chain: [...chain, node], effectedPoses: new Set(pos.poses), d: td };
-              }
-            }
-          } else {
+          if (!pos.isGroup) {
             // pos is cell then startPos should also be cell.
             // pos is one of startPos's related positions.
             if (
