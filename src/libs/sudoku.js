@@ -95,10 +95,19 @@ export class Sudoku {
     this._cellsHistory = [];
     this._curCellsIdx = -1;
     this._txCells = null;
+    this._historyLowerBound = 0;
     this._setCells(Sudoku.parse(puzzle), 'init');
     this.puzzle = this.stringify();
     // FIXME:
     this._notify();
+  }
+
+  setHistoryLowerBound(n) {
+    this._historyLowerBound = n;
+  }
+
+  clearHistoryLowerBound() {
+    this._historyLowerBound = 0;
   }
 
   get initialPuzzle() {
@@ -111,6 +120,10 @@ export class Sudoku {
 
   get cellsRecord() {
     return this._cellsHistory[this._curCellsIdx];
+  }
+
+  get curIdx() {
+    return this._curCellsIdx;
   }
 
   get lastIdx() {
@@ -138,7 +151,13 @@ export class Sudoku {
   }
 
   jumpTo = (idx, revert = false) => {
+    if (idx < this._historyLowerBound) {
+      // can't set lower than lower bound.
+      return;
+    }
+
     this._curCellsIdx = idx;
+
     if (this._curCellsIdx < 0) {
       this._curCellsIdx = 0;
     } else if (this._curCellsIdx >= this._cellsHistory.length) {
@@ -158,15 +177,15 @@ export class Sudoku {
   };
 
   jump = steps => {
-    this.jumpTo(this._curCellsIdx + steps);
+    this.jumpTo(this.curIdx + steps);
   };
 
   jumpToFirst = () => {
-    this.jump(-this._curCellsIdx);
+    this.jumpTo(0);
   };
 
   jumpToLast = () => {
-    this.jump(this._cellsHistory.length);
+    this.jumpTo(this.lastIdx);
   };
 
   subscribe(f) {
@@ -551,6 +570,16 @@ export class Sudoku {
     }
   }
 
+  _checkComplete() {
+    for (const pos of positions.flattenPositions) {
+      const { value } = this.getCell(pos);
+      if (Notes.is(value)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   _note({ pos }) {
     const { value } = this.getCell(pos);
     if (!Notes.is(value)) {
@@ -763,9 +792,14 @@ export class Sudoku {
     }
   }
 
-  findTip() {
+  findTip(options = { trial: true }) {
     const cells = this.getCurCells();
-    return this.findGroup(cells) || this.findXGroup(cells) || this.findChain(cells) || this.findTrialError();
+    return (
+      this.findGroup(cells) ||
+      this.findXGroup(cells) ||
+      this.findChain(cells) ||
+      (options.trial && this.findTrialError())
+    );
   }
 
   _handleTip({ tip }) {
@@ -783,32 +817,55 @@ export class Sudoku {
   findTrialError() {
     this._disableNotify();
     const startIdx = this._curCellsIdx;
-    for (const pos of positions.flattenPositions) {
-      const { value } = this.getCell(pos);
-      if (!Notes.is(value)) {
-        continue;
-      }
-      for (const d of Notes.entries(value)) {
-        // start trial for d@pos
-        this.updateCellValue(false, pos, d);
-        this.autoPlacePointingClaiming();
-        const err = this._checkValidity();
-        if (err) {
-          this._enableNotify();
-          const endIdx = this._curCellsIdx;
-          const includedCells = new Set(
-            this._cellsHistory.filter(({ idx }) => idx >= startIdx && idx <= endIdx).map(h => h.cells)
-          );
-          return { startIdx, endIdx, includedCells, pos, d, err, type: 'trial-error', name: `try ${d}@${pos}` };
+    for (const tryTip of [false, true]) {
+      for (const pos of positions.flattenPositions) {
+        const { value } = this.getCell(pos);
+        if (!Notes.is(value)) {
+          continue;
         }
-        this.jumpTo(startIdx);
+        for (const d of Notes.entries(value)) {
+          // start trial for d@pos
+          this.updateCellValue(false, pos, d);
+          this.autoPlacePointingClaiming();
+          let err = this._checkValidity();
+          if (!err && tryTip) {
+            let tip = this.findTip({ trial: false });
+            while (tip) {
+              this.handleTip(tip);
+              this.autoPlacePointingClaiming();
+              err = this._checkValidity();
+              if (err) {
+                break;
+              }
+              tip = this.findTip({ trial: false });
+            }
+            if (this._checkComplete()) {
+              err = true;
+            }
+          }
+          if (err) {
+            this._enableNotify();
+            const endIdx = this._curCellsIdx;
+            const includedCells = new Set(
+              this._cellsHistory.filter(({ idx }) => idx >= startIdx && idx <= endIdx).map(h => h.cells)
+            );
+            return { startIdx, endIdx, includedCells, pos, d, err, type: 'trial-error', name: `try ${d}@${pos}` };
+          }
+          this.jumpTo(startIdx);
+        }
       }
     }
+    // revert
+    this.jumpTo(startIdx);
     this._enableNotify();
   }
 
   _eliminateTrialError({ tip }) {
-    const { startIdx, pos, d } = tip;
+    const { startIdx, pos, d, err } = tip;
+    if (err === true) {
+      // complete
+      return;
+    }
     this.revertTo(startIdx);
     const { value } = this.getCell(pos);
     if (Notes.is(value)) {

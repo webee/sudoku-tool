@@ -135,6 +135,7 @@ const Sudoku = ({
     if (tip) {
       // clear
       setTip(null);
+      sudoku.clearHistoryLowerBound();
 
       // handle tip
       sudoku.handleTip(tip);
@@ -149,6 +150,8 @@ const Sudoku = ({
           setTip(t);
           if (t.type === 'chain') {
             setChainStep(t.chain.length);
+          } else if (t.type === 'trial-error') {
+            sudoku.setHistoryLowerBound(t.startIdx);
           }
         }
       }, 0);
@@ -162,6 +165,7 @@ const Sudoku = ({
       // clear
       setTip(null);
       if (tip.type === 'trial-error') {
+        sudoku.clearHistoryLowerBound();
         sudoku.revertTo(tip.startIdx);
       }
     }
@@ -280,16 +284,23 @@ const Sudoku = ({
           highlights: { poses, posNotes, posSubNotes, withoutOutlinePoses },
         };
       } else if (tip.type === 'trial-error') {
-        const { startIdx, endIdx, pos, d, err } = tip;
-        const { domain } = err;
+        const { startIdx, pos, d, err } = tip;
         const values = new Set([d]);
-        if (cellsRecord.idx === endIdx) {
-          return {
-            effect: { [domain + 's']: new Set([err[domain]]) },
-            highlights: { poses: new Set([pos]), values, notes: values },
-          };
-        } else if (cellsRecord.idx >= startIdx) {
-          return { highlights: { poses: new Set([pos]), values, notes: values } };
+        let marks = null;
+        if (err === true) {
+          // complete
+          marks = { highlights: { poses: new Set([pos]), values, notes: values } };
+        } else {
+          const { domain, digits } = err;
+          if (cellsRecord.idx >= startIdx) {
+            marks = {
+              effect: { [domain + 's']: new Set([err[domain]]), notes: digits, values: digits },
+              highlights: { poses: new Set([pos]), values, notes: values },
+            };
+          }
+        }
+        if (cellsRecord.idx >= startIdx) {
+          return marks;
         }
       }
     }
@@ -396,6 +407,7 @@ const Sudoku = ({
     moveActiveVal,
     startNewGameHandler,
     sudoku,
+    tip,
     tipHandler,
     toggleIsNotingHandler,
   ]);
@@ -407,6 +419,7 @@ const Sudoku = ({
       }
       // clear tip if values changed
       setTip(null);
+      sudoku.clearHistoryLowerBound();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cells]);
