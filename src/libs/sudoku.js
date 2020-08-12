@@ -826,9 +826,9 @@ export class Sudoku {
   findTrialError() {
     this._disableNotify();
     const startIdx = this._curCellsIdx;
+    // randomize this pos choice
     const poses = shuffleArray(positions.flattenPositions);
-    for (const tryTip of [false, true]) {
-      // randomize this pos choice
+    for (const tryTip of [false, { maxDepth: 15 }, {maxDepth: 25}, { maxDepth: Number.MAX_VALUE }]) {
       for (const pos of poses) {
         const { value } = this.getCell(pos);
         if (!Notes.is(value)) {
@@ -848,6 +848,9 @@ export class Sudoku {
               this.autoPlacePointingClaiming();
               err = this._checkValidity();
               if (err) {
+                break;
+              }
+              if (deepTried > tryTip.maxDepth) {
                 break;
               }
               tip = this.findTip({ trial: false });
