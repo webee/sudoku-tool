@@ -6,16 +6,20 @@ import * as calc from './calc';
 // shortend arrow length, to avoid tail-head contact.
 const dd = 0.02;
 
-const Arrow = styled.div`
+const Arrow = styled.div.attrs(({ x, y, distance, deg, type }) => ({
+  style: {
+    borderTop: `2px ${type} red`,
+    width: `${distance * 100}%`,
+    height: `${distance * 100}%`,
+    transform: `translate(${(x / distance) * 100}%, ${(y / distance) * 100}%)
+    rotate(${deg}deg)
+    translate(${(dd / 2 / distance) * 100}%)`,
+  },
+}))`
   user-select: none;
   pointer-events: none;
   position: absolute;
-  border-top: 2px ${({ type }) => type} red;
-  width: ${({ distance }) => distance * 100}%;
-  height: ${({ distance }) => distance * 100}%;
   transform-origin: top left;
-  transform: translate(${({ x, distance }) => (x / distance) * 100}%, ${({ y, distance }) => (y / distance) * 100}%)
-    rotate(${({ deg }) => deg}deg) translate(${({ distance }) => (dd / 2 / distance) * 100}%);
 `;
 
 export default ({ type = 'solid', startPos, startDigit, endPos, endDigit }) => {

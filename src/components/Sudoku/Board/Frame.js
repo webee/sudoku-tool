@@ -5,15 +5,18 @@ import * as calc from './calc';
 
 const dd = 0.8;
 
-const Frame = styled.div`
+const Frame = styled.div.attrs(({ sx, sy, ex, ey }) => ({
+  style: {
+    top: `${sy * 100 - dd}%`,
+    left: `${sx * 100 - dd}%`,
+    right: `${(1 - ex) * 100 - dd}%`,
+    bottom: `${(1 - ey) * 100 - dd}%`,
+  },
+}))`
   user-select: none;
   pointer-events: none;
   position: absolute;
   border: 1px solid red;
-  top: ${({ sy }) => sy * 100 - dd}%;
-  left: ${({ sx }) => sx * 100 - dd}%;
-  right: ${({ ex }) => (1 - ex) * 100 - dd}%;
-  bottom: ${({ ey }) => (1 - ey) * 100 - dd}%;
 `;
 
 export default ({ domain, row, col, block }) => {
