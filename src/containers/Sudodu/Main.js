@@ -157,6 +157,16 @@ const Sudoku = ({
     deselectHandler();
   }, [deselectHandler, sudoku, tip]);
 
+  const cancelTipHandler = useCallback(() => {
+    if (tip) {
+      // clear
+      setTip(null);
+      if (tip.type === 'trial-error') {
+        sudoku.revertTo(tip.startIdx);
+      }
+    }
+  }, [sudoku, tip]);
+
   const moveActivePos = useCallback(
     (dRow, dCol) => {
       if (activePos) {
@@ -269,9 +279,21 @@ const Sudoku = ({
           effect: { poses: effectedPoses, notes: effectedNotes },
           highlights: { poses, posNotes, posSubNotes, withoutOutlinePoses },
         };
+      } else if (tip.type === 'trial-error') {
+        const { startIdx, endIdx, pos, d, err } = tip;
+        const { domain } = err;
+        const values = new Set([d]);
+        if (cellsRecord.idx === endIdx) {
+          return {
+            effect: { [domain + 's']: new Set([err[domain]]) },
+            highlights: { poses: new Set([pos]), values, notes: values },
+          };
+        } else if (cellsRecord.idx >= startIdx) {
+          return { highlights: { poses: new Set([pos]), values, notes: values } };
+        }
       }
     }
-  }, [chainStep, tip]);
+  }, [cellsRecord.idx, chainStep, tip]);
 
   const changeChainStepHandler = useCallback(
     d => {
@@ -284,6 +306,12 @@ const Sudoku = ({
     },
     [tip]
   );
+
+  const jumpToTrailStartHandler = useCallback(() => {
+    if (tip && tip.type === 'trial-error') {
+      sudoku.jumpTo(tip.startIdx);
+    }
+  }, [sudoku, tip]);
 
   // event listeners
   useEffect(() => {
@@ -373,8 +401,14 @@ const Sudoku = ({
   ]);
 
   useEffect(() => {
-    // clear tip if values changed
-    setTip(null);
+    if (tip) {
+      if (tip.includedCells && tip.includedCells.has(cells)) {
+        return;
+      }
+      // clear tip if values changed
+      setTip(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cells]);
 
   let shareContent = null;
@@ -439,7 +473,9 @@ const Sudoku = ({
           autoPlacePointingClaimingHandler={autoPlacePointingClaimingHandler}
           tip={tip}
           tipHandler={tipHandler}
+          cancelTipHandler={cancelTipHandler}
           changeChainStepHandler={changeChainStepHandler}
+          jumpToTrailStartHandler={jumpToTrailStartHandler}
         />
       </div>
       <div className={styles.Info}></div>

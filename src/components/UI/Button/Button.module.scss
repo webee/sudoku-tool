@@ -22,6 +22,12 @@
       box-shadow: 0 2px 4px #ccc;
     }
 
+    &.Warn {
+      color: salmon;
+      background-color: gray;
+      border-color: transparent;
+    }
+
     &.On {
       color: white;
       background-color: green;

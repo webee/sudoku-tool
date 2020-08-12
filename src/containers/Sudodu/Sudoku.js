@@ -26,7 +26,6 @@ const Sudoku = () => {
   }, []);
 
   const newGameHandler = useCallback(puzzle => {
-    console.log('xxxxxxx', puzzle);
     try {
       setSudoku(new sudokus.Sudoku(puzzle));
       setIsNewGame(false);

@@ -6,6 +6,7 @@ export const blockShape = [
   [6, 7, 8],
 ];
 
+export const indices = _baseArray;
 export const blocks = _baseArray;
 export const rows = _baseArray;
 export const cols = _baseArray;

@@ -6,9 +6,14 @@ import {
   getRelatedRowPositions,
   getRelatedColPositions,
   getRelatedBlockPositions,
+  getRowPositions,
+  getColPositions,
+  getBlockFlattenPositions,
 } from './position';
 import * as positions from './position';
 import { findNGroupFromLinks, console, getAttrDefault } from './utils';
+
+export const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 export class Notes {
   static _base = 1 << 16;
@@ -80,6 +85,7 @@ export class Sudoku {
   000000000 000000000 000000000
 `;
   constructor(puzzle) {
+    this._shouldNotify = true;
     this.subscribers = [];
     this._setPuzzle(puzzle || Sudoku.defaultPuzzle);
   }
@@ -88,7 +94,6 @@ export class Sudoku {
     // clear history
     this._cellsHistory = [];
     this._curCellsIdx = -1;
-    this._ops = 0;
     this._txCells = null;
     this._setCells(Sudoku.parse(puzzle), 'init');
     this.puzzle = this.stringify();
@@ -108,13 +113,20 @@ export class Sudoku {
     return this._cellsHistory[this._curCellsIdx];
   }
 
-  _setCells(cells, desc = '') {
+  get lastIdx() {
+    return this._cellsHistory.length - 1;
+  }
+
+  _cut() {
     if (this._curCellsIdx + 1 < this._cellsHistory.length) {
       this._cellsHistory = this._cellsHistory.slice(0, this._curCellsIdx + 1);
     }
-    this._cellsHistory.push({ idx: this._ops, cells, desc });
+  }
+
+  _setCells(cells, desc = '') {
+    this._cut();
     this._curCellsIdx++;
-    this._ops++;
+    this._cellsHistory.push({ idx: this._curCellsIdx, cells, desc });
   }
 
   get hasPrev() {
@@ -125,15 +137,28 @@ export class Sudoku {
     return this._curCellsIdx < this._cellsHistory.length - 1;
   }
 
-  jump = steps => {
-    this._curCellsIdx += steps;
+  jumpTo = (idx, revert = false) => {
+    this._curCellsIdx = idx;
     if (this._curCellsIdx < 0) {
       this._curCellsIdx = 0;
     } else if (this._curCellsIdx >= this._cellsHistory.length) {
       this._curCellsIdx = this._cellsHistory.length - 1;
     }
+    if (revert) {
+      this._cut();
+    }
+
+    this._rollback();
 
     this._notify();
+  };
+
+  revertTo = idx => {
+    this.jumpTo(idx, true);
+  };
+
+  jump = steps => {
+    this.jumpTo(this._curCellsIdx + steps);
   };
 
   jumpToFirst = () => {
@@ -152,9 +177,19 @@ export class Sudoku {
     this.subscribers = this.subscribers.filter(s => s !== f);
   }
 
+  _disableNotify() {
+    this._shouldNotify = false;
+  }
+
+  _enableNotify() {
+    this._shouldNotify = true;
+  }
+
   _notify() {
-    for (const f of this.subscribers) {
-      f(n => n + 1);
+    if (this._shouldNotify) {
+      for (const f of this.subscribers) {
+        f(n => n + 1);
+      }
     }
   }
 
@@ -352,7 +387,7 @@ export class Sudoku {
     this._txCells = null;
   }
 
-  setCellValue(pos, value) {
+  _setCellValue(pos, value) {
     this._startTx();
     this._txCells = this._txSetCellValue(this._txCells, pos, value);
   }
@@ -361,15 +396,16 @@ export class Sudoku {
   static actions = {
     RESET: 'RESET',
     NOTE: 'NOTE',
-    UPDATE_CELL_VALUE: 'UPDATE_CELL_VALUE',
-    AUTO_NOTE: 'AUTO_NOTE',
-    AUTO_POINTING: 'AUTO_POINTING',
-    AUTO_CLAIMING: 'AUTO_CLAIMING',
-    AUTO_PLACE: 'AUTO_PLACE',
-    AUTO_PLACE_POINTING_CLAIMING: 'AUTO_PLACE_POINTING_CLAIMING',
-    ELIMINATE_GROUP: 'ELIMINATE_GROUP',
-    ELIMINATE_XGROUP: 'ELIMINATE_XGROUP',
-    ELIMINATE_CHAIN: 'ELIMINATE_CHAIN',
+    UPDATE_CELL_VALUE: 'U CELL_VALUE',
+    AUTO_NOTE: 'A NOTE',
+    AUTO_POINTING: 'A POINTING',
+    AUTO_CLAIMING: 'A CLAIMING',
+    AUTO_PLACE: 'A PLACE',
+    AUTO_PLACE_POINTING_CLAIMING: 'A PLACE/POINTING/CLAIMING',
+    ELIMINATE_GROUP: '- GROUP',
+    ELIMINATE_XGROUP: '- XGROUP',
+    ELIMINATE_CHAIN: '- CHAIN',
+    ELIMINATE_TRIAL_ERROR: '- TRIAL_ERROR',
     HANDLE_TIP: 'HANDLE_TIP',
   };
 
@@ -407,6 +443,9 @@ export class Sudoku {
         break;
       case Sudoku.actions.ELIMINATE_CHAIN:
         this._eliminateChain(payload);
+        break;
+      case Sudoku.actions.ELIMINATE_TRIAL_ERROR:
+        this._eliminateTrialError(payload);
         break;
       case Sudoku.actions.HANDLE_TIP:
         this._handleTip(payload);
@@ -480,8 +519,36 @@ export class Sudoku {
     this.dispatch(Sudoku.actions.ELIMINATE_CHAIN, { tip });
   }
 
+  eliminateTrialError(tip) {
+    this.dispatch(Sudoku.actions.ELIMINATE_TRIAL_ERROR, { tip });
+  }
+
   handleTip(tip) {
     this.dispatch(Sudoku.actions.HANDLE_TIP, { tip });
+  }
+
+  _checkValidity() {
+    // check every house should has 9 digits
+    for (const [domain, getPositions] of [
+      ['row', getRowPositions],
+      ['col', getColPositions],
+      ['block', getBlockFlattenPositions],
+    ]) {
+      for (const idx of positions.indices) {
+        const errDigits = new Set(digits);
+        for (const pos of getPositions(idx)) {
+          const { value } = this.getCell(pos);
+          if (Notes.is(value)) {
+            Notes.entries(value).forEach(v => errDigits.delete(v));
+          } else {
+            errDigits.delete(value);
+          }
+        }
+        if (errDigits.size !== 0) {
+          return { domain, [domain]: idx, digits: errDigits };
+        }
+      }
+    }
   }
 
   _note({ pos }) {
@@ -493,7 +560,7 @@ export class Sudoku {
       // only note empty cell. erase before re-note.
       return;
     }
-    this.setCellValue(pos, Notes.new(...this.calcAvailableDigits(pos)));
+    this._setCellValue(pos, Notes.new(...this.calcAvailableDigits(pos)));
   }
 
   _autoNote() {
@@ -591,7 +658,7 @@ export class Sudoku {
       value = Notes.new();
     }
 
-    this.setCellValue(pos, value);
+    this._setCellValue(pos, value);
   }
 
   _noteCellValue(pos, n) {
@@ -609,14 +676,14 @@ export class Sudoku {
       notes = Notes.add(notes, n);
     }
 
-    this.setCellValue(pos, notes);
+    this._setCellValue(pos, notes);
   }
 
-  findGroup() {
+  findGroup(cells) {
     for (let n = 1; n <= 8; n++) {
       // 0:naked group, 1: hidden group
       for (const cls of [0, 1]) {
-        for (const group of findNGroup(this.getCurCells(), n, cls)) {
+        for (const group of findNGroup(cells, n, cls)) {
           // only return the first group
           group.type = 'group';
           return group;
@@ -631,7 +698,7 @@ export class Sudoku {
       const pos = [...group.poses][0];
       const d = [...group.notes][0];
 
-      this.setCellValue(pos, d);
+      this._setCellValue(pos, d);
     } else if (group.cls === 0) {
       // naked
       // to eliminate other cells
@@ -649,21 +716,21 @@ export class Sudoku {
       });
       for (const pos of otherPoses) {
         const { value } = this.getCell(pos);
-        this.setCellValue(pos, Notes.delete(value, ...group.notes));
+        this._setCellValue(pos, Notes.delete(value, ...group.notes));
       }
     } else if (group.cls === 1) {
       // hidden
       // to eliminate other notes
       for (const pos of group.poses) {
         const { value } = this.getCell(pos);
-        this.setCellValue(pos, Notes.new(...Notes.entries(value).filter(n => group.notes.has(n))));
+        this._setCellValue(pos, Notes.new(...Notes.entries(value).filter(n => group.notes.has(n))));
       }
     }
   }
 
-  findXGroup() {
+  findXGroup(cells) {
     for (let n = 1; n <= 8; n++) {
-      for (const group of findNXGroup(this.getCurCells(), n)) {
+      for (const group of findNXGroup(cells, n)) {
         group.type = 'X-Group';
         return group;
       }
@@ -692,13 +759,13 @@ export class Sudoku {
         continue;
       }
 
-      this.setCellValue(pos, Notes.delete(value, tip.d));
+      this._setCellValue(pos, Notes.delete(value, tip.d));
     }
   }
 
   findTip() {
     const cells = this.getCurCells();
-    return this.findGroup(cells) || this.findXGroup(cells) || this.findChain(cells);
+    return this.findGroup(cells) || this.findXGroup(cells) || this.findChain(cells) || this.findTrialError();
   }
 
   _handleTip({ tip }) {
@@ -708,11 +775,48 @@ export class Sudoku {
       this.eliminateXGroup(tip);
     } else if (tip.type === 'chain') {
       this.eliminateChain(tip);
+    } else if (tip.type === 'trial-error') {
+      this.eliminateTrialError(tip);
     }
   }
 
-  findChain() {
-    const cells = this.getCurCells();
+  findTrialError() {
+    this._disableNotify();
+    const startIdx = this._curCellsIdx;
+    for (const pos of positions.flattenPositions) {
+      const { value } = this.getCell(pos);
+      if (!Notes.is(value)) {
+        continue;
+      }
+      for (const d of Notes.entries(value)) {
+        // start trial for d@pos
+        this.updateCellValue(false, pos, d);
+        this.autoPlacePointingClaiming();
+        const err = this._checkValidity();
+        if (err) {
+          this._enableNotify();
+          const endIdx = this._curCellsIdx;
+          const includedCells = new Set(
+            this._cellsHistory.filter(({ idx }) => idx >= startIdx && idx <= endIdx).map(h => h.cells)
+          );
+          return { startIdx, endIdx, includedCells, pos, d, err, type: 'trial-error', name: `try ${d}@${pos}` };
+        }
+        this.jumpTo(startIdx);
+      }
+    }
+    this._enableNotify();
+  }
+
+  _eliminateTrialError({ tip }) {
+    const { startIdx, pos, d } = tip;
+    this.revertTo(startIdx);
+    const { value } = this.getCell(pos);
+    if (Notes.is(value)) {
+      this._setCellValue(pos, Notes.delete(value, d));
+    }
+  }
+
+  findChain(cells) {
     const [dPoses, dGroupPoses, dLinks] = getDigitPosesAndLinks(cells);
     console.log('chain info:', dGroupPoses, dLinks);
     for (const maxLen of [20, Number.MAX_VALUE]) {
@@ -768,7 +872,7 @@ export class Sudoku {
       } else {
         newValue = Notes.delete(value, tip.d);
       }
-      this.setCellValue(pos, newValue);
+      this._setCellValue(pos, newValue);
     }
   }
 }

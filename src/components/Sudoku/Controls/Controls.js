@@ -25,7 +25,9 @@ const Controls = ({
   autoPlacePointingClaimingHandler,
   tip,
   tipHandler,
+  cancelTipHandler,
   changeChainStepHandler,
+  jumpToTrailStartHandler,
 }) => {
   return (
     <div className={styles.Controls}>
@@ -70,6 +72,11 @@ const Controls = ({
           <Button type={tip && 'On'} onClick={tipHandler}>
             {tip ? tip.name : 'tip'}
           </Button>
+          {tip && (
+            <Button type={'Warn'} onClick={cancelTipHandler}>
+              X
+            </Button>
+          )}
           {tip && tip.type === 'chain' && (
             <>
               <span className={styles.ChainSteper} onClick={() => changeChainStepHandler(-1)}>
@@ -79,6 +86,11 @@ const Controls = ({
                 &gt;
               </span>
             </>
+          )}
+          {tip && tip.type === 'trial-error' && (
+            <span className={styles.ChainSteper} onClick={jumpToTrailStartHandler}>
+              &lt;start
+            </span>
           )}
         </div>
       </div>

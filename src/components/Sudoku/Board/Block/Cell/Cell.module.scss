@@ -96,6 +96,7 @@
 
 .Placed {
   @include placed();
+  // animation: PlacedValue 300ms 0s ease-out 3 none;
 }
 
 .Notes {
@@ -144,5 +145,17 @@
         @include digitColor($marked-effected-color);
       }
     }
+  }
+}
+
+@keyframes PlacedValue {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(-15deg);
+  }
+  100% {
+    transform: rotate(15deg);
   }
 }
