@@ -37,6 +37,7 @@ const Sudoku = ({
 
   // calculated states
   const cellsRecord = sudoku.cellsRecord;
+  const isComplete = sudoku.isComplete;
   const { cells } = cellsRecord;
   // cells dependency is needed for memo check
   const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos, cells), [activePos, sudoku, cells]);
@@ -453,6 +454,7 @@ const Sudoku = ({
       </div>
       <div className={styles.Board}>
         <Board
+          isComplete={isComplete}
           cells={cells}
           availablePositions={availablePositions}
           activeVal={activeVal}

@@ -6,7 +6,17 @@ import Frame from './Frame';
 import styles from './Board.module.scss';
 import * as positions from '../../../libs/position';
 
-const Board = ({ availablePositions, cells, activeVal, activePos, cellClickedHandler, showAvail, isNoting, marks }) => {
+const Board = ({
+  isComplete,
+  availablePositions,
+  cells,
+  activeVal,
+  activePos,
+  cellClickedHandler,
+  showAvail,
+  isNoting,
+  marks,
+}) => {
   // active value
   if (activePos) {
     // no active value, then selected value is active value for board
@@ -14,9 +24,13 @@ const Board = ({ availablePositions, cells, activeVal, activePos, cellClickedHan
     activeVal = cells[row][col].value;
   }
 
+  const classes = [styles.SudokuBoard];
+  if (isComplete) {
+    classes.push(styles.Complete);
+  }
   return (
     <AspectRatioBox ratio={1.0}>
-      <div className={styles.SudokuBoard}>
+      <div className={classes.join(' ')}>
         {marks && marks.frames && marks.frames.map(frame => <Frame {...frame} />)}
         {marks &&
           marks.arrows &&

@@ -98,6 +98,7 @@ export class Sudoku {
     this._historyLowerBound = 0;
     this._setCells(Sudoku.parse(puzzle), 'init');
     this.puzzle = this.stringify();
+    this._checkComplete();
     // FIXME:
     this._notify();
   }
@@ -108,6 +109,10 @@ export class Sudoku {
 
   clearHistoryLowerBound() {
     this._historyLowerBound = 0;
+  }
+
+  get isComplete() {
+    return this._isComplete;
   }
 
   get initialPuzzle() {
@@ -206,6 +211,7 @@ export class Sudoku {
 
   _notify() {
     if (this._shouldNotify) {
+      this._checkComplete();
       for (const f of this.subscribers) {
         f(n => n + 1);
       }
@@ -574,9 +580,11 @@ export class Sudoku {
     for (const pos of positions.flattenPositions) {
       const { value } = this.getCell(pos);
       if (Notes.is(value)) {
+        this._isComplete = false;
         return false;
       }
     }
+    this._isComplete = true;
     return true;
   }
 
