@@ -340,7 +340,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       } else {
         return;
       }
-      e.preventDefault();
+      // e.preventDefault();
     };
     document.addEventListener('keydown', keydownHandler);
 
