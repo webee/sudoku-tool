@@ -11,7 +11,7 @@ import {
   getBlockFlattenPositions,
 } from './position';
 import * as positions from './position';
-import { findNGroupFromLinks, console, getAttrDefault } from './utils';
+import { findNGroupFromLinks, console, getAttrDefault, shuffleArray } from './utils';
 
 export const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -817,20 +817,24 @@ export class Sudoku {
   findTrialError() {
     this._disableNotify();
     const startIdx = this._curCellsIdx;
+    const poses = shuffleArray(positions.flattenPositions);
     for (const tryTip of [false, true]) {
-      for (const pos of positions.flattenPositions) {
+      // randomize this pos choice
+      for (const pos of poses) {
         const { value } = this.getCell(pos);
         if (!Notes.is(value)) {
           continue;
         }
         for (const d of Notes.entries(value)) {
           // start trial for d@pos
+          let deepTried = 0;
           this.updateCellValue(false, pos, d);
           this.autoPlacePointingClaiming();
           let err = this._checkValidity();
           if (!err && tryTip) {
             let tip = this.findTip({ trial: false });
             while (tip) {
+              deepTried++;
               this.handleTip(tip);
               this.autoPlacePointingClaiming();
               err = this._checkValidity();
@@ -849,7 +853,16 @@ export class Sudoku {
             const includedCells = new Set(
               this._cellsHistory.filter(({ idx }) => idx >= startIdx && idx <= endIdx).map(h => h.cells)
             );
-            return { startIdx, endIdx, includedCells, pos, d, err, type: 'trial-error', name: `try ${d}@${pos}` };
+            return {
+              startIdx,
+              endIdx,
+              includedCells,
+              pos,
+              d,
+              err,
+              type: 'trial-error',
+              name: `try${deepTried ? '*' + deepTried : ''} ${d}@${pos}`,
+            };
           }
           this.jumpTo(startIdx);
         }
@@ -876,6 +889,8 @@ export class Sudoku {
   findChain(cells) {
     const [dPoses, dGroupPoses, dLinks] = getDigitPosesAndLinks(cells);
     console.log('chain info:', dGroupPoses, dLinks);
+    // randomize digits.
+    const ds = shuffleArray(digits);
     for (const maxLen of [20, Number.MAX_VALUE]) {
       for (const tryCellLinks of [false, true]) {
         for (const tryGroupLinks of [false, true]) {
@@ -883,7 +898,7 @@ export class Sudoku {
           for (const getPoses of [d => dPoses[d] || [], d => (dGroupPoses[d] || []).filter(p => p.isGroup)]) {
             let dRes = null;
             let maxLength = maxLen;
-            for (let d = 1; d <= 9; d++) {
+            for (const d of ds) {
               for (const pos of getPoses(d)) {
                 const val = false;
                 const startNode = { pos, d, val };
@@ -901,7 +916,7 @@ export class Sudoku {
                     dRes = chain;
                     maxLength = dRes.chain.length;
                     extraData.maxLength = maxLength;
-                    if (maxLength <= 8) {
+                    if (maxLength <= 10) {
                       return prepareChainResult(dRes);
                     }
                   }
