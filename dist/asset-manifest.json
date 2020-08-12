@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/sudoku-game/static/css/main.298f8ad4.chunk.css",
-    "main.js": "/sudoku-game/static/js/main.126e6823.chunk.js",
-    "main.js.map": "/sudoku-game/static/js/main.126e6823.chunk.js.map",
+    "main.js": "/sudoku-game/static/js/main.ed59667c.chunk.js",
+    "main.js.map": "/sudoku-game/static/js/main.ed59667c.chunk.js.map",
     "runtime-main.js": "/sudoku-game/static/js/runtime-main.de7171a8.js",
     "runtime-main.js.map": "/sudoku-game/static/js/runtime-main.de7171a8.js.map",
     "static/js/2.cbfe5bca.chunk.js": "/sudoku-game/static/js/2.cbfe5bca.chunk.js",
     "static/js/2.cbfe5bca.chunk.js.map": "/sudoku-game/static/js/2.cbfe5bca.chunk.js.map",
     "index.html": "/sudoku-game/index.html",
-    "precache-manifest.f51b0a814e3bae2f8ff2365e99611836.js": "/sudoku-game/precache-manifest.f51b0a814e3bae2f8ff2365e99611836.js",
+    "precache-manifest.655c3926d001761c6389d23dd864a9b2.js": "/sudoku-game/precache-manifest.655c3926d001761c6389d23dd864a9b2.js",
     "service-worker.js": "/sudoku-game/service-worker.js",
     "static/css/main.298f8ad4.chunk.css.map": "/sudoku-game/static/css/main.298f8ad4.chunk.css.map",
     "static/js/2.cbfe5bca.chunk.js.LICENSE.txt": "/sudoku-game/static/js/2.cbfe5bca.chunk.js.LICENSE.txt",
@@ -18,6 +18,6 @@
     "static/js/runtime-main.de7171a8.js",
     "static/js/2.cbfe5bca.chunk.js",
     "static/css/main.298f8ad4.chunk.css",
-    "static/js/main.126e6823.chunk.js"
+    "static/js/main.ed59667c.chunk.js"
   ]
 }
