@@ -208,19 +208,24 @@ export class Sudoku {
     return cells;
   }
 
-  stringify(cells) {
+  stringify(cells, options = { placedAsOrigin: false, withNotes: true }) {
     cells = cells || this.cells;
     const res = [];
     for (const pos of flattenPositions) {
       const { origin, value } = cells[pos.row][pos.col];
       if (Notes.is(value)) {
+        if (!options.withNotes) {
+          res.push('0');
+          continue;
+        }
+
         // notes
         if (Notes.isEmpty(value)) {
           res.push('0');
         } else {
           res.push('n', ...Notes.entries(value), 'N');
         }
-      } else if (origin) {
+      } else if (options.placedAsOrigin || origin) {
         // origin
         res.push(value);
       } else {

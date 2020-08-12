@@ -26,6 +26,7 @@ const Sudoku = () => {
   }, []);
 
   const newGameHandler = useCallback(puzzle => {
+    console.log('xxxxxxx', puzzle);
     try {
       setSudoku(new sudokus.Sudoku(puzzle));
       setIsNewGame(false);
@@ -44,7 +45,14 @@ const Sudoku = () => {
       <NewGame cancelNewGameHandler={cancelNewGameHandler} newGameHandler={newGameHandler} error={puzzleError} />
     );
   } else {
-    content = <Main sudoku={sudoku} startNewGameHandler={startNewGameHandler} emptyHandler={emptyHandler} />;
+    content = (
+      <Main
+        sudoku={sudoku}
+        startNewGameHandler={startNewGameHandler}
+        newGameHandler={newGameHandler}
+        emptyHandler={emptyHandler}
+      />
+    );
   }
 
   return <div className={styles.Sudoku}>{content}</div>;

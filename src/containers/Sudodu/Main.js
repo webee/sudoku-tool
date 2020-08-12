@@ -11,7 +11,12 @@ import { Notes } from '../../libs/sudoku';
 import { getPosition, findClosedPosPair } from '../../libs/position';
 import { console } from '../../libs/utils';
 
-const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), startNewGameHandler, emptyHandler }) => {
+const Sudoku = ({
+  /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(),
+  startNewGameHandler,
+  newGameHandler,
+  emptyHandler,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [, setChanged] = useState(0);
@@ -39,6 +44,9 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
   const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(cells), [sudoku, cells]);
 
   // handlers
+  const startGameHandler = useCallback(() => {
+    newGameHandler(sudoku.stringify(cells, { placedAsOrigin: true, withNotes: false }));
+  }, [cells, newGameHandler, sudoku]);
   const cellClickedHandler = useCallback(
     pos => {
       if (activeVal !== 0) {
@@ -392,6 +400,7 @@ const Sudoku = ({ /** @type {sudokus.Sudoku} */ sudoku = new sudokus.Sudoku(), s
       </Modal>
       <div className={styles.Menu}>
         <Button onClick={startNewGameHandler}>New</Button>
+        <Button onClick={startGameHandler}>Start</Button>
         <Button onClick={emptyHandler}>Empty</Button>
         <Button onClick={() => setShowShare(true)}>Share</Button>
       </div>
