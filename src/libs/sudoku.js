@@ -268,7 +268,8 @@ export class Sudoku {
     return cells;
   }
 
-  stringify(cells, options = { placedAsOrigin: false, withNotes: true }) {
+  stringify(cells, options = {}) {
+    options = { placedAsOrigin: false, withNotes: true, originAsPlaced: false, ...options };
     cells = cells || this.cells;
     const res = [];
     for (const pos of flattenPositions) {
@@ -285,7 +286,7 @@ export class Sudoku {
         } else {
           res.push('n', ...Notes.entries(value), 'N');
         }
-      } else if (options.placedAsOrigin || origin) {
+      } else if ((options.placedAsOrigin || origin) && !options.originAsPlaced) {
         // origin
         res.push(value);
       } else {

@@ -48,6 +48,11 @@ const Sudoku = ({
   const startGameHandler = useCallback(() => {
     newGameHandler(sudoku.stringify(cells, { placedAsOrigin: true, withNotes: false }));
   }, [cells, newGameHandler, sudoku]);
+
+  const editGameHandler = useCallback(() => {
+    newGameHandler(sudoku.stringify(cells, { originAsPlaced: true, withNotes: false }));
+  }, [cells, newGameHandler, sudoku]);
+
   const cellClickedHandler = useCallback(
     pos => {
       if (activeVal !== 0) {
@@ -341,6 +346,10 @@ const Sudoku = ({
         } else {
           toggleIsNotingHandler();
         }
+      } else if (e.key === 'a') {
+        toggleShowAvailHandler();
+      } else if (e.key === 'r') {
+        resetHandler();
       } else if (e.key === 'e') {
         eraseValueHandler();
       } else if (e.key === 'b') {
@@ -351,6 +360,12 @@ const Sudoku = ({
         deselectHandler();
       } else if (e.key === 't') {
         tipHandler();
+      } else if (e.key === 'x') {
+        cancelTipHandler();
+      } else if (e.key === 'y') {
+        changeChainStepHandler(-1);
+      } else if (e.key === 'u') {
+        changeChainStepHandler(1);
       } else if (e.key === 'p') {
         autoPlacePointingClaimingHandler();
       } else if (e.key === 'h' || e.key === 'ArrowLeft') {
@@ -400,17 +415,21 @@ const Sudoku = ({
     activeVal,
     autoNoteHandler,
     autoPlacePointingClaimingHandler,
+    cancelTipHandler,
     cellClickedHandler,
+    changeChainStepHandler,
     deselectHandler,
     digitClickedHandler,
     eraseValueHandler,
     moveActivePos,
     moveActiveVal,
+    resetHandler,
     startNewGameHandler,
     sudoku,
     tip,
     tipHandler,
     toggleIsNotingHandler,
+    toggleShowAvailHandler,
   ]);
 
   useEffect(() => {
@@ -449,6 +468,7 @@ const Sudoku = ({
       <div className={styles.Menu}>
         <Button onClick={startNewGameHandler}>New</Button>
         <Button onClick={startGameHandler}>Start</Button>
+        <Button onClick={editGameHandler}>Edit</Button>
         <Button onClick={emptyHandler}>Empty</Button>
         <Button onClick={() => setShowShare(true)}>Share</Button>
       </div>
