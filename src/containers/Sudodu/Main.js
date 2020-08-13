@@ -204,13 +204,18 @@ const Sudoku = ({
   const marks = useMemo(() => {
     if (tip) {
       if (tip.type === 'group') {
-        const { cls, domain, poses: cells, notes } = tip;
+        const { cls, domains, poses: cells, notes } = tip;
+        const domainInfo = {};
+        for (const [domain, value] of Object.entries(domains)) {
+          domainInfo[domain + 's'] = new Set([value]);
+        }
+
         if (cls === 0) {
           // naked
-          return { effect: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { cells, notes } };
+          return { effect: { ...domainInfo, notes }, highlights: { cells, notes } };
         } else if (cls === 1) {
           // hidden
-          return { domain: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { cells, notes } };
+          return { domain: { ...domainInfo, notes }, highlights: { cells, notes } };
         }
       } else if (tip.type === 'X-Group') {
         const { domain, rows, cols, blocks, poses: cells, d } = tip;
@@ -422,6 +427,7 @@ const Sudoku = ({
     deselectHandler,
     digitClickedHandler,
     eraseValueHandler,
+    jumpToTrailStartHandler,
     moveActivePos,
     moveActiveVal,
     resetHandler,

@@ -29,6 +29,7 @@ const Sudoku = () => {
     try {
       setSudoku(new sudokus.Sudoku(puzzle));
       setIsNewGame(false);
+      setPuzzleError(null);
     } catch (error) {
       setPuzzleError(error);
     }

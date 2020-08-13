@@ -745,20 +745,18 @@ export class Sudoku {
     } else if (group.cls === 0) {
       // naked
       // to eliminate other cells
-      let otherPoses = [];
-      if (group.domain === 'row') {
-        otherPoses = positions.getRowPositions(group.row);
-      } else if (group.domain === 'col') {
-        otherPoses = positions.getColPositions(group.col);
-      } else if (group.domain === 'block') {
-        otherPoses = positions.getBlockFlattenPositions(group.block);
-      }
-      otherPoses = otherPoses.filter(pos => {
-        const { value } = this.getCell(pos);
-        return !(!Notes.is(value) || group.poses.has(pos));
-      });
+      const { row, col, block } = group.domains;
+      const otherPoses = [
+        ...(positions.getRowPositions(row) || []),
+        ...(positions.getColPositions(col) || []),
+        ...(positions.getBlockPositions(block) || []),
+      ];
       for (const pos of otherPoses) {
         const { value } = this.getCell(pos);
+        if (!Notes.is(value) || group.poses.has(pos)) {
+          continue;
+        }
+
         this._setCellValue(pos, Notes.delete(value, ...group.notes));
       }
     } else if (group.cls === 1) {
@@ -1356,6 +1354,18 @@ function getPositionsLinks(cells, positions) {
   return links;
 }
 
+const getPosDomains = poses => {
+  const res = {};
+  for (const domain of ['row', 'col', 'block']) {
+    const ds = new Set();
+    poses.forEach(p => ds.add(p[domain]));
+    if (ds.size === 1) {
+      res[domain] = [...ds][0];
+    }
+  }
+  return res;
+};
+
 function* findNGroup(cells, n, cls) {
   // rows
   for (const row of positions.rows) {
@@ -1363,7 +1373,14 @@ function* findNGroup(cells, n, cls) {
     for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'row', row: row, poses, notes, name: ['naked', 'hidden'][cls] + `-${n}-group` };
+      yield {
+        cls,
+        n,
+        domains: cls === 0 ? getPosDomains(poses) : { row },
+        poses,
+        notes,
+        name: ['naked', 'hidden'][cls] + `-${n}-group`,
+      };
     }
   }
   // cols
@@ -1372,7 +1389,14 @@ function* findNGroup(cells, n, cls) {
     for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'col', col: col, poses, notes, name: ['naked', 'hidden'][cls] + `-${n}-group` };
+      yield {
+        cls,
+        n,
+        domains: cls === 0 ? getPosDomains(poses) : { col },
+        poses,
+        notes,
+        name: ['naked', 'hidden'][cls] + `-${n}-group`,
+      };
     }
   }
   // blocks
@@ -1381,7 +1405,14 @@ function* findNGroup(cells, n, cls) {
     for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
-      yield { cls, n, domain: 'block', block: block, poses, notes, name: ['naked', 'hidden'][cls] + `-${n}-group` };
+      yield {
+        cls,
+        n,
+        domains: cls === 0 ? getPosDomains(poses) : { block },
+        poses,
+        notes,
+        name: ['naked', 'hidden'][cls] + `-${n}-group`,
+      };
     }
   }
 }
