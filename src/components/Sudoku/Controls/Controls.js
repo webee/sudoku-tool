@@ -33,18 +33,18 @@ const Controls = ({
     <div className={styles.Controls}>
       <div className={styles.History}>
         <Button disabled={!hasPrev} onClick={jumpToFirst}>
-          first
+          &lt;&lt;
         </Button>
         <Button disabled={!hasPrev} onClick={() => jump(-1)}>
-          prev
+          &lt;
         </Button>
-        <span>#{cellsRecord.idx}</span>
         <Button disabled={!hasNext} onClick={() => jump(1)}>
-          next
+          &gt;
         </Button>
         <Button disabled={!hasNext} onClick={jumpToLast}>
-          last
+          &gt;&gt;
         </Button>
+        <span>#{cellsRecord.idx}</span>
         <span>{cellsRecord.desc}</span>
       </div>
       <div className={styles.Panel}>
