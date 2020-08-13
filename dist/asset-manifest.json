@@ -1,23 +1,23 @@
 {
   "files": {
-    "main.css": "/sudoku-game/static/css/main.298f8ad4.chunk.css",
-    "main.js": "/sudoku-game/static/js/main.ed59667c.chunk.js",
-    "main.js.map": "/sudoku-game/static/js/main.ed59667c.chunk.js.map",
-    "runtime-main.js": "/sudoku-game/static/js/runtime-main.de7171a8.js",
-    "runtime-main.js.map": "/sudoku-game/static/js/runtime-main.de7171a8.js.map",
-    "static/js/2.cbfe5bca.chunk.js": "/sudoku-game/static/js/2.cbfe5bca.chunk.js",
-    "static/js/2.cbfe5bca.chunk.js.map": "/sudoku-game/static/js/2.cbfe5bca.chunk.js.map",
-    "index.html": "/sudoku-game/index.html",
-    "precache-manifest.655c3926d001761c6389d23dd864a9b2.js": "/sudoku-game/precache-manifest.655c3926d001761c6389d23dd864a9b2.js",
-    "service-worker.js": "/sudoku-game/service-worker.js",
-    "static/css/main.298f8ad4.chunk.css.map": "/sudoku-game/static/css/main.298f8ad4.chunk.css.map",
-    "static/js/2.cbfe5bca.chunk.js.LICENSE.txt": "/sudoku-game/static/js/2.cbfe5bca.chunk.js.LICENSE.txt",
-    "static/media/Digits.module.scss": "/sudoku-game/static/media/9.4e6a7a5d.svg"
+    "main.css": "/sodoku-tool/static/css/main.b1478dc2.chunk.css",
+    "main.js": "/sodoku-tool/static/js/main.585a4497.chunk.js",
+    "main.js.map": "/sodoku-tool/static/js/main.585a4497.chunk.js.map",
+    "runtime-main.js": "/sodoku-tool/static/js/runtime-main.ec9a4c9d.js",
+    "runtime-main.js.map": "/sodoku-tool/static/js/runtime-main.ec9a4c9d.js.map",
+    "static/js/2.6bc776e7.chunk.js": "/sodoku-tool/static/js/2.6bc776e7.chunk.js",
+    "static/js/2.6bc776e7.chunk.js.map": "/sodoku-tool/static/js/2.6bc776e7.chunk.js.map",
+    "index.html": "/sodoku-tool/index.html",
+    "precache-manifest.97a2a4cc9d033c71b187be66c2bc9aa2.js": "/sodoku-tool/precache-manifest.97a2a4cc9d033c71b187be66c2bc9aa2.js",
+    "service-worker.js": "/sodoku-tool/service-worker.js",
+    "static/css/main.b1478dc2.chunk.css.map": "/sodoku-tool/static/css/main.b1478dc2.chunk.css.map",
+    "static/js/2.6bc776e7.chunk.js.LICENSE.txt": "/sodoku-tool/static/js/2.6bc776e7.chunk.js.LICENSE.txt",
+    "static/media/Digits.module.scss": "/sodoku-tool/static/media/9.4e6a7a5d.svg"
   },
   "entrypoints": [
-    "static/js/runtime-main.de7171a8.js",
-    "static/js/2.cbfe5bca.chunk.js",
-    "static/css/main.298f8ad4.chunk.css",
-    "static/js/main.ed59667c.chunk.js"
+    "static/js/runtime-main.ec9a4c9d.js",
+    "static/js/2.6bc776e7.chunk.js",
+    "static/css/main.b1478dc2.chunk.css",
+    "static/js/main.585a4497.chunk.js"
   ]
 }
