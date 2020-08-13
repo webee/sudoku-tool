@@ -204,23 +204,23 @@ const Sudoku = ({
   const marks = useMemo(() => {
     if (tip) {
       if (tip.type === 'group') {
-        const { cls, domain, poses, notes } = tip;
+        const { cls, domain, poses: cells, notes } = tip;
         if (cls === 0) {
           // naked
-          return { effect: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { poses, notes } };
+          return { effect: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { cells, notes } };
         } else if (cls === 1) {
           // hidden
-          return { domain: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { poses, notes } };
+          return { domain: { [domain + 's']: new Set([tip[domain]]), notes }, highlights: { cells, notes } };
         }
       } else if (tip.type === 'X-Group') {
-        const { domain, rows, cols, blocks, poses, d } = tip;
+        const { domain, rows, cols, blocks, poses: cells, d } = tip;
         const notes = new Set([d]);
         if (domain === 'row') {
-          return { domain: { rows }, effect: { cols, blocks, notes }, highlights: { poses, notes } };
+          return { domain: { rows }, effect: { cols, blocks, notes }, highlights: { cells, notes } };
         } else if (domain === 'col') {
-          return { domain: { cols }, effect: { rows, blocks, notes }, highlights: { poses, notes } };
+          return { domain: { cols }, effect: { rows, blocks, notes }, highlights: { cells, notes } };
         } else if (domain === 'block') {
-          return { domain: { blocks }, effect: { rows, cols, notes }, highlights: { poses, notes } };
+          return { domain: { blocks }, effect: { rows, cols, notes }, highlights: { cells, notes } };
         }
       } else if (tip.type === 'chain') {
         const { chain, effectedPoses, d, effectedDs } = tip;
@@ -286,22 +286,22 @@ const Sudoku = ({
         return {
           frames,
           arrows,
-          effect: { poses: effectedPoses, notes: effectedNotes },
-          highlights: { poses, posNotes, posSubNotes, withoutOutlinePoses },
+          effect: { cells: effectedPoses, notes: effectedNotes },
+          highlights: { cells: poses, posNotes, posSubNotes, withoutOutlinePoses },
         };
       } else if (tip.type === 'trial-error') {
         const { startIdx, pos, d, err } = tip;
         const values = new Set([d]);
         let marks = null;
         if (err === true) {
-          // complete
+          // is complete
           marks = { highlights: { poses: new Set([pos]), values, notes: values } };
         } else {
           const { domain, digits } = err;
           if (cellsRecord.idx >= startIdx) {
             marks = {
               effect: { [domain + 's']: new Set([err[domain]]), notes: digits, values: digits },
-              highlights: { poses: new Set([pos]), values, notes: values },
+              highlights: { cells: new Set([pos]), values, notes: values },
             };
           }
         }
@@ -364,6 +364,7 @@ const Sudoku = ({
         cancelTipHandler();
       } else if (e.key === 'y') {
         changeChainStepHandler(-1);
+        jumpToTrailStartHandler();
       } else if (e.key === 'u') {
         changeChainStepHandler(1);
       } else if (e.key === 'p') {

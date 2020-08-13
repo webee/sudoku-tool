@@ -97,7 +97,7 @@ const Cell = React.memo(
         }
       }
       if (effect) {
-        const { rows, cols, blocks, poses } = effect;
+        const { rows, cols, blocks, cells } = effect;
         if (rows && rows.has(row)) {
           effectMarked = true;
         }
@@ -107,11 +107,11 @@ const Cell = React.memo(
         if (blocks && blocks.has(block)) {
           effectMarked = true;
         }
-        if (poses && poses.has(pos)) {
+        if (cells && cells.has(pos)) {
           effectMarked = true;
         }
       }
-      if (highlights && highlights.poses.has(pos)) {
+      if (highlights && highlights.cells.has(pos)) {
         highlighted = true;
       }
     }

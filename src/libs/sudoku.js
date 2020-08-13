@@ -18,7 +18,7 @@ export const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 export class Notes {
   static _base = 1 << 16;
   static new(...notes) {
-    let value = 1 << 16;
+    let value = Notes._base;
     for (const n of notes) {
       value |= 1 << n;
     }
@@ -564,6 +564,11 @@ export class Sudoku {
         const errDigits = new Set(digits);
         for (const pos of getPositions(idx)) {
           const { value } = this.getCell(pos);
+          if (domain === 'row' && Notes.isEmpty(value)) {
+            // check empty.
+            return { domain: 'cell', cell: pos, digits: new Set() };
+          }
+
           if (Notes.is(value)) {
             Notes.entries(value).forEach(v => errDigits.delete(v));
           } else {
@@ -828,7 +833,7 @@ export class Sudoku {
     const startIdx = this._curCellsIdx;
     // randomize this pos choice
     const poses = shuffleArray(positions.flattenPositions);
-    for (const tryTip of [false, { maxDepth: 15 }, {maxDepth: 25}, { maxDepth: Number.MAX_VALUE }]) {
+    for (const tryTip of [false, { maxDepth: 15 }, { maxDepth: 25 }, { maxDepth: Number.MAX_VALUE }]) {
       for (const pos of poses) {
         const { value } = this.getCell(pos);
         if (!Notes.is(value)) {
@@ -1001,12 +1006,13 @@ function* searchChain(chain, node, extraData) {
   const { pos, d, val } = node;
   const { dLinks, cells, td } = extraData;
 
-  if (extraData.val === false && val === true) {
+  if (extraData.val === false && val === true && chain.length > 1) {
     // strong link
     const startPos = chain[0].pos;
     // strong link is reversable.
-    // digit(startPos) -> group(endPos)
+    // d->g => g->d, so we only consider d->g
     if (!(startPos.isGroup && !pos.isGroup)) {
+      // ignore g->d
       if (d === td) {
         // start and end shouldn't be the same position.
         // check if intersection related positions has d
@@ -1257,7 +1263,7 @@ function getGroupPosLink(groupPoses, pos, d) {
       strongTargets.add(strongPos);
     }
   }
-  return { false: [...strongTargets], true: [...weakTargets] };
+  return { false: strongTargets, true: weakTargets };
 }
 
 function getPosLink(cells, d, pos) {
@@ -1294,7 +1300,7 @@ function getPosLink(cells, d, pos) {
       strongTargets.add(strongPos);
     }
   }
-  return { false: [...strongTargets], true: [...weakTargets] };
+  return { false: strongTargets, true: weakTargets };
 }
 
 function getDigitPosesAndLinks(cells) {
@@ -1316,8 +1322,8 @@ function getDigitPosesAndLinks(cells) {
       links[pos] = link;
       link.group = getGroupPosLink(dGroupPoses[d], pos, d);
 
-      const otherDs = ds.filter(v => v !== d);
-      link.cell = { false: ds.length === 2 ? otherDs : [], true: otherDs };
+      const otherDs = new Set(ds.filter(v => v !== d));
+      link.cell = { false: ds.length === 2 ? otherDs : new Set(), true: otherDs };
     }
   }
   // group position links
@@ -1328,7 +1334,7 @@ function getDigitPosesAndLinks(cells) {
       const link = getPosLink(cells, d, pos);
       links[pos] = link;
       link.group = getGroupPosLink(dGroupPoses[d], pos);
-      link.cell = { false: [], true: [] };
+      link.cell = { false: new Set(), true: new Set() };
     }
   }
 
