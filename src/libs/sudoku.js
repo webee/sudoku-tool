@@ -420,19 +420,19 @@ export class Sudoku {
 
   // actions
   static actions = {
-    RESET: 'RESET',
-    NOTE: 'NOTE',
-    UPDATE_CELL_VALUE: 'U CELL_VALUE',
-    AUTO_NOTE: 'A NOTE',
-    AUTO_POINTING: 'A POINTING',
-    AUTO_CLAIMING: 'A CLAIMING',
-    AUTO_PLACE: 'A PLACE',
-    AUTO_PLACE_POINTING_CLAIMING: 'A PLACE/POINTING/CLAIMING',
-    ELIMINATE_GROUP: '- GROUP',
-    ELIMINATE_XGROUP: '- XGROUP',
-    ELIMINATE_CHAIN: '- CHAIN',
-    ELIMINATE_TRIAL_ERROR: '- TRIAL_ERROR',
-    HANDLE_TIP: 'HANDLE_TIP',
+    RESET: 'Reset',
+    NOTE: 'Note',
+    UPDATE_CELL_VALUE: 'Update Cell Value',
+    AUTO_NOTE: 'Auto Note',
+    AUTO_POINTING: 'Auto Pointing',
+    AUTO_CLAIMING: 'Auto Claiming',
+    AUTO_PLACE: 'Auto Place',
+    AUTO_PLACE_POINTING_CLAIMING: 'Auto Place/Pointing/Claiming',
+    ELIMINATE_GROUP: 'X Group',
+    ELIMINATE_XGROUP: 'X XGroup',
+    ELIMINATE_CHAIN: 'X Chain',
+    ELIMINATE_TRIAL_ERROR: 'X Trial Error',
+    HANDLE_TIP: 'Handle Tip',
   };
 
   _handlActions(action, payload = {}) {
@@ -1372,55 +1372,26 @@ const getPosDomains = poses => {
 };
 
 function* findNGroup(cells, n, cls) {
-  // rows
-  for (const row of positions.rows) {
-    const links = getPosDigitLinks(cells, positions.getRowPositions(row));
-    const points = aggregateLinks(links, cls);
-    for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
-      const poses = group[cls];
-      const notes = group[(cls + 1) % 2];
-      yield {
-        cls,
-        n,
-        domains: cls === 0 ? getPosDomains(poses) : { row },
-        poses,
-        notes,
-        name: ['naked', 'hidden'][cls] + `-${n}-group`,
-      };
-    }
-  }
-  // cols
-  for (const col of positions.cols) {
-    const links = getPosDigitLinks(cells, positions.getColPositions(col));
-    const points = aggregateLinks(links, cls);
-    for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
-      const poses = group[cls];
-      const notes = group[(cls + 1) % 2];
-      yield {
-        cls,
-        n,
-        domains: cls === 0 ? getPosDomains(poses) : { col },
-        poses,
-        notes,
-        name: ['naked', 'hidden'][cls] + `-${n}-group`,
-      };
-    }
-  }
-  // blocks
-  for (const block of positions.blocks) {
-    const links = getPosDigitLinks(cells, positions.getBlockFlattenPositions(block));
-    const points = aggregateLinks(links, cls);
-    for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
-      const poses = group[cls];
-      const notes = group[(cls + 1) % 2];
-      yield {
-        cls,
-        n,
-        domains: cls === 0 ? getPosDomains(poses) : { block },
-        poses,
-        notes,
-        name: ['naked', 'hidden'][cls] + `-${n}-group`,
-      };
+  for (const [domain, getPositions] of [
+    ['row', getRowPositions],
+    ['col', getColPositions],
+    ['block', getBlockFlattenPositions],
+  ]) {
+    for (const idx of positions.indices) {
+      const links = getPosDigitLinks(cells, getPositions(idx));
+      const points = aggregateLinks(links, cls);
+      for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
+        const poses = group[cls];
+        const notes = group[(cls + 1) % 2];
+        yield {
+          cls,
+          n,
+          domains: cls === 0 ? getPosDomains(poses) : { [domain]: idx },
+          poses,
+          notes,
+          name: ['naked', 'hidden'][cls] + `-${n}-group`,
+        };
+      }
     }
   }
 }
