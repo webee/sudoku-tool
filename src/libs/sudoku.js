@@ -11,7 +11,7 @@ import {
   getBlockFlattenPositions,
 } from './position';
 import * as positions from './position';
-import { findNGroupFromLinks, console, getAttrDefault, shuffleArray } from './utils';
+import { aggregateLinks, findNGroupFromLinks, console, getAttrDefault, shuffleArray } from './utils';
 
 export const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -83,7 +83,7 @@ export class Sudoku {
   000000000 000000000 000000000
   000000000 000000000 000000000
   000000000 000000000 000000000
-`;
+ `;
   constructor(puzzle) {
     this._shouldNotify = true;
     this.subscribers = [];
@@ -810,6 +810,7 @@ export class Sudoku {
       this.findGroup(cells) ||
       this.findXGroup(cells) ||
       this.findChain(cells) ||
+      this.findALSChain(cells) ||
       (options.trial && this.findTrialError())
     );
   }
@@ -961,6 +962,10 @@ export class Sudoku {
       }
       this._setCellValue(pos, newValue);
     }
+  }
+
+  findALSChain(cells) {
+    //
   }
 }
 
@@ -1339,10 +1344,10 @@ function getDigitPosesAndLinks(cells) {
   return [dPoses, dGroupPoses, dLinks];
 }
 
-function getPositionsLinks(cells, positions) {
+function getPosDigitLinks(cells, poses) {
   const links = [];
-  for (const pos of positions) {
-    const { value } = cells[pos.row][pos.col];
+  for (const pos of poses) {
+    const { value } = positions.getCell(cells, pos);
     if (!Notes.is(value)) {
       continue;
     }
@@ -1369,8 +1374,9 @@ const getPosDomains = poses => {
 function* findNGroup(cells, n, cls) {
   // rows
   for (const row of positions.rows) {
-    const links = getPositionsLinks(cells, positions.getRowPositions(row));
-    for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
+    const links = getPosDigitLinks(cells, positions.getRowPositions(row));
+    const points = aggregateLinks(links, cls);
+    for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
       yield {
@@ -1385,8 +1391,9 @@ function* findNGroup(cells, n, cls) {
   }
   // cols
   for (const col of positions.cols) {
-    const links = getPositionsLinks(cells, positions.getColPositions(col));
-    for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
+    const links = getPosDigitLinks(cells, positions.getColPositions(col));
+    const points = aggregateLinks(links, cls);
+    for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
       yield {
@@ -1401,8 +1408,9 @@ function* findNGroup(cells, n, cls) {
   }
   // blocks
   for (const block of positions.blocks) {
-    const links = getPositionsLinks(cells, positions.getBlockFlattenPositions(block));
-    for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
+    const links = getPosDigitLinks(cells, positions.getBlockFlattenPositions(block));
+    const points = aggregateLinks(links, cls);
+    for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
       const poses = group[cls];
       const notes = group[(cls + 1) % 2];
       yield {
@@ -1454,7 +1462,8 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       // row->col
       const rcLinks = getRowToColLinks(cells, d);
       if (types.rc) {
-        for (const group of findNGroupFromLinks(rcLinks, n, 0)) {
+        const points = aggregateLinks(rcLinks, 0);
+        for (const group of findNGroupFromLinks(points, n)) {
           const [rows, cols] = group;
           const poses = [];
           let isXWing = true;
@@ -1471,7 +1480,8 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       }
       // col->row
       if (types.cr) {
-        for (const group of findNGroupFromLinks(rcLinks, n, 1)) {
+        const points = aggregateLinks(rcLinks, 1);
+        for (const group of findNGroupFromLinks(points, n)) {
           const [cols, rows] = group;
           const poses = [];
           let isXWing = true;
@@ -1492,7 +1502,8 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       // row->block, 1-xrb-group is claiming
       const rbLinks = getRowToBlockLinks(cells, d);
       if (types.rb) {
-        for (const group of findNGroupFromLinks(rbLinks, n, 0)) {
+        const points = aggregateLinks(rbLinks, 0);
+        for (const group of findNGroupFromLinks(points, n)) {
           const [rows, blocks] = group;
           const poses = [];
           for (const row of rows) {
@@ -1504,7 +1515,8 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       }
       // block-row, 1-xbr-group is pointing
       if (types.br) {
-        for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
+        const points = aggregateLinks(rbLinks, 1);
+        for (const group of findNGroupFromLinks(points, n)) {
           const [blocks, rows] = group;
           const poses = [];
           for (const block of blocks) {
@@ -1520,7 +1532,8 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       // col->block, 1-xcb-group is claiming
       const cbLinks = getColToBlockLinks(cells, d);
       if (types.cb) {
-        for (const group of findNGroupFromLinks(cbLinks, n, 0)) {
+        const points = aggregateLinks(cbLinks, 0);
+        for (const group of findNGroupFromLinks(points, n)) {
           const [cols, blocks] = group;
           const poses = [];
           for (const col of cols) {
@@ -1533,7 +1546,8 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
 
       // block-col, 1-xbc-group is pointing
       if (types.bc) {
-        for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
+        const points = aggregateLinks(cbLinks, 1);
+        for (const group of findNGroupFromLinks(points, n)) {
           const [blocks, cols] = group;
           const poses = [];
           for (const block of blocks) {

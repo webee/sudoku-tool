@@ -27,16 +27,18 @@ export function* comb(n, k) {
   yield* combx(0, n, k);
 }
 
-export function* findNGroupFromLinks(links, n, order = 0, options = { checkClear: true }) {
+export const aggregateLinks = (links, order = 0) => {
   const s = {};
   for (const link of links) {
     const start = link[order];
     const end = link[(order + 1) % 2];
-    const v = s[start] || { start, ends: new Set() };
+    const v = getAttrDefault(s, start, { start, ends: new Set() });
     v.ends.add(end);
-    s[start] = v;
   }
-  const points = Object.values(s);
+  return Object.values(s);
+};
+
+export function* findNGroupFromLinks(points, n, options = { checkClear: true }) {
   const xpoints = points.filter(p => p.ends.size <= n);
   if (options.checkClear && points.length <= n) {
     // only return group if count(starts) > n
@@ -77,6 +79,28 @@ export function* findNGroupFromLinks(links, n, order = 0, options = { checkClear
   }
 }
 
+export function* findALSFromLinks(points, n) {
+  const m = n + 1;
+  const xpoints = points.filter(p => p.ends.size <= m);
+
+  for (const idxes of comb(xpoints.length, n)) {
+    // check
+    const starts = new Set();
+    const ends = new Set();
+    for (const idx of idxes) {
+      const point = xpoints[idx];
+      starts.add(point.start);
+      point.ends.forEach(ends.add, ends);
+      if (ends.size > m) {
+        break;
+      }
+    }
+    if (ends.size === m) {
+      yield [starts, ends];
+    }
+  }
+}
+
 const _store = {};
 export const memorize = f => (...args) => {
   if (_store[f]) {
@@ -100,7 +124,7 @@ export const console = {
 };
 
 export const getAttrDefault = (obj, name, defVal) => {
-  if (obj[name] === undefined) {
+  if (!obj.hasOwnProperty(name)) {
     obj[name] = defVal;
   }
   return obj[name];
