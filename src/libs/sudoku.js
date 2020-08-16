@@ -11,7 +11,15 @@ import {
   getBlockFlattenPositions,
 } from './position';
 import * as positions from './position';
-import { aggregateLinks, findNGroupFromLinks, console, getAttrDefault, shuffleArray } from './utils';
+import {
+  aggregateLinks,
+  findNGroupFromLinks,
+  console,
+  getAttrDefault,
+  shuffleArray,
+  findALSFromPoints,
+  intersection,
+} from './utils';
 
 export const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -749,7 +757,7 @@ export class Sudoku {
       const otherPoses = [
         ...(positions.getRowPositions(row) || []),
         ...(positions.getColPositions(col) || []),
-        ...(positions.getBlockPositions(block) || []),
+        ...(positions.getBlockFlattenPositions(block) || []),
       ];
       for (const pos of otherPoses) {
         const { value } = this.getCell(pos);
@@ -810,7 +818,6 @@ export class Sudoku {
       this.findGroup(cells) ||
       this.findXGroup(cells) ||
       this.findChain(cells) ||
-      this.findALSChain(cells) ||
       (options.trial && this.findTrialError())
     );
   }
@@ -903,31 +910,49 @@ export class Sudoku {
   }
 
   findChain(cells) {
-    const [dPoses, dGroupPoses, dLinks] = getDigitPosesAndLinks(cells);
-    console.log('chain info:', dGroupPoses, dLinks);
+    const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells);
+    console.log('chain info:', dPoses, dGroupPoses, dAlsces, dLinks);
+    // for (const chain of searchChainBFS([[{ pos: dAlsces[7]['r0c5'], d: 7, val: false }]], {
+    //   dLinks,
+    //   dAlsces,
+    //   val: false,
+    //   cells,
+    //   td: 7,
+    //   tryDigitLinks: false,
+    //   tryGroupLinks: false,
+    //   tryCellLinks: false,
+    //   tryAlscLinks: true,
+    // })) {
+    //   console.log('chain:', chain);
+    // }
+    // return;
     // randomize digits.
-    const ds = shuffleArray(digits);
+    // const ds = shuffleArray(digits);
+    const ds = digits;
     for (const maxLen of [20, Number.MAX_VALUE]) {
-      for (const tryCellLinks of [false, true]) {
-        for (const tryGroupLinks of [false, true]) {
-          // for (const getPoses of [d => dPoses[d] || [] /*, d => (dGroupPoses[d] || []).filter(p => p.isGroup)*/]) {
-          for (const getPoses of [d => dPoses[d] || [], d => (dGroupPoses[d] || []).filter(p => p.isGroup)]) {
-            let dRes = null;
-            let maxLength = maxLen;
-            for (const d of ds) {
-              for (const pos of getPoses(d)) {
-                const val = false;
-                const startNode = { pos, d, val };
+      for (const tryAlscLinks of [false]) {
+        for (const tryCellLinks of [false, true]) {
+          for (const tryGroupLinks of [false, true]) {
+            // for (const getPoses of [d => dPoses[d] /*, d => (dGroupPoses[d] || []).filter(p => p.isGroup)*/]) {
+            for (const getPoses of [d => dPoses[d], d => (dGroupPoses[d] || []).filter(p => p.isGroup)]) {
+              // for (const getPoses of [d => Object.values(dAlsces[d])]) {
+              let dRes = null;
+              let maxLength = maxLen;
+              for (const d of ds) {
+                const qs = (getPoses(d) || []).map(pos => [{ pos, d, val: false }]);
                 const extraData = {
                   dLinks,
+                  dAlsces,
                   val: false,
                   cells,
                   td: d,
+                  tryDigitLinks: true,
                   tryGroupLinks,
                   tryCellLinks,
+                  tryAlscLinks,
                   maxLength,
                 };
-                for (const chain of searchChain([], startNode, extraData)) {
+                for (const chain of searchChainBFS(qs, extraData)) {
                   if (chain.chain.length < maxLength) {
                     dRes = chain;
                     maxLength = dRes.chain.length;
@@ -938,9 +963,9 @@ export class Sudoku {
                   }
                 }
               }
-            }
-            if (dRes) {
-              return prepareChainResult(dRes);
+              if (dRes) {
+                return prepareChainResult(dRes);
+              }
             }
           }
         }
@@ -962,10 +987,6 @@ export class Sudoku {
       }
       this._setCellValue(pos, newValue);
     }
-  }
-
-  findALSChain(cells) {
-    //
   }
 }
 
@@ -1000,15 +1021,9 @@ const prepareChainResult = res => {
 
 const checkExistAndEqual = (a, b) => a !== undefined && a === b;
 
-function* searchChain(chain, node, extraData) {
-  // optimize
-  if (chain.length + 1 >= extraData.maxLength) {
-    return;
-  }
-
+function* checkChain(chain, node, extraData) {
   const { pos, d, val } = node;
-  const { dLinks, cells, td } = extraData;
-
+  const { cells, td } = extraData;
   if (extraData.val === false && val === true && chain.length > 1) {
     // strong link
     const startPos = chain[0].pos;
@@ -1040,7 +1055,7 @@ function* searchChain(chain, node, extraData) {
           //
           // but at this case, start and end poses must not be groups.
           // diffrenet digits' group keys are all different.
-          const poses = pos.isGroup ? [...pos.poses] : [pos];
+          const poses = getRealPoses(pos);
           const ds = new Set();
           for (const p of poses) {
             const { value } = positions.getCell(cells, p);
@@ -1079,16 +1094,23 @@ function* searchChain(chain, node, extraData) {
       }
     }
   }
-  // try related links or group links
-  for (const targets of [dLinks[d][pos][val], extraData.tryGroupLinks ? dLinks[d][pos].group[val] : []]) {
-    for (const tpos of targets) {
-      const nextNode = { pos: tpos, val: !val, d };
+}
 
-      if (chainHasNode(chain, nextNode)) {
-        continue;
+function* genNextChainAndNode(chain, node, extraData) {
+  const { pos, d, val } = node;
+  const { dLinks, dAlsces } = extraData;
+  if (extraData.tryDigitLinks) {
+    // try related links or group links
+    for (const targets of [dLinks[d][pos][val], extraData.tryGroupLinks ? dLinks[d][pos].group[val] : []]) {
+      for (const tpos of targets) {
+        const nextNode = { pos: tpos, val: !val, d };
+
+        if (chainHasNode(chain, nextNode)) {
+          continue;
+        }
+
+        yield [[...chain, node], nextNode];
       }
-
-      yield* searchChain([...chain, node], nextNode, extraData);
     }
   }
 
@@ -1101,20 +1123,77 @@ function* searchChain(chain, node, extraData) {
         continue;
       }
 
-      yield* searchChain([...chain, node], nextNode, extraData);
+      yield [[...chain, node], nextNode];
+    }
+  }
+
+  if (extraData.tryAlscLinks) {
+    // try alsc links
+    for (const link of dLinks[d][pos].alsc[val]) {
+      let curNode = null;
+      let nextNode = null;
+      if (val) {
+        // weak link
+        const rcc = link;
+        curNode = { ...node, pos: dAlsces[d][pos] };
+        nextNode = { pos: rcc, val: !val, d: rcc.d };
+      } else {
+        // strong link
+        const { als, alsc } = link;
+        curNode = { ...node, pos: dAlsces[d][pos], als };
+        nextNode = { pos: alsc, val: !val, d: alsc.d, als };
+      }
+      if (chainHasNode(chain, nextNode)) {
+        continue;
+      }
+      yield [[...chain, curNode], nextNode];
+    }
+  }
+}
+
+function* searchChainDFS(chain, node, extraData) {
+  // optimize
+  if (chain.length + 1 >= extraData.maxLength) {
+    return;
+  }
+
+  yield* checkChain(chain, node, extraData);
+
+  for (const nextChainAndNode of genNextChainAndNode(chain, node, extraData)) {
+    yield* searchChainDFS(...nextChainAndNode, extraData);
+  }
+}
+
+function* searchChainBFS(qs, extraData) {
+  while (qs.length > 0) {
+    const chain = qs.shift();
+    if (chain.length + 1 > extraData.maxLength) {
+      continue;
+    }
+
+    const node = chain.pop();
+
+    yield* checkChain(chain, node, extraData);
+
+    for (const nextChainAndNode of genNextChainAndNode(chain, node, extraData)) {
+      const [chain, nextNode] = nextChainAndNode;
+      qs.push([...chain, nextNode]);
     }
   }
 }
 
 const chainHasNode = (chain, node) => {
-  const poses = node.pos.isGroup ? node.pos.poses : [node.pos];
+  const poses = getRealPoses(node.pos);
   for (const n of chain) {
-    if (n.val === node.val && n.d === node.d && n.pos === node.pos) {
+    if (n.val === node.val && n.d === node.d && n.pos.key === node.pos.key) {
       return true;
     }
-    if (n.pos.isGroup || node.pos.isGroup) {
-      if (hasCommon(poses, n.pos.isGroup ? n.pos.poses : [n.pos])) {
-        return true;
+    // FIXME:
+    if (n.d === node.d && n.val && node.val) {
+      if (n.pos.poses || node.pos.poses) {
+        if (hasCommon(poses, getRealPoses(n.pos))) {
+          return true;
+        }
       }
     }
   }
@@ -1152,7 +1231,7 @@ const newGroupPos = (domain, val, block, poses, d) => {
   };
 };
 
-export const getRealPoses = pos => (pos.isGroup ? pos.poses : [pos]);
+export const getRealPoses = pos => (pos.isGroup || pos.isAlsc ? pos.poses : [pos]);
 
 // for row/col in block, like claiming.
 function getDigitGroupPoses(cells) {
@@ -1201,8 +1280,7 @@ function getDigitGroupPoses(cells) {
 }
 
 const hasCommon = (a, b) => {
-  const sb = new Set(b);
-  return a.filter(v => sb.has(v)).length > 0;
+  return intersection(new Set(a), new Set(b)).size > 0;
 };
 
 const getOtherRowGroupPositions = (groupPoses = [], pos) => {
@@ -1233,7 +1311,7 @@ const getOtherBlockGroupPositions = (groupPoses = [], pos) => {
   return res;
 };
 
-function getGroupPosLink(groupPoses, pos, d) {
+function getGroupPosLink(groupPoses, pos) {
   // strong: false->true, weak: true->false
   const strongTargets = new Set();
   const weakTargets = new Set();
@@ -1306,8 +1384,14 @@ function getPosLink(cells, d, pos) {
   return { false: strongTargets, true: weakTargets };
 }
 
+function getAlscLink(alscLinks, pos) {
+  return alscLinks[pos];
+}
+
 function getDigitPosesAndLinks(cells) {
   const dGroupPoses = getDigitGroupPoses(cells);
+  const [dAlsces, dAlscLinks] = getDigitAlscAndLinks(cells, dGroupPoses);
+  console.log('dAlscLinks:', dAlsces, dAlscLinks);
   const dLinks = {};
   const dPoses = {};
   for (const pos of positions.flattenPositions) {
@@ -1321,12 +1405,18 @@ function getDigitPosesAndLinks(cells) {
       poses.push(pos);
 
       const links = getAttrDefault(dLinks, d, {});
+      // same digit, different poses
       const link = getPosLink(cells, d, pos);
       links[pos] = link;
-      link.group = getGroupPosLink(dGroupPoses[d], pos, d);
+
+      // group
+      link.group = getGroupPosLink(dGroupPoses[d], pos);
 
       const otherDs = new Set(ds.filter(v => v !== d));
+      // different digits, same pos
       link.cell = { false: ds.length === 2 ? otherDs : new Set(), true: otherDs };
+
+      link.alsc = getAlscLink(dAlscLinks[d], pos) || { false: new Set(), true: new Set() };
     }
   }
   // group position links
@@ -1338,10 +1428,24 @@ function getDigitPosesAndLinks(cells) {
       links[pos] = link;
       link.group = getGroupPosLink(dGroupPoses[d], pos);
       link.cell = { false: new Set(), true: new Set() };
+      link.alsc = getAlscLink(dAlscLinks[d], pos) || { false: new Set(), true: new Set() };
     }
   }
 
-  return [dPoses, dGroupPoses, dLinks];
+  // alsc position links
+  for (const [sd, alsces] of Object.entries(dAlsces)) {
+    const d = parseInt(sd);
+    const links = getAttrDefault(dLinks, d, {});
+    for (const alsc of Object.values(alsces).filter(a => a.type === 'alsc')) {
+      const link = { false: new Set(), true: new Set() };
+      links[alsc] = link;
+      link.group = { false: new Set(), true: new Set() };
+      link.cell = { false: new Set(), true: new Set() };
+      link.alsc = getAlscLink(dAlscLinks[d], alsc) || { false: new Set(), true: new Set() };
+    }
+  }
+
+  return [dPoses, dGroupPoses, dAlsces, dLinks];
 }
 
 function getPosDigitLinks(cells, poses) {
@@ -1379,8 +1483,7 @@ function* findNGroup(cells, n, cls) {
   ]) {
     for (const idx of positions.indices) {
       const links = getPosDigitLinks(cells, getPositions(idx));
-      const points = aggregateLinks(links, cls);
-      for (const group of findNGroupFromLinks(points, n, { checkClear: n > 1 })) {
+      for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
         const poses = group[cls];
         const notes = group[(cls + 1) % 2];
         yield {
@@ -1394,6 +1497,156 @@ function* findNGroup(cells, n, cls) {
       }
     }
   }
+}
+
+const findGroupForALSC = (d, dGroupPoses, domains, poses) => {
+  const { row, col, block } = domains;
+  const key = `${d}@row${row}col${col}block${block}`;
+  const groupPoses = dGroupPoses[d].filter(g => g.isGroup && g.key === key && g.poses.size === poses.size);
+  if (groupPoses.length === 1) {
+    return groupPoses[0];
+  }
+};
+
+function getDigitALSCes(cells, dGroupPoses) {
+  const alses = {};
+  const dAlsces = {};
+  for (const getPositions of [getRowPositions, getColPositions, getBlockFlattenPositions]) {
+    for (const idx of positions.indices) {
+      const links = getPosDigitLinks(cells, getPositions(idx));
+      const points = Object.values(aggregateLinks(links, 0));
+      for (let n = 1; n <= 8; n++) {
+        for (const [poses, digits] of findALSFromPoints(points, n)) {
+          const xlinks = getPosDigitLinks(cells, poses);
+          // build digit infos.
+          const digitInfos = aggregateLinks(xlinks, 1, 'd', 'poses');
+          const key = [...[...poses].map(p => p.key).sort(), [...digits].sort().join('')].join('-');
+          const als = alses[key] || {
+            key,
+            poses,
+            digits,
+            domains: getPosDomains(poses),
+            digitInfos,
+            toString() {
+              return this.key;
+            },
+          };
+          alses[key] = als;
+          for (const d of digits) {
+            const digitInfo = digitInfos[d];
+            const { poses } = digitInfo;
+            const domains = getPosDomains(poses);
+            const alsces = getAttrDefault(dAlsces, d, {});
+            let key = null;
+            let alsc = null;
+            if (poses.size === 1) {
+              const cell = [...poses][0];
+              key = cell.key;
+              alsc = alsces[key] || {
+                ...digitInfo,
+                isAlsc: true,
+                domains,
+                cell,
+                key,
+                type: 'cell',
+                alses: [],
+                toString() {
+                  return this.key;
+                },
+              };
+            } else {
+              const group = findGroupForALSC(d, dGroupPoses, domains, poses);
+              if (group) {
+                key = group.key;
+                alsc = alsces[key] || {
+                  ...digitInfo,
+                  isAlsc: true,
+                  domains,
+                  group,
+                  key: group.key,
+                  type: 'group',
+                  isGroup: true,
+                  alses: [],
+                  toString() {
+                    return this.key;
+                  },
+                };
+              } else {
+                key = [...poses]
+                  .map(p => p.key)
+                  .sort()
+                  .join('-');
+                alsc = alsces[key] || {
+                  ...digitInfo,
+                  isAlsc: true,
+                  domains,
+                  key,
+                  type: 'alsc',
+                  alses: [],
+                  toString() {
+                    return this.key;
+                  },
+                };
+              }
+            }
+            alsc.alses.push(als);
+            alsces[key] = alsc;
+            digitInfos[d] = alsc;
+          }
+        }
+      }
+    }
+  }
+  return dAlsces;
+}
+
+function getRCCs(alsces, alsc) {
+  const rccs = [];
+  const { poses, domains } = alsc;
+  // check every domain of the rcc
+  for (const [domain, val] of Object.entries(domains)) {
+    // find d related ALSes in domain
+    for (const rcc of Object.values(alsces)) {
+      if (rcc === alsc) {
+        // should not be current als.
+        continue;
+      }
+      if (rcc.domains[domain] !== val) {
+        // rcc should be in domain
+        continue;
+      }
+      if (hasCommon(rcc.poses, poses)) {
+        // overlapping area should not contain the rcc.
+        continue;
+      }
+
+      rccs.push(rcc);
+    }
+  }
+  return rccs;
+}
+
+function getDigitAlscAndLinks(cells, dGroupPoses) {
+  const dAlsces = getDigitALSCes(cells, dGroupPoses);
+  const dAlscLinks = {};
+  for (const alsces of Object.values(dAlsces)) {
+    for (const alsc of Object.values(alsces)) {
+      const { d, alses } = alsc;
+      const alscLinks = getAttrDefault(dAlscLinks, d, {});
+      const weakTargets = getRCCs(alsces, alsc);
+      const strongTargets = [];
+      for (const als of alses) {
+        for (const t of Object.values(als.digitInfos)) {
+          if (t !== alsc) {
+            strongTargets.push({ als, alsc: t });
+          }
+        }
+      }
+      alscLinks[alsc] = { true: weakTargets, false: strongTargets };
+    }
+  }
+
+  return [dAlsces, dAlscLinks];
 }
 
 const getAToBLinks = (getPositions, getEnd) => (cells, d) => {
@@ -1433,8 +1686,7 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       // row->col
       const rcLinks = getRowToColLinks(cells, d);
       if (types.rc) {
-        const points = aggregateLinks(rcLinks, 0);
-        for (const group of findNGroupFromLinks(points, n)) {
+        for (const group of findNGroupFromLinks(rcLinks, n, 0)) {
           const [rows, cols] = group;
           const poses = [];
           let isXWing = true;
@@ -1451,8 +1703,7 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       }
       // col->row
       if (types.cr) {
-        const points = aggregateLinks(rcLinks, 1);
-        for (const group of findNGroupFromLinks(points, n)) {
+        for (const group of findNGroupFromLinks(rcLinks, n, 1)) {
           const [cols, rows] = group;
           const poses = [];
           let isXWing = true;
@@ -1473,8 +1724,7 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       // row->block, 1-xrb-group is claiming
       const rbLinks = getRowToBlockLinks(cells, d);
       if (types.rb) {
-        const points = aggregateLinks(rbLinks, 0);
-        for (const group of findNGroupFromLinks(points, n)) {
+        for (const group of findNGroupFromLinks(rbLinks, n, 0)) {
           const [rows, blocks] = group;
           const poses = [];
           for (const row of rows) {
@@ -1486,8 +1736,7 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       }
       // block-row, 1-xbr-group is pointing
       if (types.br) {
-        const points = aggregateLinks(rbLinks, 1);
-        for (const group of findNGroupFromLinks(points, n)) {
+        for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
           const [blocks, rows] = group;
           const poses = [];
           for (const block of blocks) {
@@ -1503,8 +1752,7 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
       // col->block, 1-xcb-group is claiming
       const cbLinks = getColToBlockLinks(cells, d);
       if (types.cb) {
-        const points = aggregateLinks(cbLinks, 0);
-        for (const group of findNGroupFromLinks(points, n)) {
+        for (const group of findNGroupFromLinks(cbLinks, n, 0)) {
           const [cols, blocks] = group;
           const poses = [];
           for (const col of cols) {
@@ -1517,8 +1765,7 @@ function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true
 
       // block-col, 1-xbc-group is pointing
       if (types.bc) {
-        const points = aggregateLinks(cbLinks, 1);
-        for (const group of findNGroupFromLinks(points, n)) {
+        for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
           const [blocks, cols] = group;
           const poses = [];
           for (const block of blocks) {

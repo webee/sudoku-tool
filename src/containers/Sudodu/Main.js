@@ -149,7 +149,7 @@ const Sudoku = ({
       // find tip
       setIsLoading(true);
       setTimeout(() => {
-        const t = sudoku.findTip();
+        const t = sudoku.findTip({ trial: false });
         setIsLoading(false);
         if (t) {
           console.log('tip:', t);
@@ -288,10 +288,11 @@ const Sudoku = ({
           });
           startNode = endNode;
         }
+        const effect = curChain.length === chain.length ? { cells: effectedPoses, notes: effectedNotes } : null;
         return {
           frames,
           arrows,
-          effect: { cells: effectedPoses, notes: effectedNotes },
+          effect,
           highlights: { cells: poses, posNotes, posSubNotes, withoutOutlinePoses },
         };
       } else if (tip.type === 'trial-error') {

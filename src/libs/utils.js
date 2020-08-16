@@ -27,18 +27,19 @@ export function* comb(n, k) {
   yield* combx(0, n, k);
 }
 
-export const aggregateLinks = (links, order = 0) => {
+export const aggregateLinks = (links, order = 0, startName = 'start', endsName = 'ends') => {
   const s = {};
   for (const link of links) {
     const start = link[order];
     const end = link[(order + 1) % 2];
-    const v = getAttrDefault(s, start, { start, ends: new Set() });
-    v.ends.add(end);
+    const v = getAttrDefault(s, start, { [startName]: start, [endsName]: new Set() });
+    v[endsName].add(end);
   }
-  return Object.values(s);
+  return s;
 };
 
-export function* findNGroupFromLinks(points, n, options = { checkClear: true }) {
+export function* findNGroupFromLinks(links, n, cls, options = { checkClear: true }) {
+  const points = Object.values(aggregateLinks(links, cls));
   const xpoints = points.filter(p => p.ends.size <= n);
   if (options.checkClear && points.length <= n) {
     // only return group if count(starts) > n
@@ -79,7 +80,7 @@ export function* findNGroupFromLinks(points, n, options = { checkClear: true }) 
   }
 }
 
-export function* findALSFromLinks(points, n) {
+export function* findALSFromPoints(points, n) {
   const m = n + 1;
   const xpoints = points.filter(p => p.ends.size <= m);
 
@@ -136,4 +137,14 @@ export function shuffleArray(array) {
     [res[i], res[j]] = [res[j], res[i]];
   }
   return res;
+}
+
+export function intersection(setA, setB) {
+  let _intersection = new Set();
+  for (let elem of setB) {
+    if (setA.has(elem)) {
+      _intersection.add(elem);
+    }
+  }
+  return _intersection;
 }
