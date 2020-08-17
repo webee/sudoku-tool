@@ -149,7 +149,8 @@ const Sudoku = ({
       // find tip
       setIsLoading(true);
       setTimeout(() => {
-        const t = sudoku.findTip({ trial: false });
+        // const t = sudoku.findTip({ trial: false });
+        const t = sudoku.findTip();
         setIsLoading(false);
         if (t) {
           console.log('tip:', t);

@@ -812,12 +812,12 @@ export class Sudoku {
     }
   }
 
-  findTip(options = { trial: true }) {
+  findTip(options = { trial: true, chain: { withoutALS: false } }) {
     const cells = this.getCurCells();
     return (
       this.findGroup(cells) ||
       this.findXGroup(cells) ||
-      this.findChain(cells) ||
+      this.findChain(cells, options.chain) ||
       (options.trial && this.findTrialError())
     );
   }
@@ -852,7 +852,7 @@ export class Sudoku {
           this.autoPlacePointingClaiming();
           let err = this._checkValidity();
           if (!err && tryTip) {
-            let tip = this.findTip({ trial: false });
+            let tip = this.findTip({ trial: false, chain: { withoutALS: true } });
             while (tip) {
               deepTried++;
               this.handleTip(tip);
@@ -909,9 +909,13 @@ export class Sudoku {
     }
   }
 
-  findChain(cells) {
-    const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells);
-    console.log('chain info:', dPoses, dGroupPoses, dAlsces, dLinks);
+  findChain(cells, options = {}) {
+    options = { withoutALS: false, ...options };
+    const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells, { alsSizes: [1, 2, 3, 4, 5] });
+    console.log('dPoses:', dPoses);
+    console.log('dGroupPoses:', dGroupPoses);
+    console.log('dAlsces:', dAlsces);
+    console.log('dLinks:', dLinks);
     // randomize digits.
     const ds = shuffleArray(digits);
     const baseData = { dLinks, dAlsces, val: false, cells };
@@ -927,7 +931,7 @@ export class Sudoku {
       earlyExitLen: 7,
     };
     // without ALS
-    for (const maxLength of [15, 25 /*,Number.MAX_VALUE*/]) {
+    for (const maxLength of [15 /*,Number.MAX_VALUE*/]) {
       for (const config of [
         defaultConfig,
         { ...defaultConfig, tryCellLinks: true },
@@ -938,30 +942,34 @@ export class Sudoku {
           for (const d of ds) {
             extraData.td = d;
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
-              console.log('count:', extraData.count);
               return prepareChainResult(res);
             }
           }
           if (extraData.res) {
-            console.log('count:', extraData.count);
             return prepareChainResult(extraData.res);
           }
-          console.log('count:', extraData.count);
         }
       }
     }
-    // with ALS
-    const alscSrcs = [d => Object.values(dAlsces[d] || {})];
-    const allClosedConfig = { ...defaultConfig, tryDigitLinks: false, posSrcs: [] };
-    for (const maxLength of [20]) {
+
+    if (!options.withoutALS) {
+      // with ALS
+      const alscSrcs = [d => Object.values(dAlsces[d] || {})];
+      const allClosedConfig = { ...defaultConfig, tryDigitLinks: false, posSrcs: [] };
       for (const config of [
         // pure ALS-chain
-        { ...allClosedConfig, tryAlscLinks: true, posSrcs: alscSrcs },
-        { ...defaultConfig, tryAlscLinks: true, posSrcs: alscSrcs },
-        { ...defaultConfig, tryAlscLinks: true, tryCellLinks: true, posSrcs: alscSrcs },
+        { ...allClosedConfig, tryAlscLinks: true, maxLength: 9, posSrcs: alscSrcs },
+        {
+          ...defaultConfig,
+          tryAlscLinks: true,
+          tryCellLinks: true,
+          tryGroupLinks: true,
+          maxLength: 9,
+          posSrcs: [...alscSrcs, ...basicPosSrcs],
+        },
       ]) {
         for (const getPoses of config.posSrcs) {
-          const extraData = { ...baseData, maxLength, ...config, count: 0 };
+          const extraData = { ...baseData, ...config, count: 0 };
           for (const d of ds) {
             extraData.td = d;
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
@@ -1416,10 +1424,9 @@ function getAlscLink(alscLinks, pos) {
   return alscLinks[pos];
 }
 
-function getDigitPosesAndLinks(cells) {
+function getDigitPosesAndLinks(cells, options) {
   const dGroupPoses = getDigitGroupPoses(cells);
-  const [dAlsces, dAlscLinks] = getDigitAlscAndLinks(cells, dGroupPoses);
-  console.log('dAlscLinks:', dAlsces, dAlscLinks);
+  const [dAlsces, dAlscLinks] = getDigitAlscAndLinks(cells, dGroupPoses, options);
   const dLinks = {};
   const dPoses = {};
   for (const pos of positions.flattenPositions) {
@@ -1536,14 +1543,15 @@ const findGroupForALSC = (d, dGroupPoses, domains, poses) => {
   }
 };
 
-function getDigitALSCes(cells, dGroupPoses) {
+function getDigitALSCes(cells, dGroupPoses, options = {}) {
+  options = { alsSizes: [1, 2, 3, 4, 5, 6, 7, 8], ...options };
   const alses = {};
   const dAlsces = {};
   for (const getPositions of [getRowPositions, getColPositions, getBlockFlattenPositions]) {
     for (const idx of positions.indices) {
       const links = getPosDigitLinks(cells, getPositions(idx));
       const points = Object.values(aggregateLinks(links, 0));
-      for (let n = 1; n <= 8; n++) {
+      for (const n of options.alsSizes) {
         for (const [poses, digits] of findALSFromPoints(points, n)) {
           const xlinks = getPosDigitLinks(cells, poses);
           // build digit infos.
@@ -1654,8 +1662,8 @@ function getRCCs(alsces, alsc) {
   return rccs;
 }
 
-function getDigitAlscAndLinks(cells, dGroupPoses) {
-  const dAlsces = getDigitALSCes(cells, dGroupPoses);
+function getDigitAlscAndLinks(cells, dGroupPoses, options) {
+  const dAlsces = getDigitALSCes(cells, dGroupPoses, options);
   const dAlscLinks = {};
   for (const alsces of Object.values(dAlsces)) {
     for (const alsc of Object.values(alsces)) {
