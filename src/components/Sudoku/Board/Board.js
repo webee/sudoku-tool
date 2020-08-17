@@ -34,7 +34,7 @@ const Board = ({
         {marks && marks.frames && marks.frames.map(frame => <Frame {...frame} />)}
         {marks &&
           marks.arrows &&
-          marks.arrows.map(arrow => <Arrow key={`${arrow.startPos}-${arrow.endPos}`} {...arrow} />)}
+          marks.arrows.map((arrow, idx) => <Arrow key={`${arrow.startPos}-${arrow.endPos}#${idx}`} {...arrow} />)}
         {positions.blockShape.map((rows, idx) => (
           <div key={idx} className={styles.Row}>
             {rows.map(b => (

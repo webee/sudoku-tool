@@ -232,11 +232,7 @@ const Sudoku = ({
         const curChain = chain.slice(0, chainStep);
         const allPoses = [];
         curChain.forEach(({ pos }) => {
-          if (pos.isGroup) {
-            pos.poses.forEach(p => allPoses.push(p));
-          } else {
-            allPoses.push(pos);
-          }
+          allPoses.push(...sudokus.getRealPoses(pos));
         });
         const poses = new Set(allPoses);
         const withoutOutlinePoses = new Set(allPoses);
@@ -264,7 +260,8 @@ const Sudoku = ({
 
         // frames
         curChain.forEach(({ pos }) => {
-          if (pos.isGroup) {
+          if (pos.isAlsc) {
+          } else if (pos.isGroup) {
             const { key, domain, block, row, col } = pos;
             frames.push({ key, domain: [...domain][0], block, row, col });
           }
@@ -275,8 +272,8 @@ const Sudoku = ({
         let startNode = curChain[0];
         for (const endNode of curChain.slice(1)) {
           const [startPos, endPos] = findClosedPosPair(
-            startNode.pos.isGroup ? startNode.pos.poses : [startNode.pos],
-            endNode.pos.isGroup ? endNode.pos.poses : [endNode.pos]
+            sudokus.getRealPoses(startNode.pos),
+            sudokus.getRealPoses(endNode.pos)
           );
 
           arrows.push({
@@ -317,6 +314,7 @@ const Sudoku = ({
       }
     }
   }, [cellsRecord.idx, chainStep, tip]);
+  console.log('marks:', marks);
 
   const changeChainStepHandler = useCallback(
     d => {

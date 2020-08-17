@@ -912,61 +912,60 @@ export class Sudoku {
   findChain(cells) {
     const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells);
     console.log('chain info:', dPoses, dGroupPoses, dAlsces, dLinks);
-    // for (const chain of searchChainBFS([[{ pos: dAlsces[7]['r0c5'], d: 7, val: false }]], {
-    //   dLinks,
-    //   dAlsces,
-    //   val: false,
-    //   cells,
-    //   td: 7,
-    //   tryDigitLinks: false,
-    //   tryGroupLinks: false,
-    //   tryCellLinks: false,
-    //   tryAlscLinks: true,
-    // })) {
-    //   console.log('chain:', chain);
-    // }
-    // return;
     // randomize digits.
     // const ds = shuffleArray(digits);
     const ds = digits;
-    for (const maxLen of [20, Number.MAX_VALUE]) {
-      for (const tryAlscLinks of [false]) {
-        for (const tryCellLinks of [false, true]) {
-          for (const tryGroupLinks of [false, true]) {
-            // for (const getPoses of [d => dPoses[d] /*, d => (dGroupPoses[d] || []).filter(p => p.isGroup)*/]) {
-            for (const getPoses of [d => dPoses[d], d => (dGroupPoses[d] || []).filter(p => p.isGroup)]) {
-              // for (const getPoses of [d => Object.values(dAlsces[d])]) {
-              let dRes = null;
-              let maxLength = maxLen;
-              for (const d of ds) {
-                const qs = (getPoses(d) || []).map(pos => [{ pos, d, val: false }]);
-                const extraData = {
-                  dLinks,
-                  dAlsces,
-                  val: false,
-                  cells,
-                  td: d,
-                  tryDigitLinks: true,
-                  tryGroupLinks,
-                  tryCellLinks,
-                  tryAlscLinks,
-                  maxLength,
-                };
-                for (const chain of searchChainBFS(qs, extraData)) {
-                  if (chain.chain.length < maxLength) {
-                    dRes = chain;
-                    maxLength = dRes.chain.length;
-                    extraData.maxLength = maxLength;
-                    if (maxLength <= 10) {
-                      return prepareChainResult(dRes);
-                    }
-                  }
-                }
-              }
-              if (dRes) {
-                return prepareChainResult(dRes);
-              }
+    // const ds = [7];
+    const baseData = { dLinks, dAlsces, val: false, cells };
+    const basicPosSrcs = [d => dPoses[d], d => (dGroupPoses[d] || []).filter(p => p.isGroup)];
+    const defaultConfig = {
+      tryDigitLinks: true,
+      tryCellLinks: false,
+      tryGroupLinks: false,
+      tryAlscLinks: false,
+      posSrcs: basicPosSrcs,
+      searchChain: dfsSearchChain,
+      earlyExitLen: 7,
+    };
+    // without ALS
+    for (const maxLength of [15, 25 /*,Number.MAX_VALUE*/]) {
+      for (const config of [
+        defaultConfig,
+        { ...defaultConfig, tryCellLinks: true },
+        { ...defaultConfig, tryCellLinks: true, tryGroupLinks: true },
+      ]) {
+        for (const getPoses of config.posSrcs) {
+          const extraData = { ...baseData, maxLength, ...config };
+          for (const d of ds) {
+            extraData.td = d;
+            for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
+              return prepareChainResult(res);
             }
+          }
+          if (extraData.res) {
+            return prepareChainResult(extraData.res);
+          }
+        }
+      }
+    }
+    // with ALS
+    const alscSrcs = [d => Object.values(dAlsces[d] || {})];
+    const allClosedConfig = { ...defaultConfig, tryDigitLinks: false, posSrcs: [] };
+    for (const maxLength of [12]) {
+      for (const config of [
+        // pure ALS-chain
+        { ...allClosedConfig, tryAlscLinks: true, posSrcs: alscSrcs },
+      ]) {
+        for (const getPoses of config.posSrcs) {
+          const extraData = { ...baseData, maxLength, ...config };
+          for (const d of ds) {
+            extraData.td = d;
+            for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
+              return prepareChainResult(res);
+            }
+          }
+          if (extraData.res) {
+            return prepareChainResult(extraData.res);
           }
         }
       }
@@ -998,26 +997,44 @@ const prepareChainResult = res => {
   const d = res.d;
   let hasMulti = false;
   let hasGroup = false;
+  let hasALS = false;
   for (const node of res.chain) {
     if (node.d !== d) {
       hasMulti = true;
     }
-    if (node.pos.isGroup) {
+    if (node.pos.isAlsc) {
+      hasALS = true;
+    } else if (node.pos.isGroup) {
       hasGroup = true;
     }
-    if (hasMulti && hasGroup) {
+    if (hasMulti && hasGroup && hasALS) {
       break;
     }
   }
   const parts = [res.chain.length - 1];
-  if (hasGroup) {
-    parts.push('G');
-  }
+  hasGroup && parts.push('G');
+  hasALS && parts.push('ALS');
   parts.push(hasMulti ? 'XY' : 'X', 'Chain');
   parts.push([startPos.isGroup ? 'g' : 'd', endPos.isGroup ? 'g' : 'd', endNode.d === d ? '-x' : '-xy'].join(''));
   res.name = parts.join('-');
   return res;
 };
+
+function* dfsSearchChain(d, poses, extraData) {
+  for (const pos of poses) {
+    const node = { pos, d, val: extraData.val };
+    for (const res of searchChainDFS([], node, extraData)) {
+      if (res.chain.length < extraData.maxLength) {
+        if (res.chain.length <= extraData.earlyExitLen) {
+          yield res;
+        } else {
+          extraData.res = res;
+          extraData.maxLength = res.chain.length;
+        }
+      }
+    }
+  }
+}
 
 const checkExistAndEqual = (a, b) => a !== undefined && a === b;
 
@@ -1164,6 +1181,7 @@ function* searchChainDFS(chain, node, extraData) {
   }
 }
 
+/*
 function* searchChainBFS(qs, extraData) {
   while (qs.length > 0) {
     const chain = qs.shift();
@@ -1181,6 +1199,7 @@ function* searchChainBFS(qs, extraData) {
     }
   }
 }
+*/
 
 const chainHasNode = (chain, node) => {
   const poses = getRealPoses(node.pos);
