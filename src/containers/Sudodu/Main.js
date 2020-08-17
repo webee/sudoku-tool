@@ -232,7 +232,10 @@ const Sudoku = ({
         const curChain = chain.slice(0, chainStep);
         const allPoses = [];
         curChain.forEach(({ pos }) => {
-          allPoses.push(...sudokus.getRealPoses(pos));
+          if (!pos.isAlsc) {
+            // no alsc
+            allPoses.push(...sudokus.getRealPoses(pos));
+          }
         });
         const poses = new Set(allPoses);
         const withoutOutlinePoses = new Set(allPoses);
@@ -257,15 +260,22 @@ const Sudoku = ({
         }
 
         const frames = [];
+        const domain = {};
+        let lastAls = null;
+        let lastPos = null;
 
         // frames
-        curChain.forEach(({ pos }) => {
+        curChain.forEach(({ pos, als }) => {
           if (pos.isAlsc) {
+            lastAls = als;
+            lastPos = pos;
           } else if (pos.isGroup) {
             const { key, domain, block, row, col } = pos;
             frames.push({ key, domain: [...domain][0], block, row, col });
           }
         });
+        domain.cells = lastAls && lastAls.poses;
+        lastPos && sudokus.getRealPoses(lastPos).forEach(p => poses.add(p));
 
         // arrows
         const arrows = [];
@@ -287,6 +297,7 @@ const Sudoku = ({
         }
         const effect = curChain.length === chain.length ? { cells: effectedPoses, notes: effectedNotes } : null;
         return {
+          domain,
           frames,
           arrows,
           effect,
@@ -314,7 +325,6 @@ const Sudoku = ({
       }
     }
   }, [cellsRecord.idx, chainStep, tip]);
-  console.log('marks:', marks);
 
   const changeChainStepHandler = useCallback(
     d => {
@@ -352,7 +362,7 @@ const Sudoku = ({
         }
       } else if (e.key === 'a') {
         toggleShowAvailHandler();
-      } else if (e.key === 'r') {
+      } else if (e.key === 'r' && !e.composed) {
         resetHandler();
       } else if (e.key === 'e') {
         eraseValueHandler();

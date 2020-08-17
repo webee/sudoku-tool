@@ -85,7 +85,7 @@ const Cell = React.memo(
     if (marks) {
       const { domain, effect, highlights } = marks;
       if (domain) {
-        const { rows, cols, blocks } = domain;
+        const { rows, cols, blocks, cells } = domain;
         if (rows && rows.has(row)) {
           domainMarked = true;
         }
@@ -93,6 +93,9 @@ const Cell = React.memo(
           domainMarked = true;
         }
         if (blocks && blocks.has(block)) {
+          domainMarked = true;
+        }
+        if (cells && cells.has(pos)) {
           domainMarked = true;
         }
       }

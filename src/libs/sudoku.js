@@ -913,11 +913,10 @@ export class Sudoku {
     const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells);
     console.log('chain info:', dPoses, dGroupPoses, dAlsces, dLinks);
     // randomize digits.
-    // const ds = shuffleArray(digits);
-    const ds = digits;
-    // const ds = [7];
+    const ds = shuffleArray(digits);
     const baseData = { dLinks, dAlsces, val: false, cells };
-    const basicPosSrcs = [d => dPoses[d], d => (dGroupPoses[d] || []).filter(p => p.isGroup)];
+    const singlePosSrcs = [d => dPoses[d]];
+    const basicPosSrcs = [...singlePosSrcs, d => (dGroupPoses[d] || []).filter(p => p.isGroup)];
     const defaultConfig = {
       tryDigitLinks: true,
       tryCellLinks: false,
@@ -935,38 +934,46 @@ export class Sudoku {
         { ...defaultConfig, tryCellLinks: true, tryGroupLinks: true },
       ]) {
         for (const getPoses of config.posSrcs) {
-          const extraData = { ...baseData, maxLength, ...config };
+          const extraData = { ...baseData, maxLength, ...config, count: 0 };
           for (const d of ds) {
             extraData.td = d;
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
+              console.log('count:', extraData.count);
               return prepareChainResult(res);
             }
           }
           if (extraData.res) {
+            console.log('count:', extraData.count);
             return prepareChainResult(extraData.res);
           }
+          console.log('count:', extraData.count);
         }
       }
     }
     // with ALS
     const alscSrcs = [d => Object.values(dAlsces[d] || {})];
     const allClosedConfig = { ...defaultConfig, tryDigitLinks: false, posSrcs: [] };
-    for (const maxLength of [12]) {
+    for (const maxLength of [20]) {
       for (const config of [
         // pure ALS-chain
         { ...allClosedConfig, tryAlscLinks: true, posSrcs: alscSrcs },
+        { ...defaultConfig, tryAlscLinks: true, posSrcs: alscSrcs },
+        { ...defaultConfig, tryAlscLinks: true, tryCellLinks: true, posSrcs: alscSrcs },
       ]) {
         for (const getPoses of config.posSrcs) {
-          const extraData = { ...baseData, maxLength, ...config };
+          const extraData = { ...baseData, maxLength, ...config, count: 0 };
           for (const d of ds) {
             extraData.td = d;
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
+              console.log('als count:', extraData.count);
               return prepareChainResult(res);
             }
           }
           if (extraData.res) {
+            console.log('als count:', extraData.count);
             return prepareChainResult(extraData.res);
           }
+          console.log('als count:', extraData.count);
         }
       }
     }
@@ -1170,6 +1177,7 @@ function* genNextChainAndNode(chain, node, extraData) {
 }
 
 function* searchChainDFS(chain, node, extraData) {
+  extraData.count++;
   // optimize
   if (chain.length + 1 >= extraData.maxLength) {
     return;
@@ -1251,7 +1259,7 @@ const newGroupPos = (domain, val, block, poses, d) => {
   };
 };
 
-export const getRealPoses = pos => (pos.isGroup || pos.isAlsc ? pos.poses : [pos]);
+export const getRealPoses = pos => (pos.isGroup || pos.isAlsc ? [...pos.poses] : [pos]);
 
 // for row/col in block, like claiming.
 function getDigitGroupPoses(cells) {
