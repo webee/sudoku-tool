@@ -32,6 +32,7 @@ const Sudoku = ({
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
+  const [withALS, setWithALS] = useState(true);
   const [tip, setTip] = useState(null);
   const [chainStep, setChainStep] = useState(2);
 
@@ -129,6 +130,10 @@ const Sudoku = ({
     setIsNoting(isNoting => !isNoting);
   }, []);
 
+  const toggleWithALSHandler = useCallback(() => {
+    setWithALS(v => !v);
+  }, []);
+
   const autoNoteHandler = useCallback(() => {
     sudoku.autoNote();
   }, [sudoku]);
@@ -149,8 +154,9 @@ const Sudoku = ({
       // find tip
       setIsLoading(true);
       setTimeout(() => {
+        // for test new tech.
         // const t = sudoku.findTip({ trial: false });
-        const t = sudoku.findTip();
+        const t = sudoku.findTip({ chain: { withoutALS: !withALS } });
         setIsLoading(false);
         if (t) {
           console.log('tip:', t);
@@ -165,7 +171,7 @@ const Sudoku = ({
     }
     // deselect
     deselectHandler();
-  }, [deselectHandler, sudoku, tip]);
+  }, [deselectHandler, sudoku, tip, withALS]);
 
   const cancelTipHandler = useCallback(() => {
     if (tip) {
@@ -362,7 +368,11 @@ const Sudoku = ({
           toggleIsNotingHandler();
         }
       } else if (e.key === 'a') {
-        toggleShowAvailHandler();
+        if (e.ctrlKey) {
+          toggleShowAvailHandler();
+        } else {
+          toggleWithALSHandler();
+        }
       } else if (e.key === 'r' && !e.composed) {
         resetHandler();
       } else if (e.key === 'e') {
@@ -447,6 +457,7 @@ const Sudoku = ({
     tipHandler,
     toggleIsNotingHandler,
     toggleShowAvailHandler,
+    toggleWithALSHandler,
   ]);
 
   useEffect(() => {
@@ -516,11 +527,13 @@ const Sudoku = ({
           digitClickedHandler={digitClickedHandler}
           showAvail={showAvail}
           isNoting={isNoting}
+          withALS={withALS}
           resetHandler={resetHandler}
           eraseValueHandler={eraseValueHandler}
           deselectHandler={deselectHandler}
           toggleShowAvailHandler={toggleShowAvailHandler}
           toggleIsNotingHandler={toggleIsNotingHandler}
+          toggleWithALSHandler={toggleWithALSHandler}
           autoNoteHandler={autoNoteHandler}
           autoPlacePointingClaimingHandler={autoPlacePointingClaimingHandler}
           tip={tip}

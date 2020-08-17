@@ -846,6 +846,9 @@ export class Sudoku {
           continue;
         }
         for (const d of Notes.entries(value)) {
+          console.enabled = true;
+          console.log(`try: ${d}@${pos}`);
+          console.enabled = false;
           // start trial for d@pos
           let deepTried = 0;
           this.updateCellValue(false, pos, d);
@@ -871,6 +874,8 @@ export class Sudoku {
             }
           }
           if (err) {
+            // restore some settings.
+            console.enabled = true;
             this._enableNotify();
             const endIdx = this._curCellsIdx;
             const includedCells = new Set(
@@ -961,11 +966,11 @@ export class Sudoku {
         { ...allClosedConfig, tryAlscLinks: true, maxLength: 9, posSrcs: alscSrcs },
         {
           ...defaultConfig,
-          tryAlscLinks: true,
-          tryCellLinks: true,
+          tryDigitLinks: true,
           tryGroupLinks: true,
+          tryAlscLinks: true,
           maxLength: 9,
-          posSrcs: [...alscSrcs, ...basicPosSrcs],
+          posSrcs: basicPosSrcs,
         },
       ]) {
         for (const getPoses of config.posSrcs) {
@@ -1004,6 +1009,10 @@ export class Sudoku {
   }
 }
 
+const getPosTypeSign = pos => {
+  return pos.isAlsc ? 'a' : pos.isGroup ? 'g' : 'd';
+};
+
 const prepareChainResult = res => {
   res.type = 'chain';
   const startPos = res.chain[0].pos;
@@ -1030,7 +1039,7 @@ const prepareChainResult = res => {
   hasGroup && parts.push('G');
   hasALS && parts.push('ALS');
   parts.push(hasMulti ? 'XY' : 'X', 'Chain');
-  parts.push([startPos.isGroup ? 'g' : 'd', endPos.isGroup ? 'g' : 'd', endNode.d === d ? '-x' : '-xy'].join(''));
+  parts.push([getPosTypeSign(startPos), getPosTypeSign(endPos), endNode.d === d ? '-x' : '-xy'].join(''));
   res.name = parts.join('-');
   return res;
 };

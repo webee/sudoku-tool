@@ -16,9 +16,11 @@ const Controls = ({
   digitClickedHandler,
   showAvail,
   isNoting,
+  withALS,
   deselectHandler,
   toggleShowAvailHandler,
   toggleIsNotingHandler,
+  toggleWithALSHandler,
   resetHandler,
   eraseValueHandler,
   autoNoteHandler,
@@ -56,6 +58,9 @@ const Controls = ({
         </Button>
         <Button type={isNoting ? 'On' : 'Off'} onClick={toggleIsNotingHandler}>
           Note
+        </Button>
+        <Button type={withALS ? 'On' : 'Off'} onClick={toggleWithALSHandler}>
+          ALS
         </Button>
       </div>
       <Digits

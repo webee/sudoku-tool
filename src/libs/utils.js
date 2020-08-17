@@ -118,10 +118,22 @@ export const memorize = f => (...args) => {
 const _console = (window || global || {}).console || {};
 
 export const console = {
-  group: (debug && _console.group) || nilFunc,
-  groupEnd: (debug && _console.groupEnd) || nilFunc,
-  log: (debug && _console.log) || nilFunc,
-  error: (debug && _console.error) || nilFunc,
+  enabled: true,
+  ifEnabled(val, def) {
+    return (this.enabled && val) || def;
+  },
+  get group() {
+    return this.ifEnabled(debug && _console.group, nilFunc);
+  },
+  get groupEnd() {
+    return this.ifEnabled(debug && _console.groupEnd, nilFunc);
+  },
+  get log() {
+    return this.ifEnabled(debug && _console.log, nilFunc);
+  },
+  get error() {
+    return this.ifEnabled(debug && _console.error, nilFunc);
+  },
 };
 
 export const getAttrDefault = (obj, name, defVal) => {
