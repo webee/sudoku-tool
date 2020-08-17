@@ -149,10 +149,18 @@ export class Sudoku {
     }
   }
 
-  _setCells(cells, desc = '') {
+  _setCells(cells, action, payload = {}) {
     this._cut();
     this._curCellsIdx++;
-    this._cellsHistory.push({ idx: this._curCellsIdx, cells, desc });
+    this._cellsHistory.push({
+      idx: this._curCellsIdx,
+      cells,
+      action,
+      payload,
+      get desc() {
+        return `[${action}] ${payload.name || ''}`;
+      },
+    });
   }
 
   get hasPrev() {
@@ -226,7 +234,7 @@ export class Sudoku {
     }
   }
 
-  static cellPattern = /(\d)|(p\d)|(n[1-9]*N)/g;
+  static cellPattern = /(\d)|(p\d)|(n[1-9]*N)|\./g;
   static valuePattern = /^[1-9]$/;
 
   static parse(puzzle) {
@@ -258,7 +266,7 @@ export class Sudoku {
           // puzzle origin value
           origin: true,
         };
-      } else if (cell === '0') {
+      } else if (cell === '0' || cell === '.') {
         // it's empty
         return { value: Notes.new() };
       }
@@ -409,9 +417,9 @@ export class Sudoku {
     }
   }
 
-  _commit(desc = '') {
+  _commit(action, payload) {
     if (this._txCells && this._txCells !== this.cells) {
-      this._setCells(this._txCells, desc);
+      this._setCells(this._txCells, action, payload);
       this._txCells = null;
       this._notify();
     }
@@ -443,7 +451,7 @@ export class Sudoku {
     HANDLE_TIP: 'Handle Tip',
   };
 
-  _handlActions(action, payload = {}) {
+  _handlActions(action, payload) {
     switch (action) {
       case Sudoku.actions.RESET:
         this._setPuzzle(this.puzzle);
@@ -498,14 +506,14 @@ export class Sudoku {
     }
 
     this._startTx();
-    this._handlActions(action, payload, options);
+    this._handlActions(action, payload);
 
     if (options.log) {
       console.groupEnd();
     }
 
     if (options.commit) {
-      this._commit(action);
+      this._commit(action, payload);
     }
   }
 
@@ -514,7 +522,7 @@ export class Sudoku {
   }
 
   note(pos) {
-    this.dispatch(Sudoku.actions.NOTE, { pos });
+    this.dispatch(Sudoku.actions.NOTE, pos);
   }
 
   updateCellValue(isNoting, pos, value) {
@@ -542,23 +550,23 @@ export class Sudoku {
   }
 
   eliminateGroup(group) {
-    this.dispatch(Sudoku.actions.ELIMINATE_GROUP, { group });
+    this.dispatch(Sudoku.actions.ELIMINATE_GROUP, group);
   }
 
-  eliminateXGroup(tip) {
-    this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, { tip });
+  eliminateXGroup(group) {
+    this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, group);
   }
 
-  eliminateChain(tip) {
-    this.dispatch(Sudoku.actions.ELIMINATE_CHAIN, { tip });
+  eliminateChain(chain) {
+    this.dispatch(Sudoku.actions.ELIMINATE_CHAIN, chain);
   }
 
-  eliminateTrialError(tip) {
-    this.dispatch(Sudoku.actions.ELIMINATE_TRIAL_ERROR, { tip });
+  eliminateTrialError(res) {
+    this.dispatch(Sudoku.actions.ELIMINATE_TRIAL_ERROR, res);
   }
 
   handleTip(tip) {
-    this.dispatch(Sudoku.actions.HANDLE_TIP, { tip });
+    this.dispatch(Sudoku.actions.HANDLE_TIP, tip);
   }
 
   _checkValidity() {
@@ -602,7 +610,7 @@ export class Sudoku {
     return true;
   }
 
-  _note({ pos }) {
+  _note(pos) {
     const { value } = this.getCell(pos);
     if (!Notes.is(value)) {
       return;
@@ -616,7 +624,7 @@ export class Sudoku {
 
   _autoNote() {
     for (const pos of flattenPositions) {
-      this.dispatch(Sudoku.actions.NOTE, { pos }, { commit: false, log: false });
+      this.dispatch(Sudoku.actions.NOTE, pos, { commit: false, log: false });
     }
   }
 
@@ -648,7 +656,7 @@ export class Sudoku {
       // 0:naked, 1:hidden
       for (const cls of [0, 1]) {
         for (const group of findNGroup(this.getCurCells(), 1, cls)) {
-          this.dispatch(Sudoku.actions.ELIMINATE_GROUP, { group }, { commit: false });
+          this.dispatch(Sudoku.actions.ELIMINATE_GROUP, group, { commit: false });
           count++;
           placed = true;
           break;
@@ -668,9 +676,9 @@ export class Sudoku {
   _autoPointing() {
     let count = 0;
     console.group('[auto pointing]');
-    for (const tip of findNXGroup(this.getCurCells(), 1, { br: true, bc: true })) {
-      console.log(tip);
-      this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, { tip }, { commit: false });
+    for (const group of findNXGroup(this.getCurCells(), 1, { br: true, bc: true })) {
+      console.log(group);
+      this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, group, { commit: false });
       count++;
     }
     console.groupEnd();
@@ -681,8 +689,8 @@ export class Sudoku {
   _autoClaiming() {
     let count = 0;
     console.group('[auto claiming]');
-    for (const tip of findNXGroup(this.getCurCells(), 1, { rb: true, cb: true })) {
-      this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, { tip }, { commit: false });
+    for (const group of findNXGroup(this.getCurCells(), 1, { rb: true, cb: true })) {
+      this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, group, { commit: false });
       count++;
     }
     console.groupEnd();
@@ -743,7 +751,7 @@ export class Sudoku {
     }
   }
 
-  _eliminateGroup({ group }) {
+  _eliminateGroup(group) {
     if (group.n === 1) {
       // place value
       const pos = [...group.poses][0];
@@ -786,33 +794,34 @@ export class Sudoku {
     }
   }
 
-  _eliminateXGroup({ tip }) {
+  _eliminateXGroup(group) {
     const otherPositions = [];
-    if (tip.effect === 'row') {
-      for (const row of tip.rows) {
+    if (group.effect === 'row') {
+      for (const row of group.rows) {
         otherPositions.push(...positions.getRowPositions(row));
       }
-    } else if (tip.effect === 'col') {
-      for (const col of tip.cols) {
+    } else if (group.effect === 'col') {
+      for (const col of group.cols) {
         otherPositions.push(...positions.getColPositions(col));
       }
-    } else if (tip.effect === 'block') {
-      for (const block of tip.blocks) {
+    } else if (group.effect === 'block') {
+      for (const block of group.blocks) {
         otherPositions.push(...positions.getBlockFlattenPositions(block));
       }
     }
 
     for (const pos of otherPositions) {
       const { value } = this.getCell(pos);
-      if (!Notes.is(value) || tip.poses.has(pos)) {
+      if (!Notes.is(value) || group.poses.has(pos)) {
         continue;
       }
 
-      this._setCellValue(pos, Notes.delete(value, tip.d));
+      this._setCellValue(pos, Notes.delete(value, group.d));
     }
   }
 
-  findTip(options = { trial: true, chain: { withoutALS: false } }) {
+  findTip(options) {
+    options = { trial: true, chain: { withoutALS: false }, ...options };
     const cells = this.getCurCells();
     return (
       this.findGroup(cells) ||
@@ -822,7 +831,7 @@ export class Sudoku {
     );
   }
 
-  _handleTip({ tip }) {
+  _handleTip(tip) {
     if (tip.type === 'group') {
       this.eliminateGroup(tip);
     } else if (tip.type === 'X-Group') {
@@ -901,8 +910,8 @@ export class Sudoku {
     this._enableNotify();
   }
 
-  _eliminateTrialError({ tip }) {
-    const { startIdx, pos, d, err } = tip;
+  _eliminateTrialError(res) {
+    const { startIdx, pos, d, err } = res;
     if (err === true) {
       // complete
       return;
@@ -936,7 +945,7 @@ export class Sudoku {
       earlyExitLen: 7,
     };
     // without ALS
-    for (const maxLength of [15 /*,Number.MAX_VALUE*/]) {
+    for (const maxLength of [20 /*,Number.MAX_VALUE*/]) {
       for (const config of [
         defaultConfig,
         { ...defaultConfig, tryCellLinks: true },
@@ -992,17 +1001,17 @@ export class Sudoku {
     }
   }
 
-  _eliminateChain({ tip }) {
-    for (const pos of tip.effectedPoses) {
+  _eliminateChain(chain) {
+    for (const pos of chain.effectedPoses) {
       const { value } = this.getCell(pos);
       if (!Notes.is(value)) {
         continue;
       }
       let newValue = value;
-      if (tip.keep) {
-        newValue = Notes.new(...tip.keepDs);
+      if (chain.keep) {
+        newValue = Notes.new(...chain.keepDs);
       } else {
-        newValue = Notes.delete(value, tip.d);
+        newValue = Notes.delete(value, chain.d);
       }
       this._setCellValue(pos, newValue);
     }

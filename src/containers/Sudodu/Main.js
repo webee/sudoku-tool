@@ -143,6 +143,8 @@ const Sudoku = ({
   }, [sudoku]);
 
   const tipHandler = useCallback(() => {
+    // deselect
+    deselectHandler();
     if (tip) {
       // clear
       setTip(null);
@@ -165,13 +167,14 @@ const Sudoku = ({
             setChainStep(t.chain.length);
           } else if (t.type === 'trial-error') {
             sudoku.setHistoryLowerBound(t.startIdx);
+            if (t.err.digits.size > 0) {
+              digitClickedHandler([...t.err.digits][0], true);
+            }
           }
         }
       }, 0);
     }
-    // deselect
-    deselectHandler();
-  }, [deselectHandler, sudoku, tip, withALS]);
+  }, [deselectHandler, digitClickedHandler, sudoku, tip, withALS]);
 
   const cancelTipHandler = useCallback(() => {
     if (tip) {
