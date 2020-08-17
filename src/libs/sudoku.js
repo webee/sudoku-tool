@@ -1044,67 +1044,68 @@ function* checkChain(chain, node, extraData) {
   if (extraData.val === false && val === true && chain.length > 1) {
     // strong link
     const startPos = chain[0].pos;
-    // strong link is reversable.
-    // d->g => g->d, so we only consider d->g
-    if (!(startPos.isGroup && !pos.isGroup)) {
-      // ignore g->d
-      if (d === td) {
-        // start and end shouldn't be the same position.
-        // check if intersection related positions has d
-        const effectedPoses = new Set();
-        const poses = [...getRealPoses(startPos), ...getRealPoses(pos)];
+    // ignore g->d
+    if (d === td) {
+      // start and end shouldn't be the same position.
+      // check if intersection related positions has d
+      const effectedPoses = new Set();
+      const poses = [...getRealPoses(startPos), ...getRealPoses(pos)];
 
-        for (const cpos of positions.getCommonRelatedPositions(...poses)) {
-          const { value } = positions.getCell(cells, cpos);
-          if (Notes.has(value, d)) {
-            effectedPoses.add(cpos);
-          }
+      for (const cpos of positions.getCommonRelatedPositions(...poses)) {
+        const { value } = positions.getCell(cells, cpos);
+        if (Notes.has(value, d)) {
+          effectedPoses.add(cpos);
         }
-        if (effectedPoses.size > 0) {
-          yield { chain: [...chain, node], effectedPoses, d: td };
+      }
+      if (effectedPoses.size > 0) {
+        yield { chain: [...chain, node], effectedPoses, d: td };
+      }
+    } else {
+      // xy-chain
+      // two types:
+      // 1. same pos
+      if (startPos.key === pos.key) {
+        const poses = getRealPoses(pos);
+        if (poses.length > 1) {
+          // should only be one position
+          return;
         }
+
+        const ds = new Set();
+        for (const p of poses) {
+          const { value } = positions.getCell(cells, p);
+          Notes.entries(value).forEach(d => ds.add(d));
+        }
+        ds.delete(d);
+        ds.delete(td);
+        if (ds.size > 0) {
+          // eliminate other digits of this position
+          yield {
+            chain: [...chain, node],
+            effectedPoses: new Set(poses),
+            d: td,
+            effectedDs: ds,
+            keep: true,
+            keepDs: [d, td],
+          };
+        }
+        // 2. different poses
       } else {
-        // xy-chain
-        // two types:
-        // 1. same pos
-        if (startPos.key === pos.key) {
-          // pos and startPos are all groups of all not.
-          //
-          // but at this case, start and end poses must not be groups.
-          // diffrenet digits' group keys are all different.
-          const poses = getRealPoses(pos);
-          const ds = new Set();
-          for (const p of poses) {
-            const { value } = positions.getCell(cells, p);
-            Notes.entries(value).forEach(d => ds.add(d));
-          }
-          if (ds.size > 2) {
-            // eliminate other digits of this position
-            ds.delete(d);
-            ds.delete(td);
-            yield {
-              chain: [...chain, node],
-              effectedPoses: new Set(poses),
-              d: td,
-              effectedDs: ds,
-              keep: true,
-              keepDs: [d, td],
-            };
-          }
-          // 2. different poses
-        } else {
-          if (!pos.isGroup) {
-            // pos is cell then startPos should also be cell.
-            // pos is one of startPos's related positions.
-            if (
-              checkExistAndEqual(pos.row, startPos.row) ||
-              checkExistAndEqual(pos.col, startPos.col) ||
-              checkExistAndEqual(pos.block, startPos.block)
-            ) {
-              const { value } = positions.getCell(cells, pos);
-              if (Notes.has(value, td)) {
-                yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
-              }
+        const startPoses = getRealPoses(startPos);
+        const poses = getRealPoses(pos);
+        if (poses.length === 1 && startPoses.length === 1) {
+          // pos is cell then startPos should also be cell.
+          // pos is one of startPos's related positions.
+          const startPos = startPoses[0];
+          const pos = poses[0];
+          if (
+            checkExistAndEqual(pos.row, startPos.row) ||
+            checkExistAndEqual(pos.col, startPos.col) ||
+            checkExistAndEqual(pos.block, startPos.block)
+          ) {
+            const { value } = positions.getCell(cells, pos);
+            if (Notes.has(value, td)) {
+              yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
             }
           }
         }
