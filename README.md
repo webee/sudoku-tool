@@ -47,6 +47,3 @@ or
 | `j`                       |  jump to previous history point   |
 | `k`                       |    jump to next history point     |
 | `end when`                |                                   |
-|                           |                                   |
-|                           |                                   |
-|                           |                                   |
