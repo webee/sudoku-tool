@@ -10,40 +10,42 @@ or
 
 ## shortcuts
 
-| Keys                      |              action               |
-| ------------------------- | :-------------------------------: |
-| `N`                       |          start new game           |
-| `n`                       |        toggle noting mode         |
-| `ctrl_n`                  |             auto note             |
-| `a`                       |   toggle Almost Lock Set Chain    |
-| `ctrl_a`                  |    toggle show available area     |
-| `s`                       |               solve               |
-| `r`                       |           reset puzzle            |
-| `e`                       |            erase cell             |
-| `b`                       |        select board center        |
-| `d` or `esc`              |             deselect              |
-| `t`                       |        find or handle tip         |
-| `x`                       |        cancel current tip         |
+| Keys                      |                   action                    |
+| ------------------------- | :-----------------------------------------: |
+| `N`                       |               start new game                |
+| `shift_enter`             |       start game with inputed puzzle        |
+| `n`                       |             toggle noting mode              |
+| `ctrl_n`                  |                  auto note                  |
+| `a`                       |        toggle Almost Lock Set Chain         |
+| `ctrl_a`                  |         toggle show available area          |
+| `digit 1,2...9`           | select digit or set digit for selected cell |
+| `s`                       |                    solve                    |
+| `r`                       |                reset puzzle                 |
+| `e`                       |                 erase cell                  |
+| `b`                       |             select board center             |
+| `d` or `esc`              |                  deselect                   |
+| `t`                       |             find or handle tip              |
+| `x`                       |             cancel current tip              |
 | `when` tip is trial-error |
-| `y`                       | jump to trial-start history point |
+| `y`                       |      jump to trial-start history point      |
 | when tip is chain         |
-| `y`                       |     jump chain one step back      |
-| `u`                       |    jump chain one step forward    |
-| `end when`                |                                   |
-| `p`                       |   auto place/pointing/claiming    |
+| `y`                       |          jump chain one step back           |
+| `u`                       |         jump chain one step forward         |
+| `end when`                |                                             |
+| `p`                       |        auto place/pointing/claiming         |
 | `when` board is selected  |
-| `h`                       |    left move position in board    |
-| `l`                       |   right move position in board    |
-| `j`                       |    down move position in board    |
-| `k`                       |     up move position in board     |
+| `h`                       |         left move position in board         |
+| `l`                       |        right move position in board         |
+| `j`                       |         down move position in board         |
+| `k`                       |          up move position in board          |
 | `when` digit is selected  |
-| `h`                       |    left change selected digit     |
-| `l`                       |    right change selected digit    |
-| `j`                       |    left change selected digit     |
-| `k`                       |    right change selected digit    |
+| `h`                       |         left change selected digit          |
+| `l`                       |         right change selected digit         |
+| `j`                       |         left change selected digit          |
+| `k`                       |         right change selected digit         |
 | `when` in deselected mode |
-| `h`                       |    jump to first history point    |
-| `l`                       |   jump to latest history point    |
-| `j`                       |  jump to previous history point   |
-| `k`                       |    jump to next history point     |
-| `end when`                |                                   |
+| `h`                       |         jump to first history point         |
+| `l`                       |        jump to latest history point         |
+| `j`                       |       jump to previous history point        |
+| `k`                       |         jump to next history point          |
+| `end when`                |                                             |
