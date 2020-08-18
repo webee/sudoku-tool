@@ -1438,7 +1438,7 @@ function getPosLink(cells, d, pos) {
   return { false: strongTargets, true: weakTargets };
 }
 
-function getAlscLink(alscLinks, pos) {
+function getAlscLink(alscLinks = {}, pos) {
   return alscLinks[pos];
 }
 

@@ -39,20 +39,28 @@ const Sudoku = ({
   // calculated states
   const cellsRecord = sudoku.cellsRecord;
   const isComplete = sudoku.isComplete;
-  const { cells } = cellsRecord;
+  const { cells: boardCells } = cellsRecord;
   // cells dependency is needed for memo check
-  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos, cells), [activePos, sudoku, cells]);
-  const availablePositions = useMemo(() => sudoku.calcAvailablePositions(activeVal, cells), [activeVal, sudoku, cells]);
-  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(cells), [sudoku, cells]);
+  const availableDigits = useMemo(() => sudoku.calcAvailableDigits(activePos, boardCells), [
+    activePos,
+    sudoku,
+    boardCells,
+  ]);
+  const availablePositions = useMemo(() => sudoku.calcAvailablePositions(activeVal, boardCells), [
+    activeVal,
+    sudoku,
+    boardCells,
+  ]);
+  const remainingDigits = useMemo(() => sudoku.calcRemainingDigits(boardCells), [sudoku, boardCells]);
 
   // handlers
   const startGameHandler = useCallback(() => {
-    newGameHandler(sudoku.stringify(cells, { placedAsOrigin: true, withNotes: false }));
-  }, [cells, newGameHandler, sudoku]);
+    newGameHandler(sudoku.stringify(boardCells, { placedAsOrigin: true, withNotes: false }));
+  }, [boardCells, newGameHandler, sudoku]);
 
   const editGameHandler = useCallback(() => {
-    newGameHandler(sudoku.stringify(cells, { originAsPlaced: true, withNotes: false }));
-  }, [cells, newGameHandler, sudoku]);
+    newGameHandler(sudoku.stringify(boardCells, { originAsPlaced: true, withNotes: false }));
+  }, [boardCells, newGameHandler, sudoku]);
 
   const cellClickedHandler = useCallback(
     pos => {
@@ -465,7 +473,7 @@ const Sudoku = ({
 
   useEffect(() => {
     if (tip) {
-      if (tip.includedCells && tip.includedCells.has(cells)) {
+      if (tip.includedCells && tip.includedCells.has(boardCells)) {
         return;
       }
       // clear tip if values changed
@@ -473,7 +481,7 @@ const Sudoku = ({
       sudoku.clearHistoryLowerBound();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells]);
+  }, [boardCells]);
 
   let shareContent = null;
   if (showShare) {
@@ -506,7 +514,7 @@ const Sudoku = ({
       <div className={styles.Board}>
         <Board
           isComplete={isComplete}
-          cells={cells}
+          cells={boardCells}
           availablePositions={availablePositions}
           activeVal={activeVal}
           activePos={activePos}

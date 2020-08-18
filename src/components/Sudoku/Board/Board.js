@@ -20,8 +20,7 @@ const Board = ({
   // active value
   if (activePos) {
     // no active value, then selected value is active value for board
-    const { row, col } = activePos;
-    activeVal = cells[row][col].value;
+    activeVal = positions.getCell(cells, activePos).value;
   }
 
   const classes = [styles.SudokuBoard];

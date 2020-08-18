@@ -22,7 +22,7 @@ const Block = ({
           {rows.map(pos => (
             <Cell
               key={pos.key}
-              {...cells[pos.row][pos.col]}
+              {...positions.getCell(cells, pos)}
               pos={pos}
               activePos={activePos}
               activeVal={activeVal}
