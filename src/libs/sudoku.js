@@ -13,6 +13,7 @@ import * as positions from './position';
 import { aggregateLinks, console, getAttrDefault, shuffleArray, findALSFromPoints, intersection } from './utils';
 import { Notes, digits } from './notes';
 import { findNGroup, eliminateGroup, findNXGroup, eliminateXGroup, getPosDigitLinks, getPosDomains } from './logic';
+import { solve } from './solver';
 
 export * from './notes';
 
@@ -34,7 +35,12 @@ export class Sudoku {
     this._curCellsIdx = -1;
     this._txCells = null;
     this._historyLowerBound = 0;
-    this._setCells(Sudoku.parse(puzzle), 'init');
+    const parsedCells = Sudoku.parse(puzzle);
+    if (puzzle !== Sudoku.defaultPuzzle) {
+      console.log(solve(parsedCells));
+    }
+
+    this._setCells(parsedCells);
     this.puzzle = this.stringify();
     this._checkComplete();
     // FIXME:
@@ -587,10 +593,6 @@ export class Sudoku {
           count++;
           placed = true;
           break;
-        }
-        /* use current cells for every find */
-        if (placed) {
-          continue;
         }
       }
     } while (placed);
