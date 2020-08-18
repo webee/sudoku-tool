@@ -27,6 +27,17 @@ export const blockCols = block => {
   return [start, start + 1, start + 2];
 };
 
+export const newCells = valueFunc => {
+  return rows.map(row => cols.map(col => valueFunc && valueFunc(row, col)));
+};
+export const copyCells = cells => {
+  const copied = [...cells];
+  for (const row of rows) {
+    copied[row] = [...copied[row].map(v => ({ ...v }))];
+  }
+  return copied;
+};
+
 const _rowPositions = _baseArray.map(row =>
   _baseArray.map(col => ({
     key: `r${row}c${col}`,
@@ -111,17 +122,6 @@ export const getPositionByKey = key => _keyPositionMapping[key];
 export const mapPositionsTo = f => _baseArray.map(row => _baseArray.map(col => f(row, col)));
 
 export const getCell = (cells, pos) => cells[pos.row][pos.col];
-
-export const newCells = initValue => {
-  return rows.map(() => cols.map(() => initValue));
-};
-export const copyCells = cells => {
-  const copied = [...cells];
-  for (const row of rows) {
-    copied[row] = [...copied[row]];
-  }
-  return copied;
-};
 
 const _intersection = (a, b) => {
   const sb = new Set(b);

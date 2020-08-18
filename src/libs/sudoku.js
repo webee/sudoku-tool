@@ -37,14 +37,24 @@ export class Sudoku {
     this._historyLowerBound = 0;
     const parsedCells = Sudoku.parse(puzzle);
     if (puzzle !== Sudoku.defaultPuzzle) {
-      console.log(solve(parsedCells));
+      this._results = solve(parsedCells);
     }
 
-    this._setCells(parsedCells);
+    this._setCells(parsedCells, 'init');
     this.puzzle = this.stringify();
-    this._checkComplete();
-    // FIXME:
     this._notify();
+  }
+
+  get results() {
+    return this._results;
+  }
+
+  solve() {
+    if (this._results && this._results.length > 0) {
+      // choose the first result.
+      this._setCells(this._results[0], 'solve');
+      this._notify();
+    }
   }
 
   setHistoryLowerBound(n) {
@@ -714,7 +724,7 @@ export class Sudoku {
   findTrialError() {
     this._disableNotify();
     const startIdx = this._curCellsIdx;
-    // randomize this pos choice
+    // randomize the position choice
     const poses = shuffleArray(positions.flattenPositions);
     for (const tryTip of [false, { maxDepth: 15 }, { maxDepth: 25 }, { maxDepth: Number.MAX_VALUE }]) {
       for (const pos of poses) {
