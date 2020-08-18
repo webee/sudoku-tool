@@ -41,10 +41,12 @@ const Sudoku = () => {
   }, []);
 
   const newGameHandler = useCallback(
-    puzzle => {
+    (puzzle, checkResults = true) => {
       try {
         const instance = new sudokus.Sudoku(puzzle);
-        checkSudokuResults(instance.results);
+        if (checkSudokuResults) {
+          checkSudokuResults(instance.results);
+        }
         setSudoku(instance);
         setIsNewGame(false);
         setPuzzleError(null);

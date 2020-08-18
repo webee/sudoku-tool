@@ -59,7 +59,7 @@ const Sudoku = ({
   }, [boardCells, newGameHandler, sudoku]);
 
   const editGameHandler = useCallback(() => {
-    newGameHandler(sudoku.stringify(boardCells, { originAsPlaced: true, withNotes: false }));
+    newGameHandler(sudoku.stringify(boardCells, { originAsPlaced: true, withNotes: false }), false);
   }, [boardCells, newGameHandler, sudoku]);
 
   const cellClickedHandler = useCallback(
@@ -179,7 +179,7 @@ const Sudoku = ({
             setChainStep(t.chain.length);
           } else if (t.type === 'trial-error') {
             sudoku.setHistoryLowerBound(t.startIdx);
-            if (t.err.digits.size > 0) {
+            if (t.err !== true && t.err.digits.size > 0) {
               digitClickedHandler([...t.err.digits][0], true);
             }
           }
