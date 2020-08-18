@@ -381,7 +381,7 @@ export class Sudoku {
   static actions = {
     RESET: 'Reset',
     NOTE: 'Note',
-    UPDATE_CELL_VALUE: 'Update Cell Value',
+    UPDATE_CELL_VALUE: 'Update Cell',
     AUTO_NOTE: 'Auto Note',
     AUTO_POINTING: 'Auto Pointing',
     AUTO_CLAIMING: 'Auto Claiming',
@@ -469,7 +469,12 @@ export class Sudoku {
   }
 
   updateCellValue(isNoting, pos, value) {
-    this.dispatch(Sudoku.actions.UPDATE_CELL_VALUE, { isNoting, pos, value });
+    this.dispatch(Sudoku.actions.UPDATE_CELL_VALUE, {
+      isNoting,
+      pos,
+      value,
+      name: `${isNoting ? 'note' : 'place'} ${value}@${pos}`,
+    });
   }
 
   autoNote() {
