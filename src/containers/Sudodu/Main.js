@@ -360,7 +360,7 @@ const Sudoku = ({
     [tip]
   );
 
-  const jumpToTrailStartHandler = useCallback(() => {
+  const jumpToTrialStartHandler = useCallback(() => {
     if (tip && tip.type === 'trial-error') {
       sudoku.jumpTo(tip.startIdx);
     }
@@ -406,7 +406,7 @@ const Sudoku = ({
         cancelTipHandler();
       } else if (e.key === 'y') {
         changeChainStepHandler(-1);
-        jumpToTrailStartHandler();
+        jumpToTrialStartHandler();
       } else if (e.key === 'u') {
         changeChainStepHandler(1);
       } else if (e.key === 'p') {
@@ -464,7 +464,7 @@ const Sudoku = ({
     deselectHandler,
     digitClickedHandler,
     eraseValueHandler,
-    jumpToTrailStartHandler,
+    jumpToTrialStartHandler,
     moveActivePos,
     moveActiveVal,
     resetHandler,
@@ -559,7 +559,7 @@ const Sudoku = ({
           tipHandler={tipHandler}
           cancelTipHandler={cancelTipHandler}
           changeChainStepHandler={changeChainStepHandler}
-          jumpToTrailStartHandler={jumpToTrailStartHandler}
+          jumpToTrailStartHandler={jumpToTrialStartHandler}
         />
       </div>
       <div className={styles.Info}></div>
