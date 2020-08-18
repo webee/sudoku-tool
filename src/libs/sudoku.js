@@ -729,17 +729,30 @@ export class Sudoku {
   findTrialError() {
     this._disableNotify();
     const startIdx = this._curCellsIdx;
-    // randomize the position choice
-    const poses = shuffleArray(positions.flattenPositions);
+    // randomize positions
+    const poses = shuffleArray(
+      positions.flattenPositions.filter(p => {
+        const { value } = this.getCell(p);
+        return Notes.is(value);
+      })
+    );
+    // sort positions by candidates count.
+    // const poses = positions.flattenPositions
+    //   .filter(p => {
+    //     const { value } = this.getCell(p);
+    //     return Notes.is(value);
+    //   })
+    //   .sort((pa, pb) => {
+    //     const ca = Notes.size(this.getCell(pa).value);
+    //     const cb = Notes.size(this.getCell(pb).value);
+    //     return ca - cb;
+    //   });
     for (const tryTip of [false, { maxDepth: 15 }, { maxDepth: 25 }, { maxDepth: Number.MAX_VALUE }]) {
       for (const pos of poses) {
         const { value } = this.getCell(pos);
-        if (!Notes.is(value)) {
-          continue;
-        }
         for (const d of Notes.entries(value)) {
           console.enabled = true;
-          console.log(`try: ${d}@${pos}`);
+          console.log(`try: ${d}@${pos} ${JSON.stringify(tryTip)}`);
           console.enabled = false;
           // start trial for d@pos
           let deepTried = 0;
@@ -759,7 +772,7 @@ export class Sudoku {
               if (deepTried > tryTip.maxDepth) {
                 break;
               }
-              tip = this.findTip({ trial: false });
+              tip = this.findTip({ trial: false, chain: { withoutALS: true } });
             }
             if (this._checkComplete()) {
               err = true;
