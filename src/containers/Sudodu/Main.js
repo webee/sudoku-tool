@@ -117,6 +117,10 @@ const Sudoku = ({
     setActiveState({ pos: null, val: 0 });
   }, []);
 
+  const solveHandler = useCallback(() => {
+    sudoku.solve();
+  }, [sudoku]);
+
   const resetHandler = useCallback(() => {
     if (!window.confirm || window.confirm('Are you sure to reset?')) {
       sudoku.reset();
@@ -327,7 +331,7 @@ const Sudoku = ({
         let marks = null;
         if (err === true) {
           // is complete
-          marks = { highlights: { poses: new Set([pos]), values, notes: values } };
+          marks = { highlights: { cells: new Set([pos]), values, notes: values } };
         } else {
           const { domain, digits } = err;
           if (cellsRecord.idx >= startIdx) {
@@ -384,6 +388,8 @@ const Sudoku = ({
         } else {
           toggleWithALSHandler();
         }
+      } else if (e.key === 's' && !e.isComposing && !e.metaKey) {
+        solveHandler();
       } else if (e.key === 'r' && !e.isComposing && !e.metaKey) {
         resetHandler();
       } else if (e.key === 'e') {
@@ -462,6 +468,7 @@ const Sudoku = ({
     moveActivePos,
     moveActiveVal,
     resetHandler,
+    solveHandler,
     startNewGameHandler,
     sudoku,
     tip,
@@ -539,6 +546,7 @@ const Sudoku = ({
           showAvail={showAvail}
           isNoting={isNoting}
           withALS={withALS}
+          solveHandler={solveHandler}
           resetHandler={resetHandler}
           eraseValueHandler={eraseValueHandler}
           deselectHandler={deselectHandler}

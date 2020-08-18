@@ -21,6 +21,7 @@ const Controls = ({
   toggleShowAvailHandler,
   toggleIsNotingHandler,
   toggleWithALSHandler,
+  solveHandler,
   resetHandler,
   eraseValueHandler,
   autoNoteHandler,
@@ -50,6 +51,7 @@ const Controls = ({
         <span>{cellsRecord.desc}</span>
       </div>
       <div className={styles.Panel}>
+        <Button onClick={solveHandler}>Solve</Button>
         <Button onClick={resetHandler}>Reset</Button>
         <Button onClick={eraseValueHandler}>Erase</Button>
         <Button onClick={deselectHandler}>Deselect</Button>
