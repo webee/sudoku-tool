@@ -2,7 +2,6 @@ import {
   flattenPositions,
   getRelatedPositions,
   mapPositionsTo,
-  rowColToBlock,
   getRelatedRowPositions,
   getRelatedColPositions,
   getRelatedBlockPositions,
@@ -11,80 +10,11 @@ import {
   getBlockFlattenPositions,
 } from './position';
 import * as positions from './position';
-import {
-  aggregateLinks,
-  findNGroupFromLinks,
-  console,
-  getAttrDefault,
-  shuffleArray,
-  findALSFromPoints,
-  intersection,
-} from './utils';
+import { aggregateLinks, console, getAttrDefault, shuffleArray, findALSFromPoints, intersection } from './utils';
+import { Notes, digits } from './notes';
+import { findNGroup, eliminateGroup, findNXGroup, eliminateXGroup, getPosDigitLinks, getPosDomains } from './logic';
 
-export const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
-export class Notes {
-  static _base = 1 << 16;
-  static new(...notes) {
-    let value = Notes._base;
-    for (const n of notes) {
-      value |= 1 << n;
-    }
-    return value;
-  }
-
-  static isEmpty(value) {
-    return value === this._base;
-  }
-
-  static size(value) {
-    let s = 0;
-    for (let n = 1; n <= 9; n++) {
-      value = value >> 1;
-      if ((value & 1) === 1) {
-        s++;
-      }
-    }
-    return s;
-  }
-
-  static first(value) {
-    for (let n = 1; n <= 9; n++) {
-      if (Notes.has(value, n)) {
-        return n;
-      }
-    }
-  }
-
-  static entries(value) {
-    const res = [];
-    for (let n = 1; n <= 9; n++) {
-      if (Notes.has(value, n)) {
-        res.push(n);
-      }
-    }
-    return res;
-  }
-
-  static is(value) {
-    return (value & this._base) !== 0;
-  }
-
-  static has(value, n) {
-    return Notes.is(value) && (value & (1 << n)) !== 0;
-  }
-
-  static add(value, n) {
-    return value | (1 << n);
-  }
-
-  static delete(value, ...ns) {
-    for (const n of ns) {
-      value &= ~(1 << n);
-    }
-    return value;
-  }
-}
+export * from './notes';
 
 export class Sudoku {
   static defaultPuzzle = `
@@ -274,11 +204,9 @@ export class Sudoku {
     });
 
     // organize the values
-    const cells = Array.from(new Array(9)).map(() => new Array(9));
-    for (let i = 0; i < 9; i++) {
-      for (let j = 0; j < 9; j++) {
-        cells[i][j] = flattenCellValues[9 * i + j];
-      }
+    const cells = positions.newCells();
+    for (const pos of positions.flattenPositions) {
+      cells[pos.row][pos.col] = flattenCellValues[pos.idx];
     }
     // TODO: check board integrity, no duplicated digit in any row, col, block.
     return cells;
@@ -367,24 +295,24 @@ export class Sudoku {
     return res;
   }
 
-  _txSetCellValue(cells, pos, value) {
+  _txSetCellValue(pos, value) {
     const { row, col } = pos;
     const { value: oldValue } = this.getCell(pos);
     if (value === oldValue) {
-      return cells;
+      return;
     }
 
     const curCells = this.getCurCells();
-    if (cells === curCells) {
-      cells = [...curCells];
+    if (this._txCells === curCells) {
+      this._txCells = [...curCells];
     }
-    if (cells[row] === curCells[row]) {
-      cells[row] = [...curCells[row]];
+    if (this._txCells[row] === curCells[row]) {
+      this._txCells[row] = [...curCells[row]];
     }
-    if (cells[row][col] === curCells[row][col]) {
-      cells[row][col] = { ...curCells[row][col] };
+    if (this._txCells[row][col] === curCells[row][col]) {
+      this._txCells[row][col] = { ...curCells[row][col] };
     }
-    cells[row][col].value = value;
+    this._txCells[row][col].value = value;
     if (!Notes.is(value)) {
       // updated related notes
       for (const rpos of getRelatedPositions(pos)) {
@@ -393,23 +321,22 @@ export class Sudoku {
           // is not notes
           continue;
         }
-        cells = this._txSetCellValue(cells, rpos, Notes.delete(cell.value, value));
+        this._txSetCellValue(rpos, Notes.delete(cell.value, value));
       }
     }
-    return cells;
   }
 
-  getCurCells() {
+  getCurCells = () => {
     if (this._txCells) {
       // in transaction
       return this._txCells;
     }
     return this.cells;
-  }
+  };
 
-  getCell({ row, col }) {
+  getCell = ({ row, col }) => {
     return this.getCurCells()[row][col];
-  }
+  };
 
   _startTx() {
     if (!this._txCells) {
@@ -429,10 +356,10 @@ export class Sudoku {
     this._txCells = null;
   }
 
-  _setCellValue(pos, value) {
+  _setCellValue = (pos, value) => {
     this._startTx();
-    this._txCells = this._txSetCellValue(this._txCells, pos, value);
-  }
+    this._txSetCellValue(pos, value);
+  };
 
   // actions
   static actions = {
@@ -478,10 +405,10 @@ export class Sudoku {
         this._updateCellValue(payload);
         break;
       case Sudoku.actions.ELIMINATE_GROUP:
-        this._eliminateGroup(payload);
+        eliminateGroup(payload, this.getCell, this._setCellValue);
         break;
       case Sudoku.actions.ELIMINATE_XGROUP:
-        this._eliminateXGroup(payload);
+        eliminateXGroup(payload, this.getCell, this._setCellValue);
         break;
       case Sudoku.actions.ELIMINATE_CHAIN:
         this._eliminateChain(payload);
@@ -744,43 +671,8 @@ export class Sudoku {
       for (const cls of [0, 1]) {
         for (const group of findNGroup(cells, n, cls)) {
           // only return the first group
-          group.type = 'group';
           return group;
         }
-      }
-    }
-  }
-
-  _eliminateGroup(group) {
-    if (group.n === 1) {
-      // place value
-      const pos = [...group.poses][0];
-      const d = [...group.notes][0];
-
-      this._setCellValue(pos, d);
-    } else if (group.cls === 0) {
-      // naked
-      // to eliminate other cells
-      const { row, col, block } = group.domains;
-      const otherPoses = [
-        ...(positions.getRowPositions(row) || []),
-        ...(positions.getColPositions(col) || []),
-        ...(positions.getBlockFlattenPositions(block) || []),
-      ];
-      for (const pos of otherPoses) {
-        const { value } = this.getCell(pos);
-        if (!Notes.is(value) || group.poses.has(pos)) {
-          continue;
-        }
-
-        this._setCellValue(pos, Notes.delete(value, ...group.notes));
-      }
-    } else if (group.cls === 1) {
-      // hidden
-      // to eliminate other notes
-      for (const pos of group.poses) {
-        const { value } = this.getCell(pos);
-        this._setCellValue(pos, Notes.new(...Notes.entries(value).filter(n => group.notes.has(n))));
       }
     }
   }
@@ -791,32 +683,6 @@ export class Sudoku {
         group.type = 'X-Group';
         return group;
       }
-    }
-  }
-
-  _eliminateXGroup(group) {
-    const otherPositions = [];
-    if (group.effect === 'row') {
-      for (const row of group.rows) {
-        otherPositions.push(...positions.getRowPositions(row));
-      }
-    } else if (group.effect === 'col') {
-      for (const col of group.cols) {
-        otherPositions.push(...positions.getColPositions(col));
-      }
-    } else if (group.effect === 'block') {
-      for (const block of group.blocks) {
-        otherPositions.push(...positions.getBlockFlattenPositions(block));
-      }
-    }
-
-    for (const pos of otherPositions) {
-      const { value } = this.getCell(pos);
-      if (!Notes.is(value) || group.poses.has(pos)) {
-        continue;
-      }
-
-      this._setCellValue(pos, Notes.delete(value, group.d));
     }
   }
 
@@ -1501,57 +1367,6 @@ function getDigitPosesAndLinks(cells, options) {
   return [dPoses, dGroupPoses, dAlsces, dLinks];
 }
 
-function getPosDigitLinks(cells, poses) {
-  const links = [];
-  for (const pos of poses) {
-    const { value } = positions.getCell(cells, pos);
-    if (!Notes.is(value)) {
-      continue;
-    }
-
-    for (const note of Notes.entries(value)) {
-      links.push([pos, note]);
-    }
-  }
-  return links;
-}
-
-const getPosDomains = poses => {
-  const res = {};
-  for (const domain of ['row', 'col', 'block']) {
-    const ds = new Set();
-    poses.forEach(p => ds.add(p[domain]));
-    if (ds.size === 1) {
-      res[domain] = [...ds][0];
-    }
-  }
-  return res;
-};
-
-function* findNGroup(cells, n, cls) {
-  for (const [domain, getPositions] of [
-    ['row', getRowPositions],
-    ['col', getColPositions],
-    ['block', getBlockFlattenPositions],
-  ]) {
-    for (const idx of positions.indices) {
-      const links = getPosDigitLinks(cells, getPositions(idx));
-      for (const group of findNGroupFromLinks(links, n, cls, { checkClear: n > 1 })) {
-        const poses = group[cls];
-        const notes = group[(cls + 1) % 2];
-        yield {
-          cls,
-          n,
-          domains: cls === 0 ? getPosDomains(poses) : { [domain]: idx },
-          poses,
-          notes,
-          name: ['naked', 'hidden'][cls] + `-${n}-group`,
-        };
-      }
-    }
-  }
-}
-
 const findGroupForALSC = (d, dGroupPoses, domains, poses) => {
   const { row, col, block } = domains;
   const key = `${d}@row${row}col${col}block${block}`;
@@ -1701,134 +1516,4 @@ function getDigitAlscAndLinks(cells, dGroupPoses, options) {
   }
 
   return [dAlsces, dAlscLinks];
-}
-
-const getAToBLinks = (getPositions, getEnd) => (cells, d) => {
-  const links = [];
-  for (let a = 0; a < 9; a++) {
-    for (const pos of getPositions(a)) {
-      const { value } = cells[pos.row][pos.col];
-      if (!Notes.is(value)) {
-        continue;
-      }
-      if (Notes.has(value, d)) {
-        links.push([a, getEnd(pos)]);
-      }
-    }
-  }
-  return links;
-};
-
-const getRowToColLinks = getAToBLinks(positions.getRowPositions, pos => pos.col);
-const getRowToBlockLinks = getAToBLinks(positions.getRowPositions, pos => rowColToBlock(pos.row, pos.col));
-const getColToBlockLinks = getAToBLinks(positions.getColPositions, pos => rowColToBlock(pos.row, pos.col));
-
-const getPositionsForDigit = (cells, d, positions) => {
-  const poses = [];
-  for (const pos of positions) {
-    const { value } = cells[pos.row][pos.col];
-    if (Notes.is(value) && Notes.has(value, d)) {
-      poses.push(pos);
-    }
-  }
-  return poses;
-};
-
-function* findNXGroup(cells, n, types = { rc: true, cr: true, rb: true, br: true, cb: true, bc: true }) {
-  for (let d = 1; d <= 9; d++) {
-    if (types.rc || types.cr) {
-      // row->col
-      const rcLinks = getRowToColLinks(cells, d);
-      if (types.rc) {
-        for (const group of findNGroupFromLinks(rcLinks, n, 0)) {
-          const [rows, cols] = group;
-          const poses = [];
-          let isXWing = true;
-          for (const row of rows) {
-            const rowPositions = getPositionsForDigit(cells, d, positions.getRowPositions(row));
-            if (rowPositions.length !== n) {
-              isXWing = false;
-            }
-            poses.push(...rowPositions);
-          }
-          const name = isXWing ? `${n}-X-Wing` : `${n}-XRC-Group`;
-          yield { name, domain: 'row', effect: 'col', rows, cols, poses: new Set(poses), d };
-        }
-      }
-      // col->row
-      if (types.cr) {
-        for (const group of findNGroupFromLinks(rcLinks, n, 1)) {
-          const [cols, rows] = group;
-          const poses = [];
-          let isXWing = true;
-          for (const col of cols) {
-            const colPositions = getPositionsForDigit(cells, d, positions.getColPositions(col));
-            if (colPositions.length !== n) {
-              isXWing = false;
-            }
-            poses.push(...getPositionsForDigit(cells, d, positions.getColPositions(col)));
-          }
-          const name = isXWing ? `${n}-X-Wing` : `${n}-XCR-Group`;
-          yield { name, domain: 'col', effect: 'row', rows, cols, poses: new Set(poses), d };
-        }
-      }
-    }
-
-    if (types.rb || types.br) {
-      // row->block, 1-xrb-group is claiming
-      const rbLinks = getRowToBlockLinks(cells, d);
-      if (types.rb) {
-        for (const group of findNGroupFromLinks(rbLinks, n, 0)) {
-          const [rows, blocks] = group;
-          const poses = [];
-          for (const row of rows) {
-            poses.push(...getPositionsForDigit(cells, d, positions.getRowPositions(row)));
-          }
-          const name = n === 1 ? 'claiming' : `${n}-XRB-Group`;
-          yield { name, domain: 'row', effect: 'block', rows, blocks, poses: new Set(poses), d };
-        }
-      }
-      // block-row, 1-xbr-group is pointing
-      if (types.br) {
-        for (const group of findNGroupFromLinks(rbLinks, n, 1)) {
-          const [blocks, rows] = group;
-          const poses = [];
-          for (const block of blocks) {
-            poses.push(...getPositionsForDigit(cells, d, positions.getBlockFlattenPositions(block)));
-          }
-          const name = n === 1 ? 'pointing' : `${n}-XBR-Group`;
-          yield { name, domain: 'block', effect: 'row', rows, blocks, poses: new Set(poses), d };
-        }
-      }
-    }
-
-    if (types.cb || types.bc) {
-      // col->block, 1-xcb-group is claiming
-      const cbLinks = getColToBlockLinks(cells, d);
-      if (types.cb) {
-        for (const group of findNGroupFromLinks(cbLinks, n, 0)) {
-          const [cols, blocks] = group;
-          const poses = [];
-          for (const col of cols) {
-            poses.push(...getPositionsForDigit(cells, d, positions.getColPositions(col)));
-          }
-          const name = n === 1 ? 'claiming' : `${n}-XCB-Group`;
-          yield { name, domain: 'col', effect: 'block', cols, blocks, poses: new Set(poses), d };
-        }
-      }
-
-      // block-col, 1-xbc-group is pointing
-      if (types.bc) {
-        for (const group of findNGroupFromLinks(cbLinks, n, 1)) {
-          const [blocks, cols] = group;
-          const poses = [];
-          for (const block of blocks) {
-            poses.push(...getPositionsForDigit(cells, d, positions.getBlockFlattenPositions(block)));
-          }
-          const name = n === 1 ? 'pointing' : `${n}-XBC-Group`;
-          yield { name, domain: 'block', effect: 'col', cols, blocks, poses: new Set(poses), d };
-        }
-      }
-    }
-  }
 }

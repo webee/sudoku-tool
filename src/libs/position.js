@@ -1,3 +1,4 @@
+// local position is position in block.
 export const getDigitLocalPos = d => [Math.floor((d - 1) / 3), (d - 1) % 3];
 const _baseArray = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 export const blockShape = [
@@ -29,13 +30,15 @@ export const blockCols = block => {
 const _rowPositions = _baseArray.map(row =>
   _baseArray.map(col => ({
     key: `r${row}c${col}`,
-    idx: row * 9 + col,
-    row,
-    col,
-    block: rowColToBlock(row, col),
     toString() {
       return this.key;
     },
+    // left->right, top->bottom
+    idx: row * 9 + col,
+    // domains: row, col, block
+    row,
+    col,
+    block: rowColToBlock(row, col),
   }))
 );
 export const rowPositions = _rowPositions;
@@ -108,6 +111,17 @@ export const getPositionByKey = key => _keyPositionMapping[key];
 export const mapPositionsTo = f => _baseArray.map(row => _baseArray.map(col => f(row, col)));
 
 export const getCell = (cells, pos) => cells[pos.row][pos.col];
+
+export const newCells = initValue => {
+  return rows.map(() => cols.map(() => initValue));
+};
+export const copyCells = cells => {
+  const copied = [...cells];
+  for (const row of rows) {
+    copied[row] = [...copied[row]];
+  }
+  return copied;
+};
 
 const _intersection = (a, b) => {
   const sb = new Set(b);

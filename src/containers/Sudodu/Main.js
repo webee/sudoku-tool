@@ -384,7 +384,7 @@ const Sudoku = ({
         } else {
           toggleWithALSHandler();
         }
-      } else if (e.key === 'r' && !e.isComposing) {
+      } else if (e.key === 'r' && !e.isComposing && !e.metaKey) {
         resetHandler();
       } else if (e.key === 'e') {
         eraseValueHandler();
