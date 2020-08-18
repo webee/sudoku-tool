@@ -468,12 +468,12 @@ export class Sudoku {
     this.dispatch(Sudoku.actions.NOTE, pos);
   }
 
-  updateCellValue(isNoting, pos, value) {
+  updateCellValue(isNoting, pos, value, type) {
     this.dispatch(Sudoku.actions.UPDATE_CELL_VALUE, {
       isNoting,
       pos,
       value,
-      name: `${isNoting ? 'note' : 'place'} ${value}@${pos}`,
+      name: `${type || (isNoting ? 'note' : 'place')} ${value}@${pos}`,
     });
   }
 
@@ -756,7 +756,7 @@ export class Sudoku {
           console.enabled = false;
           // start trial for d@pos
           let deepTried = 0;
-          this.updateCellValue(false, pos, d);
+          this.updateCellValue(false, pos, d, 'try');
           this.autoPlacePointingClaiming();
           let err = this._checkValidity();
           if (!err && tryTip) {
