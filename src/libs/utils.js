@@ -1,5 +1,8 @@
-const debug = process.env.NODE_ENV !== 'production';
+let debug = process.env.NODE_ENV !== 'production';
 const nilFunc = () => {};
+export const setDebug = () => {
+  debug = true;
+};
 
 function* combx(d, n, k) {
   if (n < k) {

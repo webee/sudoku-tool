@@ -3,6 +3,7 @@ import Main from './Main';
 import NewGame from './NewGame';
 import styles from './Sudoku.module.scss';
 import * as sudokus from '../../libs/sudoku';
+import * as utils from '../../libs/utils';
 
 const Sudoku = () => {
   const [alertInfo, setAlertInfo] = useState();
@@ -69,6 +70,12 @@ const Sudoku = () => {
       setAlertInfo(null);
     }
   }, [alertInfo]);
+
+  useEffect(() => {
+    // set debug
+    const isDebug = new URLSearchParams(window.location.search).get('debug');
+    utils.setDebug(isDebug !== null);
+  }, []);
 
   let content = null;
   if (isNewGame) {
