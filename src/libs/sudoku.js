@@ -27,6 +27,7 @@ export class Sudoku {
     this._shouldNotify = true;
     this.subscribers = [];
     this._setPuzzle(puzzle || Sudoku.defaultPuzzle);
+    this._chainCheckMemo = { x: {}, xy: {} };
   }
 
   _setPuzzle(puzzle) {
@@ -830,6 +831,7 @@ export class Sudoku {
     console.log('dLinks:', dLinks);
     // randomize digits.
     const ds = shuffleArray(digits);
+    // const ds = digits;
     const baseData = { dLinks, dAlsces, val: false, cells };
     const singlePosSrcs = [d => dPoses[d]];
     const basicPosSrcs = [...singlePosSrcs, d => (dGroupPoses[d] || []).filter(p => p.isGroup)];
@@ -841,22 +843,27 @@ export class Sudoku {
       posSrcs: basicPosSrcs,
       searchChain: dfsSearchChain,
       earlyExitLen: 7,
+      checkMemo: this._chainCheckMemo,
     };
+    // TODO: 在checkMemo的基础上，如果startPos对应的所有可能endPos都checkFailed，则不搜索
+    const stat = { searchChainDFS: 0, checkChainX: 0, checkChainXY: 0 };
     // without ALS
-    for (const maxLength of [20 /*,Number.MAX_VALUE*/]) {
+    for (const maxLength of [10, 20 /*,Number.MAX_VALUE*/]) {
       for (const config of [
         defaultConfig,
         { ...defaultConfig, tryCellLinks: true },
         { ...defaultConfig, tryCellLinks: true, tryGroupLinks: true },
       ]) {
         for (const getPoses of config.posSrcs) {
-          const extraData = { ...baseData, maxLength, ...config, count: 0 };
+          const extraData = { ...baseData, maxLength, ...config, stat: { ...stat } };
           for (const d of ds) {
             extraData.td = d;
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
+              console.log('chain stat:', maxLength, extraData.stat);
               return prepareChainResult(res);
             }
           }
+          console.log('chain stat:', maxLength, extraData.stat);
           if (extraData.res) {
             return prepareChainResult(extraData.res);
           }
@@ -870,30 +877,29 @@ export class Sudoku {
       const allClosedConfig = { ...defaultConfig, tryDigitLinks: false, posSrcs: [] };
       for (const config of [
         // pure ALS-chain
-        { ...allClosedConfig, tryAlscLinks: true, maxLength: 9, posSrcs: alscSrcs },
+        { ...allClosedConfig, tryAlscLinks: true, maxLength: 15, posSrcs: alscSrcs },
         {
           ...defaultConfig,
           tryDigitLinks: true,
           tryGroupLinks: true,
           tryAlscLinks: true,
-          maxLength: 9,
+          maxLength: 15,
           posSrcs: basicPosSrcs,
         },
       ]) {
         for (const getPoses of config.posSrcs) {
-          const extraData = { ...baseData, ...config, count: 0 };
+          const extraData = { ...baseData, ...config, stat: { ...stat } };
           for (const d of ds) {
             extraData.td = d;
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
-              console.log('als count:', extraData.count);
+              console.log('als stat:', 15, extraData.stat);
               return prepareChainResult(res);
             }
           }
+          console.log('als stat:', 15, extraData.stat);
           if (extraData.res) {
-            console.log('als count:', extraData.count);
             return prepareChainResult(extraData.res);
           }
-          console.log('als count:', extraData.count);
         }
       }
     }
@@ -970,8 +976,15 @@ function* checkChain(chain, node, extraData) {
   if (extraData.val === false && val === true && chain.length > 1) {
     // strong link
     const startPos = chain[0].pos;
+    const startMemoKey = `${td}@${startPos.key}`;
     // ignore g->d
     if (d === td) {
+      const memo = extraData.checkMemo.x[startMemoKey];
+      if (memo && memo.has(pos)) {
+        return;
+      }
+      extraData.stat.checkChainX++;
+
       // start and end shouldn't be the same position.
       // check if intersection related positions has d
       const effectedPoses = new Set();
@@ -985,17 +998,26 @@ function* checkChain(chain, node, extraData) {
       }
       if (effectedPoses.size > 0) {
         yield { chain: [...chain, node], effectedPoses, d: td };
+      } else {
+        // check failed
+        getAttrDefault(extraData.checkMemo.x, startMemoKey, new Set()).add(pos);
+        getAttrDefault(extraData.checkMemo.x, `${d}@${pos.key}`, new Set()).add(startPos);
       }
     } else {
+      const memo = extraData.checkMemo.xy[startMemoKey];
+      const endMemoKey = `${d}@${pos.key}`;
+      if (memo && memo.has(endMemoKey)) {
+        return;
+      }
+      extraData.stat.checkChainXY++;
+
+      let checkOk = false;
       // xy-chain
+      const poses = getRealPoses(pos);
       // two types:
       // 1. same pos
-      if (startPos.key === pos.key) {
-        const poses = getRealPoses(pos);
-        if (poses.length > 1) {
-          // should only be one position
-          return;
-        }
+      if (startPos.key === pos.key && poses.length === 1) {
+        // should only be one position
 
         const ds = new Set();
         for (const p of poses) {
@@ -1005,6 +1027,7 @@ function* checkChain(chain, node, extraData) {
         ds.delete(d);
         ds.delete(td);
         if (ds.size > 0) {
+          checkOk = true;
           // eliminate other digits of this position
           yield {
             chain: [...chain, node],
@@ -1021,7 +1044,6 @@ function* checkChain(chain, node, extraData) {
         // 2. different poses
       } else {
         const startPoses = getRealPoses(startPos);
-        const poses = getRealPoses(pos);
         if (poses.length === 1 && startPoses.length === 1) {
           // pos is cell then startPos should also be cell.
           // pos is one of startPos's related positions.
@@ -1034,10 +1056,16 @@ function* checkChain(chain, node, extraData) {
           ) {
             const { value } = positions.getCell(cells, pos);
             if (Notes.has(value, td)) {
+              checkOk = true;
               yield { chain: [...chain, node], effectedPoses: new Set([pos]), d: td };
             }
           }
         }
+      }
+      if (!checkOk) {
+        // check failed
+        getAttrDefault(extraData.checkMemo.xy, startMemoKey, new Set()).add(endMemoKey);
+        getAttrDefault(extraData.checkMemo.xy, endMemoKey, new Set()).add(startMemoKey);
       }
     }
   }
@@ -1099,7 +1127,7 @@ function* genNextChainAndNode(chain, node, extraData) {
 }
 
 function* searchChainDFS(chain, node, extraData) {
-  extraData.count++;
+  extraData.stat.searchChainDFS++;
   // optimize
   if (chain.length + 1 >= extraData.maxLength) {
     return;
