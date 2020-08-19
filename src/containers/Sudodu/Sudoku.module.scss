@@ -9,8 +9,10 @@
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
+  font-size: 60%;
 
   @media (min-height: 640px) and (min-width: 640px) {
+    font-size: 100%;
     width: 70vmin;
   }
 }
