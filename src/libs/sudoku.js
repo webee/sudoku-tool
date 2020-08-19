@@ -318,6 +318,7 @@ export class Sudoku {
       return;
     }
 
+    this._startTx();
     const curCells = this.getCurCells();
     if (this._txCells === curCells) {
       this._txCells = [...curCells];
@@ -337,9 +338,14 @@ export class Sudoku {
           // is not notes
           continue;
         }
-        this._txSetCellValue(rpos, Notes.delete(cell.value, value));
+        this._eliminate(rpos, value);
       }
     }
+  }
+
+  _eliminate(pos, ...ds) {
+    const { value } = this.getCell(pos);
+    this._txSetCellValue(pos, Notes.delete(value, ...ds));
   }
 
   getCurCells = () => {
@@ -373,7 +379,6 @@ export class Sudoku {
   }
 
   _setCellValue = (pos, value) => {
-    this._startTx();
     this._txSetCellValue(pos, value);
   };
 
@@ -813,10 +818,7 @@ export class Sudoku {
       return;
     }
     this.revertTo(startIdx);
-    const { value } = this.getCell(pos);
-    if (Notes.is(value)) {
-      this._setCellValue(pos, Notes.delete(value, d));
-    }
+    this._eliminate(pos, d);
   }
 
   findChain(cells, options = {}) {
@@ -900,16 +902,11 @@ export class Sudoku {
   _eliminateChain(chain) {
     for (const pos of chain.effectedPoses) {
       const { value } = this.getCell(pos);
-      if (!Notes.is(value)) {
-        continue;
-      }
-      let newValue = value;
       if (chain.keep) {
-        newValue = Notes.new(...chain.keepDs);
+        this._eliminate(pos, ...Notes.entries(value).filter(d => d !== chain.d && d !== chain.yd));
       } else {
-        newValue = Notes.delete(value, chain.d);
+        this._eliminate(pos, chain.d);
       }
-      this._setCellValue(pos, newValue);
     }
   }
 }
@@ -1012,7 +1009,10 @@ function* checkChain(chain, node, extraData) {
           yield {
             chain: [...chain, node],
             effectedPoses: new Set(poses),
+            // xd
             d: td,
+            // yd
+            yd: d,
             effectedDs: ds,
             keep: true,
             keepDs: [d, td],
