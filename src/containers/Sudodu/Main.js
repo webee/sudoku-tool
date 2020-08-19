@@ -32,7 +32,7 @@ const Sudoku = ({
   const { pos: activePos, val: activeVal } = activeState;
   const [showAvail, setShowAvail] = useState(false);
   const [isNoting, setIsNoting] = useState(true);
-  const [withALS, setWithALS] = useState(true);
+  const [withALS, setWithALS] = useState(false);
   const [tip, setTip] = useState(null);
   const [chainStep, setChainStep] = useState(2);
 

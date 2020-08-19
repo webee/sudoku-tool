@@ -820,7 +820,7 @@ export class Sudoku {
   }
 
   findChain(cells, options = {}) {
-    options = { withoutALS: false, ...options };
+    options = { withoutALS: true, ...options };
     const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells, { alsSizes: [1, 2, 3, 4, 5] });
     console.log('dPoses:', dPoses);
     console.log('dGroupPoses:', dGroupPoses);
