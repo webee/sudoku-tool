@@ -908,13 +908,14 @@ export class Sudoku {
       const allClosedConfig = { ...defaultConfig, tryDigitLinks: false, posSrcs: [] };
       for (const config of [
         // pure ALS-chain
-        { ...allClosedConfig, tryAlscLinks: true, maxLength: 15, posSrcs: alscSrcs },
+        { ...allClosedConfig, tryAlscLinks: true, maxLength: 15, earlyExitLen: 15, posSrcs: alscSrcs },
         {
           ...defaultConfig,
           tryDigitLinks: true,
           tryGroupLinks: true,
           tryAlscLinks: true,
           maxLength: 15,
+          earlyExitLen: 15,
           posSrcs: basicPosSrcs,
         },
       ]) {
@@ -1176,7 +1177,7 @@ function* searchChainDFS(chain, node, extraData, timeoutChecker) {
     return;
   }
   // optimize
-  if (chain.length + 1 >= extraData.maxLength) {
+  if (chain.length > extraData.maxLength) {
     // check continue
     if (timeoutChecker && !timeoutChecker.continue()) {
       extraData.exit = true;
