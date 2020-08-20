@@ -35,10 +35,10 @@ export class Sudoku {
     this._shouldNotify = true;
     this.subscribers = [];
     this._setPuzzle(puzzle || Sudoku.defaultPuzzle);
-    this._chainCheckMemo = { x: {}, xy: {} };
   }
 
   _setPuzzle(puzzle) {
+    this._chainCheckMemo = { x: {}, xy: {} };
     // clear history
     this._cellsHistory = [];
     this._curCellsIdx = -1;
