@@ -45,7 +45,7 @@ const Sudoku = () => {
     (puzzle, checkResults = true) => {
       try {
         const instance = new sudokus.Sudoku(puzzle);
-        if (checkSudokuResults) {
+        if (checkResults) {
           checkSudokuResults(instance.results);
         }
         setSudoku(instance);

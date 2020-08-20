@@ -225,7 +225,6 @@ export class Sudoku {
     for (const pos of positions.flattenPositions) {
       cells[pos.row][pos.col] = flattenCellValues[pos.idx];
     }
-    // TODO: check board integrity, no duplicated digit in any row, col, block.
     return cells;
   }
 
@@ -395,6 +394,7 @@ export class Sudoku {
     AUTO_PLACE_POINTING_CLAIMING: 'Auto Place/Pointing/Claiming',
     ELIMINATE_GROUP: 'X Group',
     ELIMINATE_XGROUP: 'X XGroup',
+    ELIMINATE_UR: 'X UR',
     ELIMINATE_CHAIN: 'X Chain',
     ELIMINATE_TRIAL_ERROR: 'X Trial Error',
     HANDLE_TIP: 'Handle Tip',
@@ -431,6 +431,9 @@ export class Sudoku {
         break;
       case Sudoku.actions.ELIMINATE_XGROUP:
         eliminateXGroup(payload, this.getCell, this._setCellValue);
+        break;
+      case Sudoku.actions.ELIMINATE_UR:
+        this._eliminateUR(payload);
         break;
       case Sudoku.actions.ELIMINATE_CHAIN:
         this._eliminateChain(payload);
@@ -509,6 +512,10 @@ export class Sudoku {
 
   eliminateXGroup(group) {
     this.dispatch(Sudoku.actions.ELIMINATE_XGROUP, group);
+  }
+
+  eliminateUR(ur) {
+    this.dispatch(Sudoku.actions.ELIMINATE_UR, ur);
   }
 
   eliminateChain(chain) {
@@ -709,12 +716,21 @@ export class Sudoku {
     }
   }
 
+  findUR(cells) {
+    //
+  }
+
+  _eliminateUR(ur) {
+    //
+  }
+
   findTip(options) {
     options = { trial: true, chain: { withoutALS: false }, ...options };
     const cells = this.getCurCells();
     return (
       this.findGroup(cells) ||
       this.findXGroup(cells) ||
+      this.findUR(cells) ||
       this.findChain(cells, options.chain) ||
       (options.trial && this.findTrialError())
     );
@@ -725,6 +741,8 @@ export class Sudoku {
       this.eliminateGroup(tip);
     } else if (tip.type === 'X-Group') {
       this.eliminateXGroup(tip);
+    } else if (tip.type === 'ur') {
+      this.eliminateUR(tip);
     } else if (tip.type === 'chain') {
       this.eliminateChain(tip);
     } else if (tip.type === 'trial-error') {
@@ -831,7 +849,6 @@ export class Sudoku {
     console.log('dLinks:', dLinks);
     // randomize digits.
     const ds = shuffleArray(digits);
-    // const ds = digits;
     const baseData = { dLinks, dAlsces, val: false, cells };
     const singlePosSrcs = [d => dPoses[d]];
     const basicPosSrcs = [...singlePosSrcs, d => (dGroupPoses[d] || []).filter(p => p.isGroup)];
@@ -848,7 +865,7 @@ export class Sudoku {
     // TODO: 在checkMemo的基础上，如果startPos对应的所有可能endPos都checkFailed，则不搜索
     const stat = { searchChainDFS: 0, checkChainX: 0, checkChainXY: 0 };
     // without ALS
-    for (const maxLength of [10, 20 /*,Number.MAX_VALUE*/]) {
+    for (const maxLength of [15, 20 /*,Number.MAX_VALUE*/]) {
       for (const config of [
         defaultConfig,
         { ...defaultConfig, tryCellLinks: true },
