@@ -163,3 +163,28 @@ export function intersection(setA, setB) {
   }
   return _intersection;
 }
+
+export class TimeoutConfirmer {
+  constructor(timeout, confirmContinue) {
+    this.timeout = timeout;
+    this.confirmContinue = confirmContinue;
+    // running time
+    this.rt = 0;
+    // start time
+    this.st = new Date();
+  }
+
+  continue() {
+    const ts = new Date() - this.st;
+    if (ts >= this.timeout) {
+      this.rt += ts;
+      console.log(`running time: ${this.rt / 1000}s`);
+      if (!this.confirmContinue(this.rt)) {
+        return false;
+      }
+      // reset start time
+      this.st = new Date();
+    }
+    return true;
+  }
+}

@@ -170,7 +170,13 @@ const Sudoku = ({
       setTimeout(() => {
         // for test new tech.
         // const t = sudoku.findTip({ trial: false });
-        const t = sudoku.findTip({ chain: { withoutALS: !withALS } });
+        const t = sudoku.findTip({
+          chain: {
+            timeout: 10 * 1000,
+            confirmContinue: t => window.confirm(`already running for ${t / 1000}s, continue finding?`),
+            withoutALS: !withALS,
+          },
+        });
         setIsLoading(false);
         if (t) {
           console.log('tip:', t);
@@ -370,6 +376,10 @@ const Sudoku = ({
   useEffect(() => {
     const keydownHandler = e => {
       console.log(e);
+      if (isLoading) {
+        return;
+      }
+
       // TODO: handler other shortcut keys
       if (e.code.startsWith('Digit')) {
         const d = parseInt(e.key);
@@ -464,6 +474,7 @@ const Sudoku = ({
     deselectHandler,
     digitClickedHandler,
     eraseValueHandler,
+    isLoading,
     jumpToTrialStartHandler,
     moveActivePos,
     moveActiveVal,

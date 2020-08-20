@@ -10,7 +10,15 @@ import {
   getBlockFlattenPositions,
 } from './position';
 import * as positions from './position';
-import { aggregateLinks, console, getAttrDefault, shuffleArray, findALSFromPoints, intersection } from './utils';
+import {
+  aggregateLinks,
+  console,
+  getAttrDefault,
+  shuffleArray,
+  findALSFromPoints,
+  intersection,
+  TimeoutConfirmer,
+} from './utils';
 import { Notes, digits } from './notes';
 import { findNGroup, eliminateGroup, findNXGroup, eliminateXGroup, getPosDigitLinks, getPosDomains } from './logic';
 import { solve } from './solver';
@@ -841,7 +849,7 @@ export class Sudoku {
   }
 
   findChain(cells, options = {}) {
-    options = { withoutALS: true, ...options };
+    options = { withoutALS: true, timeout: 60 * 1000, confirmContinue: null, ...options };
     const [dPoses, dGroupPoses, dAlsces, dLinks] = getDigitPosesAndLinks(cells, { alsSizes: [1, 2, 3, 4, 5] });
     console.log('dPoses:', dPoses);
     console.log('dGroupPoses:', dGroupPoses);
@@ -864,6 +872,8 @@ export class Sudoku {
     };
     // TODO: 在checkMemo的基础上，如果startPos对应的所有可能endPos都checkFailed，则不搜索
     const stat = { searchChainDFS: 0, checkChainX: 0, checkChainXY: 0 };
+
+    const timeoutChecker = options.confirmContinue && new TimeoutConfirmer(options.timeout, options.confirmContinue);
     // without ALS
     for (const maxLength of [15, 20 /*,Number.MAX_VALUE*/]) {
       for (const config of [
@@ -878,6 +888,10 @@ export class Sudoku {
             for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
               console.log('chain stat:', maxLength, extraData.stat);
               return prepareChainResult(res);
+            }
+            // check continue
+            if (timeoutChecker && !timeoutChecker.continue()) {
+              return prepareChainResult(extraData.res);
             }
           }
           console.log('chain stat:', maxLength, extraData.stat);
@@ -908,9 +922,13 @@ export class Sudoku {
           const extraData = { ...baseData, ...config, stat: { ...stat } };
           for (const d of ds) {
             extraData.td = d;
-            for (const res of config.searchChain(d, getPoses(d) || [], extraData)) {
+            for (const res of config.searchChain(d, getPoses(d) || [], extraData, timeoutChecker)) {
               console.log('als stat:', 15, extraData.stat);
               return prepareChainResult(res);
+            }
+            // check continue
+            if (extraData.exit || (timeoutChecker && !timeoutChecker.continue())) {
+              return prepareChainResult(extraData.res);
             }
           }
           console.log('als stat:', 15, extraData.stat);
@@ -939,6 +957,10 @@ const getPosTypeSign = pos => {
 };
 
 const prepareChainResult = res => {
+  if (!res) {
+    return;
+  }
+
   res.type = 'chain';
   const startPos = res.chain[0].pos;
   const endNode = res.chain[res.chain.length - 1];
@@ -969,18 +991,19 @@ const prepareChainResult = res => {
   return res;
 };
 
-function* dfsSearchChain(d, poses, extraData) {
+function* dfsSearchChain(d, poses, extraData, timeoutChecker) {
   for (const pos of poses) {
     const node = { pos, d, val: extraData.val };
-    for (const res of searchChainDFS([], node, extraData)) {
-      if (res.chain.length < extraData.maxLength) {
-        if (res.chain.length <= extraData.earlyExitLen) {
-          yield res;
-        } else {
-          extraData.res = res;
-          extraData.maxLength = res.chain.length;
-        }
+    for (const res of searchChainDFS([], node, extraData, timeoutChecker)) {
+      if (res.chain.length <= extraData.earlyExitLen) {
+        yield res;
+      } else {
+        extraData.res = res;
+        extraData.maxLength = res.chain.length;
       }
+    }
+    if (extraData.exit) {
+      return;
     }
   }
 }
@@ -994,10 +1017,11 @@ function* checkChain(chain, node, extraData) {
     // strong link
     const startPos = chain[0].pos;
     const startMemoKey = `${td}@${startPos.key}`;
+    const endMemoKey = `${d}@${pos.key}`;
     // ignore g->d
     if (d === td) {
       const memo = extraData.checkMemo.x[startMemoKey];
-      if (memo && memo.has(pos)) {
+      if (memo && memo.has(endMemoKey)) {
         return;
       }
       extraData.stat.checkChainX++;
@@ -1017,12 +1041,11 @@ function* checkChain(chain, node, extraData) {
         yield { chain: [...chain, node], effectedPoses, d: td };
       } else {
         // check failed
-        getAttrDefault(extraData.checkMemo.x, startMemoKey, new Set()).add(pos);
-        getAttrDefault(extraData.checkMemo.x, `${d}@${pos.key}`, new Set()).add(startPos);
+        getAttrDefault(extraData.checkMemo.x, startMemoKey, new Set()).add(endMemoKey);
+        getAttrDefault(extraData.checkMemo.x, endMemoKey, new Set()).add(startMemoKey);
       }
     } else {
       const memo = extraData.checkMemo.xy[startMemoKey];
-      const endMemoKey = `${d}@${pos.key}`;
       if (memo && memo.has(endMemoKey)) {
         return;
       }
@@ -1082,7 +1105,10 @@ function* checkChain(chain, node, extraData) {
       if (!checkOk) {
         // check failed
         getAttrDefault(extraData.checkMemo.xy, startMemoKey, new Set()).add(endMemoKey);
-        getAttrDefault(extraData.checkMemo.xy, endMemoKey, new Set()).add(startMemoKey);
+        if (startPos.key === pos.key) {
+          // same position
+          getAttrDefault(extraData.checkMemo.xy, endMemoKey, new Set()).add(startMemoKey);
+        }
       }
     }
   }
@@ -1143,17 +1169,26 @@ function* genNextChainAndNode(chain, node, extraData) {
   }
 }
 
-function* searchChainDFS(chain, node, extraData) {
+function* searchChainDFS(chain, node, extraData, timeoutChecker) {
   extraData.stat.searchChainDFS++;
+
+  if (extraData.exit) {
+    return;
+  }
   // optimize
   if (chain.length + 1 >= extraData.maxLength) {
+    // check continue
+    if (timeoutChecker && !timeoutChecker.continue()) {
+      extraData.exit = true;
+    }
+
     return;
   }
 
   yield* checkChain(chain, node, extraData);
 
   for (const nextChainAndNode of genNextChainAndNode(chain, node, extraData)) {
-    yield* searchChainDFS(...nextChainAndNode, extraData);
+    yield* searchChainDFS(...nextChainAndNode, extraData, timeoutChecker);
   }
 }
 
